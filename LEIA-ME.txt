@@ -9,3 +9,6 @@ Aplicação para celular. A voz usa o próprio aparelho.
 3. iPhone (Safari): compartilhar → Adicionar à Tela de Início.
 
 Cada missão tem 5 passos. As estrelas ficam salvas no celular.
+O botão 🔊 no topo liga e desliga a voz.
+
+O uso (tema, acertos e hora) é registrado no servidor para os pais acompanharem em /pais.
