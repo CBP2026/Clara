@@ -1,11 +1,11 @@
-# Missões Curtas
+# Clara
 
-Aplicação para telemóvel. Não precisa de loja nem de internet depois de aberta a primeira vez (a voz usa o telemóvel).
+Aplicação para celular. A voz usa o próprio aparelho.
 
-## Como pôr no ecrã inicial
+## Como colocar na tela inicial
 
-1. Envia a pasta para o telemóvel, ou abre o ficheiro index.html no Chrome / Safari.
-2. Android (Chrome): menu ⋮ → Adicionar ao ecrã inicial / Instalar aplicação.
-3. iPhone (Safari): partilhar → Adicionar ao Ecrã Principal.
+1. Abra o link no Chrome ou no Safari.
+2. Android (Chrome): menu ⋮ → Adicionar à tela inicial / Instalar aplicativo.
+3. iPhone (Safari): compartilhar → Adicionar à Tela de Início.
 
-Cada missão tem 5 passos. As estrelas ficam guardadas no telemóvel.
+Cada missão tem 5 passos. As estrelas ficam salvas no celular.

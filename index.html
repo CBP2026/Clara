@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -152,7 +152,7 @@
     <div class="grid">
       <button class="world" data-world="math">
         <div class="ico w-math">🍎</div>
-        <div><b>Números</b><span>Contar, mais, juntar. Sem contas no ar.</span></div>
+        <div><b>Números</b><span>Contar, mais, juntar. Sem conta de cabeça.</span></div>
         <div class="go">›</div>
       </button>
       <button class="world" data-world="time">
@@ -172,13 +172,13 @@
       </button>
     </div>
     <div class="panel">
-      Cada missão tem 5 passos curtos. Errou? Tenta outra vez, sem pressa. As estrelas ficam guardadas neste telemóvel.
+      Cada missão tem 5 passos curtos. Errou? Tenta de novo, sem pressa. As estrelas ficam salvas neste celular.
       <div class="row">
         <button class="chip" id="resetBtn">Zerar estrelas</button>
         <button class="chip" id="parentBtn">Nota para os pais</button>
       </div>
       <div id="parentNote" class="hidden" style="margin-top:10px">
-        Feita para dificuldade com o abstrato: primeiro objetos, depois o número. Sem cronómetro. Sem ranking. Inglês com voz do telemóvel. Amigos em escolhas concretas, não em sermão. Sentem-se ao lado nas primeiras vezes e digam o passo em voz alta.
+        Feita para dificuldade com o abstrato: primeiro objetos, depois o número. Sem cronômetro. Sem ranking. Inglês com a voz do celular. Amigos em escolhas concretas, não em sermão. Fiquem ao lado nas primeiras vezes e digam o passo em voz alta.
       </div>
     </div>
   </section>
@@ -235,7 +235,7 @@ function speak(text, lang) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang || "pt-PT";
+  u.lang = lang || "pt-BR";
   u.rate = 0.92;
   speechSynthesis.speak(u);
 }
@@ -261,7 +261,7 @@ function shuffle(arr) {
 const words = [
   { en: "hello", pt: "olá", emoji: "👋" },
   { en: "please", pt: "por favor", emoji: "🙏" },
-  { en: "thank you", pt: "obrigado", emoji: "💛" },
+  { en: "thank you", pt: "obrigada", emoji: "💛" },
   { en: "sorry", pt: "desculpa", emoji: "🙂" },
   { en: "friend", pt: "amigo", emoji: "🤝" },
   { en: "water", pt: "água", emoji: "💧" },
@@ -278,73 +278,73 @@ const words = [
 
 const social = [
   {
-    q: "Alguém diz olá.",
+    q: "Alguém diz oi.",
     stage: "👋",
-    hint: "O que fazes?",
+    hint: "O que você faz?",
     choices: [
-      { t: "Olho e digo olá", ok: true, why: "Um olá curto abre a porta. Não precisas de um discurso." },
-      { t: "Ignoro e viro a cara", ok: false, why: "Virar a cara parece rejeição, mesmo sem ser essa a ideia." },
-      { t: "Grito o nome muito alto", ok: false, why: "Volume alto assusta. Voz normal chega." }
+      { t: "Olho e digo oi", ok: true, why: "Um oi curto abre a porta. Você não precisa de um discurso." },
+      { t: "Ignoro e viro o rosto", ok: false, why: "Virar o rosto parece rejeição, mesmo sem ser essa a ideia." },
+      { t: "Grito o nome bem alto", ok: false, why: "Volume alto assusta. Voz normal já basta." }
     ]
   },
   {
-    q: "Queres sentar com um grupo.",
+    q: "Você quer sentar com um grupo.",
     stage: "🪑",
-    hint: "Como entras?",
+    hint: "Como você entra?",
     choices: [
       { t: "Pergunto: posso sentar?", ok: true, why: "Pedir lugar mostra respeito pelo espaço deles." },
-      { t: "Sento-me em cima da mochila", ok: false, why: "O corpo no meio, sem perguntar, fecha as pessoas." },
-      { t: "Fico a olhar calada 5 minutos", ok: false, why: "Olhar fixo sem falar deixa os outros desconfortáveis." }
+      { t: "Sento em cima da mochila", ok: false, why: "Sentar no meio, sem perguntar, afasta as pessoas." },
+      { t: "Fico olhando calada 5 minutos", ok: false, why: "Olhar fixo sem falar deixa os outros desconfortáveis." }
     ]
   },
   {
-    q: "Uma pessoa está a falar.",
+    q: "Uma pessoa está falando.",
     stage: "🗣️",
-    hint: "A tua vez ainda não chegou.",
+    hint: "Ainda não é a sua vez.",
     choices: [
       { t: "Espero ela parar", ok: true, why: "Esperar a pausa é o sinal de 'agora posso falar'." },
       { t: "Corto e conto a minha história", ok: false, why: "Cortar no meio parece que a história dela não importa." },
-      { t: "Bato palmas para calar", ok: false, why: "Palmas ou sons no meio da fala afastam." }
+      { t: "Bato palmas para calar", ok: false, why: "Palmas ou barulhos no meio da fala afastam." }
     ]
   },
   {
-    q: "Não percebeste a piada.",
+    q: "Você não entendeu a piada.",
     stage: "🤔",
-    hint: "Toda a gente está a rir.",
+    hint: "Todo mundo está rindo.",
     choices: [
-      { t: "Sorrio e pergunto depois", ok: true, why: "Não é obrigatório perceber tudo. Perguntar depois é normal." },
-      { t: "Digo que a piada é estúpida", ok: false, why: "Atacar a piada fecha o grupo." },
-      { t: "Repito a piada 4 vezes", ok: false, why: "Repetir muito cansa quem já percebeu." }
+      { t: "Sorrio e pergunto depois", ok: true, why: "Não precisa entender tudo. Perguntar depois é normal." },
+      { t: "Digo que a piada é idiota", ok: false, why: "Atacar a piada fecha o grupo." },
+      { t: "Repito a piada 4 vezes", ok: false, why: "Repetir muito cansa quem já entendeu." }
     ]
   },
   {
-    q: "Estás muito perto da cara dela.",
+    q: "Você está muito perto do rosto dela.",
     stage: "😐",
-    hint: "Ela recua um passo.",
+    hint: "Ela dá um passo para trás.",
     choices: [
-      { t: "Dou um passo atrás", ok: true, why: "Um braço de distância costuma ser confortável." },
-      { t: "Aproximo-me ainda mais", ok: false, why: "Se a pessoa recua, o corpo dela já disse 'espaço'." },
-      { t: "Agarro o braço para explicar", ok: false, why: "Tocar sem convite assusta." }
+      { t: "Dou um passo para trás", ok: true, why: "Um braço de distância costuma ser confortável." },
+      { t: "Chego ainda mais perto", ok: false, why: "Se a pessoa recua, o corpo dela já disse 'espaço'." },
+      { t: "Seguro o braço para explicar", ok: false, why: "Tocar sem convite assusta." }
     ]
   },
   {
-    q: "Perdeste o jogo.",
+    q: "Você perdeu o jogo.",
     stage: "🎮",
-    hint: "O outro ganhou.",
+    hint: "A outra pessoa ganhou.",
     choices: [
-      { t: "Digo: boa, ganhaste", ok: true, why: "Uma frase curta mantém o jogo possível amanhã." },
-      { t: "Atirei o telemóvel", ok: false, why: "Partir coisas acaba a brincadeira e a confiança." },
-      { t: "Digo que ele fez batota", ok: false, why: "Acusar sem prova vira discussão." }
+      { t: "Digo: boa, você ganhou", ok: true, why: "Uma frase curta mantém o jogo possível amanhã." },
+      { t: "Joguei o celular", ok: false, why: "Quebrar coisas acaba a brincadeira e a confiança." },
+      { t: "Digo que ele trapaceou", ok: false, why: "Acusar sem prova vira discussão." }
     ]
   },
   {
-    q: "Queres um copo de água na casa de alguém.",
+    q: "Você quer um copo de água na casa de alguém.",
     stage: "💧",
-    hint: "Não é a tua cozinha.",
+    hint: "Não é a sua cozinha.",
     choices: [
       { t: "Peço: posso beber água?", ok: true, why: "Pedir é o caminho. Please / por favor ajuda." },
-      { t: "Abro todos os armários", ok: false, why: "Armários dos outros são privados." },
-      { t: "Bebo da garrafa dela", ok: false, why: "Garrafa pessoal não se partilha sem perguntar." }
+      { t: "Abro todos os armários", ok: false, why: "Armário dos outros é privado." },
+      { t: "Bebo da garrafa dela", ok: false, why: "Garrafa pessoal não se divide sem perguntar." }
     ]
   },
   {
@@ -352,29 +352,29 @@ const social = [
     stage: "😢",
     hint: "Não sabes a razão.",
     choices: [
-      { t: "Pergunto: estás bem?", ok: true, why: "Uma pergunta curta chega. Se disser não, paras." },
-      { t: "Rio e digo para animar", ok: false, why: "Rir da cara triste parece gozo." },
-      { t: "Conto já o meu problema", ok: false, why: "Primeiro o momento é dele." }
+      { t: "Pergunto: você está bem?", ok: true, why: "Uma pergunta curta basta. Se disser não, você para." },
+      { t: "Rio e mando animar", ok: false, why: "Rir de rosto triste parece zoação." },
+      { t: "Já conto o meu problema", ok: false, why: "Primeiro o momento é dela." }
     ]
   },
   {
-    q: "Queres mostrar um vídeo.",
+    q: "Você quer mostrar um vídeo.",
     stage: "📱",
-    hint: "Eles estão a conversar.",
+    hint: "Eles estão conversando.",
     choices: [
-      { t: "Espero e pergunto se querem ver", ok: true, why: "Perguntar dá-lhes escolha. Vídeo sem pausa invade." },
-      { t: "Ponho o vídeo no máximo", ok: false, why: "Som alto por cima da conversa empurra as pessoas." },
-      { t: "Mostro 10 vídeos seguidos", ok: false, why: "Um chega. Depois devolvo a conversa." }
+      { t: "Espero e pergunto se querem ver", ok: true, why: "Perguntar dá escolha. Vídeo sem pausa invade." },
+      { t: "Coloco o vídeo no máximo", ok: false, why: "Som alto por cima da conversa afasta as pessoas." },
+      { t: "Mostro 10 vídeos seguidos", ok: false, why: "Um já basta. Depois devolvo a conversa." }
     ]
   },
   {
     q: "Alguém diz: agora não posso falar.",
     stage: "⏳",
-    hint: "Tu querias contar uma coisa.",
+    hint: "Você queria contar uma coisa.",
     choices: [
-      { t: "Digo ok e falo mais tarde", ok: true, why: "Aceitar o 'depois' mostra que ouviste." },
-      { t: "Sigo a pessoa a falar na mesma", ok: false, why: "Seguir a falar depois do não cansa e afasta." },
-      { t: "Fico zangada em silêncio ao lado", ok: false, why: "Ficar colada e zangada também é pressão." }
+      { t: "Digo ok e falo mais tarde", ok: true, why: "Aceitar o 'depois' mostra que você ouviu." },
+      { t: "Continuo falando mesmo assim", ok: false, why: "Continuar falando depois do não cansa e afasta." },
+      { t: "Fico brava em silêncio do lado", ok: false, why: "Ficar colada e brava também é pressão." }
     ]
   }
 ];
@@ -387,11 +387,11 @@ function mathItem() {
     const opts = shuffle([n, n + 1, Math.max(1, n - 1), n + 2]).slice(0, 3);
     if (!opts.includes(n)) opts[0] = n;
     return {
-      q: "Quantos vês?",
-      hint: "Conta com o dedo, um a um.",
-      speak: "Quantos vês? Conta um a um.",
+      q: "Quantos você vê?",
+      hint: "Conte no dedo, um por um.",
+      speak: "Quantos você vê? Conte um a um.",
       stage: `<div class="objs">${objs(emoji, n)}</div>`,
-      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === n, why: v === n ? `São ${n}.` : `Conta outra vez. São ${n}.` }))
+      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === n, why: v === n ? `São ${n}.` : `Conte de novo. São ${n}.` }))
     };
   }
   if (kind === "more") {
@@ -399,13 +399,13 @@ function mathItem() {
     let b = 1 + Math.floor(Math.random() * 5);
     if (a === b) b = Math.min(6, a + 1);
     return {
-      q: "Onde há mais?",
-      hint: "Olha os dois grupos. Toca no maior.",
-      speak: "Onde há mais?",
+      q: "Onde tem mais?",
+      hint: "Olhe os dois grupos. Toque no maior.",
+      speak: "Onde tem mais?",
       stage: `<div class="pile"><div class="objs">${objs(emoji, a)}</div><div>A</div></div><div class="pile"><div class="objs">${objs("🌙", b)}</div><div>B</div></div>`,
       choices: [
-        { t: "Grupo A", ok: a > b, why: a > b ? "A tem mais objetos." : "B tem mais. Conta os dois." },
-        { t: "Grupo B", ok: b > a, why: b > a ? "B tem mais objetos." : "A tem mais. Conta os dois." }
+        { t: "Grupo A", ok: a > b, why: a > b ? "A tem mais objetos." : "B tem mais. Conte os dois." },
+        { t: "Grupo B", ok: b > a, why: b > a ? "B tem mais objetos." : "A tem mais. Conte os dois." }
       ]
     };
   }
@@ -416,11 +416,11 @@ function mathItem() {
     const opts = shuffle([sum, sum + 1, Math.max(1, sum - 1)]).slice(0, 3);
     if (!opts.includes(sum)) opts[0] = sum;
     return {
-      q: "Juntas os dois grupos. Quantos ficam?",
+      q: "Junte os dois grupos. Quantos ficam?",
       hint: "Primeiro um grupo, depois o outro.",
-      speak: "Junta os dois grupos. Quantos ficam?",
+      speak: "Junte os dois grupos. Quantos ficam?",
       stage: `<div class="pile"><div class="objs">${objs(emoji, a)}</div></div><div style="font-size:28px">+</div><div class="pile"><div class="objs">${objs(emoji, b)}</div></div>`,
-      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === sum, why: v === sum ? `${a} e ${b} fazem ${sum}.` : `Conta tudo junto. São ${sum}.` }))
+      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === sum, why: v === sum ? `${a} e ${b} fazem ${sum}.` : `Conte tudo junto. São ${sum}.` }))
     };
   }
   const start = 1 + Math.floor(Math.random() * 3);
@@ -428,18 +428,18 @@ function mathItem() {
   const ans = start + 3;
   const opts = shuffle([ans, ans + 1, ans - 1]);
   return {
-    q: "Qual número vem a seguir?",
+    q: "Qual número vem depois?",
     hint: seq.join("  ·  ") + "  ·  ?",
-    speak: "Qual número vem a seguir?",
+    speak: "Qual número vem depois?",
     stage: `<div class="word">${seq.join("  ")}  ?</div>`,
-    choices: opts.map(v => ({ t: String(v), ok: v === ans, why: v === ans ? `A seguir é ${ans}.` : `A fila sobe de um em um. A seguir é ${ans}.` }))
+    choices: opts.map(v => ({ t: String(v), ok: v === ans, why: v === ans ? `Depois é ${ans}.` : `A fila sobe de um em um. Depois é ${ans}.` }))
   };
 }
 
 function timeItem() {
   const bank = [
     {
-      q: "É de manhã. O sol está a subir.",
+      q: "É de manhã. O sol está subindo.",
       stage: "🌅",
       hint: "Que parte do dia é?",
       choices: [
@@ -449,7 +449,7 @@ function timeItem() {
       ]
     },
     {
-      q: "Já jantaste. Está escuro. Vais dormir.",
+      q: "Você já jantou. Está escuro. Você vai dormir.",
       stage: "🌙",
       hint: "Isto é cedo ou tarde?",
       choices: [
@@ -458,9 +458,9 @@ function timeItem() {
       ]
     },
     {
-      q: "A escola começa às 9. Tu chegas às 8.",
+      q: "A escola começa às 9. Você chega às 8.",
       stage: "🏫",
-      hint: "Chegaste...",
+      hint: "Você chegou...",
       choices: [
         { t: "Cedo", ok: true, why: "Antes da hora = cedo." },
         { t: "Tarde", ok: false, why: "Tarde é depois da hora." },
@@ -468,16 +468,16 @@ function timeItem() {
       ]
     },
     {
-      q: "A escola começa às 9. Tu chegas às 10.",
+      q: "A escola começa às 9. Você chega às 10.",
       stage: "⏰",
-      hint: "Chegaste...",
+      hint: "Você chegou...",
       choices: [
         { t: "Tarde", ok: true, why: "Depois da hora = tarde." },
         { t: "Cedo", ok: false, why: "Cedo seria antes das 9." }
       ]
     },
     {
-      q: "Primeiro lavas as mãos. Depois comes.",
+      q: "Primeiro você lava as mãos. Depois come.",
       stage: "🧼🍽️",
       hint: "O que acontece primeiro?",
       choices: [
@@ -490,22 +490,22 @@ function timeItem() {
       stage: "🚪",
       hint: "Daqui a pouco quer dizer...",
       choices: [
-        { t: "Em breve, espera pouco", ok: true, why: "Daqui a pouco = espera curta, não agora já." },
-        { t: "Para a semana", ok: false, why: "Para a semana é muito mais longe." },
-        { t: "Nunca", ok: false, why: "Não é nunca. É esperar um bocadinho." }
+        { t: "Em breve, espera pouco", ok: true, why: "Daqui a pouco = espera curta, não é agora." },
+        { t: "Semana que vem", ok: false, why: "Semana que vem é muito mais longe." },
+        { t: "Nunca", ok: false, why: "Não é nunca. É esperar um pouquinho." }
       ]
     },
     {
-      q: "A casa da avó fica a 2 minutos a pé.",
+      q: "A casa da avó fica a 2 minutos andando.",
       stage: "🏡",
       hint: "Está perto ou longe?",
       choices: [
-        { t: "Perto", ok: true, why: "Dois minutos a pé é perto." },
+        { t: "Perto", ok: true, why: "Dois minutos andando é perto." },
         { t: "Muito longe", ok: false, why: "Longe seria horas, não dois minutos." }
       ]
     },
     {
-      q: "O comboio parte agora.",
+      q: "O trem sai agora.",
       stage: "🚆",
       hint: "Agora quer dizer...",
       choices: [
@@ -595,7 +595,7 @@ function renderItem() {
     b.onclick = () => answer(idx);
     box.appendChild(b);
   });
-  speak(state.item.speak || state.item.q, state.item.lang || "pt-PT");
+  speak(state.item.speak || state.item.q, state.item.lang || "pt-BR");
 }
 
 function answer(idx) {
@@ -616,7 +616,7 @@ function answer(idx) {
   }
   $("nextBtn").classList.add("show");
   $("nextBtn").textContent = state.step + 1 >= state.total ? "Ver estrela" : "Seguinte";
-  speak(fb.textContent, "pt-PT");
+  speak(fb.textContent, "pt-BR");
 }
 
 function start(world) {
@@ -632,13 +632,13 @@ $("nextBtn").onclick = () => {
     $("rewardTitle").textContent = "Missão de " + worlds[state.world] + " feita";
     $("rewardText").textContent = "5 passos. Estrelas guardadas: " + state.stars + ". Podes parar ou fazer outra.";
     show("reward");
-    speak("Missão feita. Muito bem.", "pt-PT");
+    speak("Missão feita. Muito bem.", "pt-BR");
   } else renderItem();
 };
 $("againBtn").onclick = () => start(state.world);
 $("homeBtn").onclick = () => show("home");
 $("backBtn").onclick = () => show("home");
-$("speakBtn").onclick = () => speak(state.item ? (state.item.speak || state.item.q) : "Missões curtas", state.item && state.item.lang || "pt-PT");
+$("speakBtn").onclick = () => speak(state.item ? (state.item.speak || state.item.q) : "Missões curtas", state.item && state.item.lang || "pt-BR");
 document.querySelectorAll(".world").forEach(b => b.onclick = () => start(b.dataset.world));
 $("resetBtn").onclick = () => { state.stars = 0; saveStars(); };
 $("parentBtn").onclick = () => $("parentNote").classList.toggle("hidden");
