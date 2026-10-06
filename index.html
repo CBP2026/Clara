@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1b1430" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Missões Curtas</title>
+<link rel="manifest" href="manifest.json" />
+<style>
+  :root {
+    --bg: #1b1430;
+    --bg2: #271c45;
+    --card: #342656;
+    --ink: #fff8ef;
+    --muted: #d9cce8;
+    --coral: #ff7a59;
+    --sun: #ffc857;
+    --mint: #3ddc97;
+    --sky: #7cc4ff;
+    --pink: #ff8ad4;
+    --line: rgba(255,255,255,.12);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(900px 500px at 80% -10%, #5a3d8a 0%, transparent 55%),
+      radial-gradient(700px 400px at -10% 110%, #ff7a59 0%, transparent 40%),
+      var(--bg);
+    color: var(--ink);
+    min-height: 100%;
+  }
+  button, .tap { font-family: inherit; }
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    padding: calc(14px + env(safe-area-inset-top)) 16px calc(22px + env(safe-area-inset-bottom));
+  }
+  header.top {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .moon {
+    width: 46px; height: 46px; border-radius: 16px;
+    background: linear-gradient(145deg, #ffe29a, #ff7a59);
+    display: grid; place-items: center; font-size: 26px;
+    box-shadow: 0 8px 20px rgba(255,122,89,.35);
+  }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -.3px; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .stars {
+    background: rgba(255,255,255,.08); border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px 12px; font-weight: 700;
+  }
+  .grid { display: grid; gap: 12px; }
+  .world {
+    border: 0; text-align: left; color: inherit; cursor: pointer;
+    border-radius: 22px; padding: 16px; display: grid; grid-template-columns: 64px 1fr auto;
+    gap: 12px; align-items: center; background: var(--card);
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
+  }
+  .world:active { transform: scale(.98); }
+  .ico {
+    width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center;
+    font-size: 32px;
+  }
+  .w-math { background: #3a2a78; }
+  .w-time { background: #2c3f72; }
+  .w-en { background: #2d4a45; }
+  .w-soc { background: #5a3058; }
+  .world b { display: block; font-size: 18px; }
+  .world span { color: var(--muted); font-size: 13px; }
+  .go { font-size: 22px; opacity: .7; }
+  .panel {
+    background: rgba(255,255,255,.06); border: 1px solid var(--line);
+    border-radius: 18px; padding: 14px; margin-top: 14px; color: var(--muted); font-size: 14px; line-height: 1.45;
+  }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .chip {
+    border: 0; border-radius: 999px; padding: 8px 12px; background: rgba(255,255,255,.1);
+    color: var(--ink); cursor: pointer;
+  }
+  .playhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .back, .speak {
+    border: 0; background: rgba(255,255,255,.1); color: white; border-radius: 14px;
+    padding: 10px 12px; font-size: 16px; cursor: pointer;
+  }
+  .q {
+    font-size: 28px; line-height: 1.2; font-weight: 800; margin: 8px 0 14px; letter-spacing: -.4px;
+  }
+  .hint { color: var(--muted); font-size: 15px; margin-bottom: 12px; min-height: 22px; }
+  .stage {
+    min-height: 150px; border-radius: 22px; background: rgba(255,255,255,.05);
+    border: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
+    gap: 18px; padding: 16px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .pile { text-align: center; }
+  .objs { font-size: 34px; letter-spacing: 2px; line-height: 1.25; max-width: 180px; }
+  .choices { display: grid; gap: 10px; }
+  .choices.two { grid-template-columns: 1fr 1fr; }
+  .choice {
+    border: 2px solid transparent; background: #fff8ef; color: #24183a;
+    border-radius: 18px; min-height: 72px; font-size: 22px; font-weight: 800;
+    cursor: pointer; padding: 12px;
+  }
+  .choice.small { font-size: 18px; font-weight: 700; text-align: left; }
+  .choice.good { background: #b8f3d6; border-color: #1d9a62; }
+  .choice.bad { background: #ffd0c6; border-color: #d4543c; }
+  .feedback {
+    margin-top: 12px; border-radius: 16px; padding: 12px 14px; font-size: 16px; line-height: 1.35;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: rgba(61,220,151,.18); }
+  .feedback.no { background: rgba(255,122,89,.18); }
+  .next {
+    width: 100%; margin-top: 12px; border: 0; border-radius: 16px; padding: 16px;
+    font-size: 18px; font-weight: 800; background: var(--sun); color: #2a1c08; cursor: pointer;
+    display: none;
+  }
+  .next.show { display: block; }
+  .dots { display: flex; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 99px; background: rgba(255,255,255,.2); }
+  .dot.on { background: var(--sun); }
+  .reward { text-align: center; padding-top: 28px; }
+  .reward .big { font-size: 72px; }
+  .hidden { display: none !important; }
+  .bar { height: 8px; background: rgba(255,255,255,.12); border-radius: 99px; overflow: hidden; margin: 8px 0 14px; }
+  .bar > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--coral), var(--sun)); }
+  .word { font-size: 40px; font-weight: 800; letter-spacing: -.5px; }
+  .en { color: var(--sky); }
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="home">
+    <header class="top">
+      <div class="brand">
+        <div class="moon">🌙</div>
+        <div>
+          <h1>Missões Curtas</h1>
+          <div class="sub">1 minuto. Um passo. Uma estrela.</div>
+        </div>
+      </div>
+      <div class="stars" id="starCount">⭐ 0</div>
+    </header>
+    <div class="grid">
+      <button class="world" data-world="math">
+        <div class="ico w-math">🍎</div>
+        <div><b>Números</b><span>Contar, mais, juntar. Sem contas no ar.</span></div>
+        <div class="go">›</div>
+      </button>
+      <button class="world" data-world="time">
+        <div class="ico w-time">🌅</div>
+        <div><b>Tempo</b><span>Agora, depois, cedo, tarde. Com imagens.</span></div>
+        <div class="go">›</div>
+      </button>
+      <button class="world" data-world="en">
+        <div class="ico w-en">💬</div>
+        <div><b>English</b><span>Palavras úteis. Ouvir e tocar.</span></div>
+        <div class="go">›</div>
+      </button>
+      <button class="world" data-world="soc">
+        <div class="ico w-soc">🤝</div>
+        <div><b>Amigos</b><span>O que fazer para as pessoas ficarem à vontade.</span></div>
+        <div class="go">›</div>
+      </button>
+    </div>
+    <div class="panel">
+      Cada missão tem 5 passos curtos. Errou? Tenta outra vez, sem pressa. As estrelas ficam guardadas neste telemóvel.
+      <div class="row">
+        <button class="chip" id="resetBtn">Zerar estrelas</button>
+        <button class="chip" id="parentBtn">Nota para os pais</button>
+      </div>
+      <div id="parentNote" class="hidden" style="margin-top:10px">
+        Feita para dificuldade com o abstrato: primeiro objetos, depois o número. Sem cronómetro. Sem ranking. Inglês com voz do telemóvel. Amigos em escolhas concretas, não em sermão. Sentem-se ao lado nas primeiras vezes e digam o passo em voz alta.
+      </div>
+    </div>
+  </section>
+
+  <section id="play" class="hidden">
+    <div class="playhead">
+      <button class="back" id="backBtn">← Início</button>
+      <div class="dots" id="dots"></div>
+      <button class="speak" id="speakBtn">🔊</button>
+    </div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="q" id="q"></div>
+    <div class="hint" id="hint"></div>
+    <div class="stage" id="stage"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next" id="nextBtn">Seguinte</button>
+  </section>
+
+  <section id="reward" class="hidden">
+    <div class="reward">
+      <div class="big">🌟</div>
+      <h2 id="rewardTitle">Missão feita</h2>
+      <p id="rewardText"></p>
+      <button class="next show" id="againBtn">Outra missão</button>
+      <button class="chip" id="homeBtn" style="margin-top:10px">Voltar ao início</button>
+    </div>
+  </section>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const state = {
+  stars: Number(localStorage.getItem("mc-stars") || 0),
+  world: null,
+  step: 0,
+  total: 5,
+  item: null,
+  locked: false
+};
+const worlds = {
+  math: "Números",
+  time: "Tempo",
+  en: "English",
+  soc: "Amigos"
+};
+
+function saveStars() {
+  localStorage.setItem("mc-stars", String(state.stars));
+  $("starCount").textContent = "⭐ " + state.stars;
+}
+saveStars();
+
+function speak(text, lang) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang || "pt-PT";
+  u.rate = 0.92;
+  speechSynthesis.speak(u);
+}
+
+function show(id) {
+  ["home", "play", "reward"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+}
+
+function objs(emoji, n) {
+  return Array.from({length: n}, () => emoji).join(" ");
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const words = [
+  { en: "hello", pt: "olá", emoji: "👋" },
+  { en: "please", pt: "por favor", emoji: "🙏" },
+  { en: "thank you", pt: "obrigado", emoji: "💛" },
+  { en: "sorry", pt: "desculpa", emoji: "🙂" },
+  { en: "friend", pt: "amigo", emoji: "🤝" },
+  { en: "water", pt: "água", emoji: "💧" },
+  { en: "help", pt: "ajuda", emoji: "🆘" },
+  { en: "yes", pt: "sim", emoji: "✅" },
+  { en: "no", pt: "não", emoji: "🚫" },
+  { en: "stop", pt: "para", emoji: "✋" },
+  { en: "wait", pt: "espera", emoji: "⏳" },
+  { en: "happy", pt: "feliz", emoji: "😊" },
+  { en: "sad", pt: "triste", emoji: "😢" },
+  { en: "school", pt: "escola", emoji: "🏫" },
+  { en: "home", pt: "casa", emoji: "🏠" }
+];
+
+const social = [
+  {
+    q: "Alguém diz olá.",
+    stage: "👋",
+    hint: "O que fazes?",
+    choices: [
+      { t: "Olho e digo olá", ok: true, why: "Um olá curto abre a porta. Não precisas de um discurso." },
+      { t: "Ignoro e viro a cara", ok: false, why: "Virar a cara parece rejeição, mesmo sem ser essa a ideia." },
+      { t: "Grito o nome muito alto", ok: false, why: "Volume alto assusta. Voz normal chega." }
+    ]
+  },
+  {
+    q: "Queres sentar com um grupo.",
+    stage: "🪑",
+    hint: "Como entras?",
+    choices: [
+      { t: "Pergunto: posso sentar?", ok: true, why: "Pedir lugar mostra respeito pelo espaço deles." },
+      { t: "Sento-me em cima da mochila", ok: false, why: "O corpo no meio, sem perguntar, fecha as pessoas." },
+      { t: "Fico a olhar calada 5 minutos", ok: false, why: "Olhar fixo sem falar deixa os outros desconfortáveis." }
+    ]
+  },
+  {
+    q: "Uma pessoa está a falar.",
+    stage: "🗣️",
+    hint: "A tua vez ainda não chegou.",
+    choices: [
+      { t: "Espero ela parar", ok: true, why: "Esperar a pausa é o sinal de 'agora posso falar'." },
+      { t: "Corto e conto a minha história", ok: false, why: "Cortar no meio parece que a história dela não importa." },
+      { t: "Bato palmas para calar", ok: false, why: "Palmas ou sons no meio da fala afastam." }
+    ]
+  },
+  {
+    q: "Não percebeste a piada.",
+    stage: "🤔",
+    hint: "Toda a gente está a rir.",
+    choices: [
+      { t: "Sorrio e pergunto depois", ok: true, why: "Não é obrigatório perceber tudo. Perguntar depois é normal." },
+      { t: "Digo que a piada é estúpida", ok: false, why: "Atacar a piada fecha o grupo." },
+      { t: "Repito a piada 4 vezes", ok: false, why: "Repetir muito cansa quem já percebeu." }
+    ]
+  },
+  {
+    q: "Estás muito perto da cara dela.",
+    stage: "😐",
+    hint: "Ela recua um passo.",
+    choices: [
+      { t: "Dou um passo atrás", ok: true, why: "Um braço de distância costuma ser confortável." },
+      { t: "Aproximo-me ainda mais", ok: false, why: "Se a pessoa recua, o corpo dela já disse 'espaço'." },
+      { t: "Agarro o braço para explicar", ok: false, why: "Tocar sem convite assusta." }
+    ]
+  },
+  {
+    q: "Perdeste o jogo.",
+    stage: "🎮",
+    hint: "O outro ganhou.",
+    choices: [
+      { t: "Digo: boa, ganhaste", ok: true, why: "Uma frase curta mantém o jogo possível amanhã." },
+      { t: "Atirei o telemóvel", ok: false, why: "Partir coisas acaba a brincadeira e a confiança." },
+      { t: "Digo que ele fez batota", ok: false, why: "Acusar sem prova vira discussão." }
+    ]
+  },
+  {
+    q: "Queres um copo de água na casa de alguém.",
+    stage: "💧",
+    hint: "Não é a tua cozinha.",
+    choices: [
+      { t: "Peço: posso beber água?", ok: true, why: "Pedir é o caminho. Please / por favor ajuda." },
+      { t: "Abro todos os armários", ok: false, why: "Armários dos outros são privados." },
+      { t: "Bebo da garrafa dela", ok: false, why: "Garrafa pessoal não se partilha sem perguntar." }
+    ]
+  },
+  {
+    q: "O colega está triste e calado.",
+    stage: "😢",
+    hint: "Não sabes a razão.",
+    choices: [
+      { t: "Pergunto: estás bem?", ok: true, why: "Uma pergunta curta chega. Se disser não, paras." },
+      { t: "Rio e digo para animar", ok: false, why: "Rir da cara triste parece gozo." },
+      { t: "Conto já o meu problema", ok: false, why: "Primeiro o momento é dele." }
+    ]
+  },
+  {
+    q: "Queres mostrar um vídeo.",
+    stage: "📱",
+    hint: "Eles estão a conversar.",
+    choices: [
+      { t: "Espero e pergunto se querem ver", ok: true, why: "Perguntar dá-lhes escolha. Vídeo sem pausa invade." },
+      { t: "Ponho o vídeo no máximo", ok: false, why: "Som alto por cima da conversa empurra as pessoas." },
+      { t: "Mostro 10 vídeos seguidos", ok: false, why: "Um chega. Depois devolvo a conversa." }
+    ]
+  },
+  {
+    q: "Alguém diz: agora não posso falar.",
+    stage: "⏳",
+    hint: "Tu querias contar uma coisa.",
+    choices: [
+      { t: "Digo ok e falo mais tarde", ok: true, why: "Aceitar o 'depois' mostra que ouviste." },
+      { t: "Sigo a pessoa a falar na mesma", ok: false, why: "Seguir a falar depois do não cansa e afasta." },
+      { t: "Fico zangada em silêncio ao lado", ok: false, why: "Ficar colada e zangada também é pressão." }
+    ]
+  }
+];
+
+function mathItem() {
+  const kind = pick(["count", "more", "add", "next"]);
+  const emoji = pick(["🍎", "⭐", "🍪", "🐶", "🎈"]);
+  if (kind === "count") {
+    const n = 1 + Math.floor(Math.random() * 6);
+    const opts = shuffle([n, n + 1, Math.max(1, n - 1), n + 2]).slice(0, 3);
+    if (!opts.includes(n)) opts[0] = n;
+    return {
+      q: "Quantos vês?",
+      hint: "Conta com o dedo, um a um.",
+      speak: "Quantos vês? Conta um a um.",
+      stage: `<div class="objs">${objs(emoji, n)}</div>`,
+      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === n, why: v === n ? `São ${n}.` : `Conta outra vez. São ${n}.` }))
+    };
+  }
+  if (kind === "more") {
+    let a = 1 + Math.floor(Math.random() * 5);
+    let b = 1 + Math.floor(Math.random() * 5);
+    if (a === b) b = Math.min(6, a + 1);
+    return {
+      q: "Onde há mais?",
+      hint: "Olha os dois grupos. Toca no maior.",
+      speak: "Onde há mais?",
+      stage: `<div class="pile"><div class="objs">${objs(emoji, a)}</div><div>A</div></div><div class="pile"><div class="objs">${objs("🌙", b)}</div><div>B</div></div>`,
+      choices: [
+        { t: "Grupo A", ok: a > b, why: a > b ? "A tem mais objetos." : "B tem mais. Conta os dois." },
+        { t: "Grupo B", ok: b > a, why: b > a ? "B tem mais objetos." : "A tem mais. Conta os dois." }
+      ]
+    };
+  }
+  if (kind === "add") {
+    const a = 1 + Math.floor(Math.random() * 3);
+    const b = 1 + Math.floor(Math.random() * 3);
+    const sum = a + b;
+    const opts = shuffle([sum, sum + 1, Math.max(1, sum - 1)]).slice(0, 3);
+    if (!opts.includes(sum)) opts[0] = sum;
+    return {
+      q: "Juntas os dois grupos. Quantos ficam?",
+      hint: "Primeiro um grupo, depois o outro.",
+      speak: "Junta os dois grupos. Quantos ficam?",
+      stage: `<div class="pile"><div class="objs">${objs(emoji, a)}</div></div><div style="font-size:28px">+</div><div class="pile"><div class="objs">${objs(emoji, b)}</div></div>`,
+      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === sum, why: v === sum ? `${a} e ${b} fazem ${sum}.` : `Conta tudo junto. São ${sum}.` }))
+    };
+  }
+  const start = 1 + Math.floor(Math.random() * 3);
+  const seq = [start, start + 1, start + 2];
+  const ans = start + 3;
+  const opts = shuffle([ans, ans + 1, ans - 1]);
+  return {
+    q: "Qual número vem a seguir?",
+    hint: seq.join("  ·  ") + "  ·  ?",
+    speak: "Qual número vem a seguir?",
+    stage: `<div class="word">${seq.join("  ")}  ?</div>`,
+    choices: opts.map(v => ({ t: String(v), ok: v === ans, why: v === ans ? `A seguir é ${ans}.` : `A fila sobe de um em um. A seguir é ${ans}.` }))
+  };
+}
+
+function timeItem() {
+  const bank = [
+    {
+      q: "É de manhã. O sol está a subir.",
+      stage: "🌅",
+      hint: "Que parte do dia é?",
+      choices: [
+        { t: "Manhã", ok: true, why: "Sol a subir = manhã." },
+        { t: "Noite", ok: false, why: "À noite o sol já não está a subir." },
+        { t: "Meia-noite", ok: false, why: "Meia-noite é a meio da noite, escuro." }
+      ]
+    },
+    {
+      q: "Já jantaste. Está escuro. Vais dormir.",
+      stage: "🌙",
+      hint: "Isto é cedo ou tarde?",
+      choices: [
+        { t: "Tarde / noite", ok: true, why: "Depois do jantar e de escuro, é tarde." },
+        { t: "De manhã cedo", ok: false, why: "De manhã ainda não jantaste." }
+      ]
+    },
+    {
+      q: "A escola começa às 9. Tu chegas às 8.",
+      stage: "🏫",
+      hint: "Chegaste...",
+      choices: [
+        { t: "Cedo", ok: true, why: "Antes da hora = cedo." },
+        { t: "Tarde", ok: false, why: "Tarde é depois da hora." },
+        { t: "Ao mesmo tempo", ok: false, why: "8 é antes de 9." }
+      ]
+    },
+    {
+      q: "A escola começa às 9. Tu chegas às 10.",
+      stage: "⏰",
+      hint: "Chegaste...",
+      choices: [
+        { t: "Tarde", ok: true, why: "Depois da hora = tarde." },
+        { t: "Cedo", ok: false, why: "Cedo seria antes das 9." }
+      ]
+    },
+    {
+      q: "Primeiro lavas as mãos. Depois comes.",
+      stage: "🧼🍽️",
+      hint: "O que acontece primeiro?",
+      choices: [
+        { t: "Lavar as mãos", ok: true, why: "Primeiro é o que vem antes." },
+        { t: "Comer", ok: false, why: "Comer vem depois, não primeiro." }
+      ]
+    },
+    {
+      q: "A mãe diz: já vamos, daqui a pouco.",
+      stage: "🚪",
+      hint: "Daqui a pouco quer dizer...",
+      choices: [
+        { t: "Em breve, espera pouco", ok: true, why: "Daqui a pouco = espera curta, não agora já." },
+        { t: "Para a semana", ok: false, why: "Para a semana é muito mais longe." },
+        { t: "Nunca", ok: false, why: "Não é nunca. É esperar um bocadinho." }
+      ]
+    },
+    {
+      q: "A casa da avó fica a 2 minutos a pé.",
+      stage: "🏡",
+      hint: "Está perto ou longe?",
+      choices: [
+        { t: "Perto", ok: true, why: "Dois minutos a pé é perto." },
+        { t: "Muito longe", ok: false, why: "Longe seria horas, não dois minutos." }
+      ]
+    },
+    {
+      q: "O comboio parte agora.",
+      stage: "🚆",
+      hint: "Agora quer dizer...",
+      choices: [
+        { t: "Neste momento", ok: true, why: "Agora = já, neste instante." },
+        { t: "Amanhã", ok: false, why: "Amanhã é outro dia." },
+        { t: "No ano passado", ok: false, why: "O ano passado já foi." }
+      ]
+    }
+  ];
+  const item = pick(bank);
+  return {
+    q: item.q,
+    hint: item.hint,
+    speak: item.q + " " + item.hint,
+    stage: `<div class="word">${item.stage}</div>`,
+    choices: shuffle(item.choices)
+  };
+}
+
+function enItem() {
+  const kind = pick(["hear", "mean"]);
+  const w = pick(words);
+  const distract = shuffle(words.filter(x => x.en !== w.en)).slice(0, 2);
+  if (kind === "hear") {
+    return {
+      q: "Toca na palavra em inglês.",
+      hint: "Significa: " + w.pt,
+      speak: w.en,
+      lang: "en-GB",
+      stage: `<div class="word">${w.emoji}</div>`,
+      choices: shuffle([w, ...distract]).map(x => ({
+        t: x.en, ok: x.en === w.en,
+        why: x.en === w.en ? `${w.en} = ${w.pt}` : `Esta é ${w.en}.`
+      }))
+    };
+  }
+  return {
+    q: w.en,
+    hint: "O que quer dizer?",
+    speak: w.en,
+    lang: "en-GB",
+    stage: `<div class="word en">${w.en}</div>`,
+    choices: shuffle([w, ...distract]).map(x => ({
+      t: x.emoji + "  " + x.pt, ok: x.en === w.en,
+      why: x.en === w.en ? `Sim. ${w.en} = ${w.pt}` : `Quer dizer ${w.pt}.`
+    }))
+  };
+}
+
+function socItem() {
+  const s = pick(social);
+  return {
+    q: s.q,
+    hint: s.hint,
+    speak: s.q + " " + s.hint,
+    stage: `<div class="word">${s.stage}</div>`,
+    choices: shuffle(s.choices).map(c => ({ t: c.t, ok: c.ok, why: c.why }))
+  };
+}
+
+function makeItem() {
+  if (state.world === "math") return mathItem();
+  if (state.world === "time") return timeItem();
+  if (state.world === "en") return enItem();
+  return socItem();
+}
+
+function renderItem() {
+  state.locked = false;
+  state.item = makeItem();
+  $("q").textContent = state.item.q;
+  $("hint").textContent = state.item.hint;
+  $("stage").innerHTML = state.item.stage;
+  $("feedback").className = "feedback";
+  $("feedback").textContent = "";
+  $("nextBtn").classList.remove("show");
+  $("bar").style.width = (state.step / state.total * 100) + "%";
+  $("dots").innerHTML = Array.from({length: state.total}, (_, i) =>
+    `<div class="dot ${i < state.step ? "on" : ""}"></div>`).join("");
+  const box = $("choices");
+  box.className = "choices" + (state.item.choices.length === 2 ? " two" : "");
+  box.innerHTML = "";
+  state.item.choices.forEach((c, idx) => {
+    const b = document.createElement("button");
+    b.className = "choice" + (c.t.length > 12 ? " small" : "");
+    b.textContent = c.t;
+    b.onclick = () => answer(idx);
+    box.appendChild(b);
+  });
+  speak(state.item.speak || state.item.q, state.item.lang || "pt-PT");
+}
+
+function answer(idx) {
+  if (state.locked) return;
+  state.locked = true;
+  const buttons = [...$("choices").children];
+  const chosen = state.item.choices[idx];
+  buttons.forEach((b, i) => {
+    if (state.item.choices[i].ok) b.classList.add("good");
+    if (i === idx && !chosen.ok) b.classList.add("bad");
+  });
+  const fb = $("feedback");
+  fb.classList.add("show", chosen.ok ? "ok" : "no");
+  fb.textContent = (chosen.ok ? "Boa. " : "Quase. ") + chosen.why;
+  if (chosen.ok) {
+    state.stars += 1;
+    saveStars();
+  }
+  $("nextBtn").classList.add("show");
+  $("nextBtn").textContent = state.step + 1 >= state.total ? "Ver estrela" : "Seguinte";
+  speak(fb.textContent, "pt-PT");
+}
+
+function start(world) {
+  state.world = world;
+  state.step = 0;
+  show("play");
+  renderItem();
+}
+
+$("nextBtn").onclick = () => {
+  state.step += 1;
+  if (state.step >= state.total) {
+    $("rewardTitle").textContent = "Missão de " + worlds[state.world] + " feita";
+    $("rewardText").textContent = "5 passos. Estrelas guardadas: " + state.stars + ". Podes parar ou fazer outra.";
+    show("reward");
+    speak("Missão feita. Muito bem.", "pt-PT");
+  } else renderItem();
+};
+$("againBtn").onclick = () => start(state.world);
+$("homeBtn").onclick = () => show("home");
+$("backBtn").onclick = () => show("home");
+$("speakBtn").onclick = () => speak(state.item ? (state.item.speak || state.item.q) : "Missões curtas", state.item && state.item.lang || "pt-PT");
+document.querySelectorAll(".world").forEach(b => b.onclick = () => start(b.dataset.world));
+$("resetBtn").onclick = () => { state.stars = 0; saveStars(); };
+$("parentBtn").onclick = () => $("parentNote").classList.toggle("hidden");
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "Missões Curtas",
+  "short_name": "Missões",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1b1430",
+  "theme_color": "#1b1430",
+  "lang": "pt-PT",
+  "icons": []
+}
