@@ -180,7 +180,7 @@ const COM_MUNDO = ["missao", "resp", "erro", "nivel"];
 function limpaEvento(b) {
   if (!b || typeof b !== "object") return null;
   if (typeof b.id !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(b.id)) return null;
-  const tipo = ["missao", "resp", "erro", "nivel", "perfil", "humor"].includes(b.tipo) ? b.tipo : null;
+  const tipo = ["missao", "resp", "erro", "nivel", "perfil", "humor", "novela"].includes(b.tipo) ? b.tipo : null;
   if (!tipo) return null;
   if (COM_MUNDO.includes(tipo) && !Object.prototype.hasOwnProperty.call(mundos, b.mundo)) return null;
   const ev = { t: new Date().toISOString(), id: b.id, tipo };
@@ -209,6 +209,16 @@ function limpaEvento(b) {
   if (tipo === "perfil") {
     ev.perfil = limpaPerfil(b.perfil);
     if (!ev.perfil) return null;
+  }
+  if (tipo === "novela") {
+    if (!["titulo", "pers", "passo", "fim"].includes(b.k)) return null;
+    ev.k = b.k;
+    ev.cap = Number.isInteger(b.cap) && b.cap >= 1 && b.cap <= 99 ? b.cap : 0;
+    ev.pers = txt(b.pers, 40);
+    ev.perg = txt(b.perg, 120);
+    ev.texto = txt(b.texto, 500);
+    const r = temRisco(ev.texto);
+    if (r) { ev.alerta = true; ev.motivo = "texto: " + r; }
   }
   if (tipo === "humor") {
     ev.rosto = Number.isInteger(b.rosto) && b.rosto >= 0 && b.rosto <= 4 ? b.rosto : -1;
@@ -611,6 +621,7 @@ function painel(res) {
   for (const k of Object.keys(mundos)) stats[k] = { missoes: 0, resp: 0, certas: 0 };
   const grupos = new Map(); // erros agrupados por pergunta, em todo o historico
   const humores = [];
+  const novela = [];
   const niveis = {}; // mundo -> [{quando, para}]
   let ultimo = 0;
 
@@ -625,6 +636,7 @@ function painel(res) {
   for (const ev of evs) {
     if (ev.tipo === "humor") { humores.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "perfil") continue;
+    if (ev.tipo === "novela") { novela.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "nivel") { (niveis[ev.mundo] = niveis[ev.mundo] || []).push(ev); continue; }
     if (ev.quando > ultimo && ev.tipo !== "erro") ultimo = ev.quando;
     const s = stats[ev.mundo];
@@ -702,6 +714,7 @@ function painel(res) {
   const limiteAlerta = agora - 14 * 864e5;
   const alertas = [];
   for (const h of humores) if (h.alerta && h.quando >= limiteAlerta) alertas.push({ q: h.quando, txt: "Como foi o dia: " + (h.motivo || "") + (h.texto ? " — “" + h.texto + "”" : "") });
+  for (const n of novela) if (n.alerta && n.quando >= limiteAlerta) alertas.push({ q: n.quando, txt: "Novela: ela escreveu “" + n.texto + "”" + (n.motivo ? " · " + n.motivo : "") });
   for (const c of conversas) if (c.alerta && c.quando >= limiteAlerta) alertas.push({ q: c.quando, txt: "Conversa (" + c.origem + "): ela escreveu “" + c.user + "”" + (c.motivo ? " · " + c.motivo : "") });
   // humor triste/raiva 3 dias seguidos
   const humorPorDia = {};
@@ -769,6 +782,21 @@ function painel(res) {
   // ---- perfil e configuracao ----
   const p = perfilAtual();
   const temPerfil = Object.keys(estado.perfis).length > 0;
+  let novelaHtml = "";
+  {
+    let titulo = "";
+    const pers = [], caps = {};
+    for (const n of novela) {
+      if (n.k === "titulo") titulo = n.texto;
+      else if (n.k === "pers") pers.push(n.pers + (n.texto ? ": " + n.texto : ""));
+      else if (n.k === "passo") (caps[n.cap] = caps[n.cap] || []).push(n);
+    }
+    const nums = Object.keys(caps).map(Number).sort((a, b) => a - b);
+    const ps = nums.map((c) => `<details><summary>Capítulo ${c} (${caps[c].length} passos)</summary><ul class="erros">${caps[c].map((n) => `<li><div class="mut">${esc(n.perg)}</div>${esc(n.texto)}</li>`).join("")}</ul></details>`).join("");
+    novelaHtml = titulo || pers.length ? `<div>Nome: <b>${esc(titulo || "(ainda sem nome)")}</b></div>
+      ${pers.length ? `<div class="mut">Personagens: ${pers.map(esc).join(" · ")}</div>` : ""}${ps}
+      <p class="mut">O que ela escreve mostra como ela vê o mundo: o que a personagem sente, quem ajuda, como as coisas acabam.</p>` : '<span class="mut">Ela ainda não começou a criar a novela.</span>';
+  }
   const perfilHtml = temPerfil ? `<div>Nome: <b>${esc(p.nome)}</b> · companheira: <b>${esc(p.lua)}</b></div>
     <div>Novelas: ${esc((p.novelas || []).join(", ") || "–")}</div>
     <div>Influencers: ${esc((p.influs || []).join(", ") || "–")}</div>
@@ -855,6 +883,9 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
     <form method="post" action="/pais/push-teste"><input type="hidden" name="slot" value="noite"><button class="sec">🌙 Boa noite</button></form></div>` :
     `<p class="mut">Para ativar: na app, toque em ⚙️ e avance até o último passo (“Sim, quero!”). No iPhone, a app tem de estar na tela inicial.</p>`}
 </div>
+
+<h2>A novela que ela está criando</h2>
+<div class="card">${novelaHtml}</div>
 
 <h2>Do que ela gosta</h2>
 <div class="card">${perfilHtml}</div>

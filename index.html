@@ -241,6 +241,7 @@
     <div class="bubble" id="bubble"></div>
     <div class="streak hidden" id="streak"></div>
     <button class="bigbtn" id="humorBtn">💬 Como foi o seu dia?</button>
+    <button class="bigbtn hl hidden" id="luaBtn"></button>
     <div class="panel" id="mdia">
       <b class="t">⭐ Missão do dia</b>
       <div class="row" id="mdiaRow" style="margin-top:0"></div>
@@ -288,9 +289,14 @@
     <div class="bubble hidden" id="humorResp" style="margin-top:14px"></div>
   </section>
 
-  <section id="nov" class="hidden">
+  <section id="girassol" class="hidden">
     <div class="playhead"><button class="back" data-home>← Início</button><b>📺 Turma do Girassol</b><span></span></div>
     <div class="grid" id="capList"></div>
+  </section>
+
+  <section id="nov" class="hidden">
+    <div class="playhead"><button class="back" data-home>← Início</button><b id="novTitulo">📺 Minha novela</b><span></span></div>
+    <div id="novBody"></div>
   </section>
 
   <section id="album" class="hidden">
@@ -333,7 +339,7 @@ const state = {
   world: null, mode: "missao", step: 0, total: 5, queue: [], item: null,
   locked: false, tries: 0, firsts: 0, place: null, cap: null
 };
-const SECOES = ["abertura", "onboard", "home", "play", "reward", "humor", "nov", "album", "chat"];
+const SECOES = ["abertura", "onboard", "home", "play", "reward", "humor", "nov", "girassol", "album", "chat"];
 function show(id) {
   SECOES.forEach(s => $(s).classList.toggle("hidden", s !== id));
   window.scrollTo(0, 0);
@@ -477,7 +483,7 @@ async function carregaConfig() {
     if (r.ok) {
       config = await r.json();
       lsSet("mc-config", JSON.stringify(config));
-      if (!$("home").classList.contains("hidden")) renderWorlds();
+      if (!$("home").classList.contains("hidden")) { renderWorlds(); $("luaBtn").classList.toggle("hidden", !config.chat); }
     }
   } catch (e) { /* offline: usa o que estava guardado */ }
 }
@@ -1038,7 +1044,7 @@ $("nextBtn").onclick = () => {
   else renderItem();
 };
 $("againBtn").onclick = () => {
-  if (state.mode === "nov") abreNov();
+  if (state.mode === "nov") abreGirassol();
   else if (state.mode === "faixa") start(getMdia().lista.find(w => w !== "nov") || "math");
   else start(state.world);
 };
@@ -1073,7 +1079,7 @@ function renderMdia() {
     const feita = m.feitas.includes(w);
     b.className = "chip" + (feita ? " done" : " on");
     b.textContent = (feita ? "✅ " : C.mundos[w].emoji + " ") + C.mundos[w].nome;
-    b.onclick = () => (w === "nov" ? abreNov() : start(w));
+    b.onclick = () => (w === "nov" ? abreGirassol() : start(w));
     row.appendChild(b);
   });
   if (m.feitas.length === m.lista.length) {
@@ -1104,14 +1110,14 @@ function renderWorlds() {
     return `<button class="world" data-w="${w}"><div class="ico w-${w}">${C.mundos[w].emoji}</div>
       <div><b>${C.mundos[w].nome}</b><span>${descr[w]}</span><div class="lvl">${L.placed ? "Nível " + L.n + " de " + maxNivel(w) : "Teste rápido para começar"}</div></div><div class="go">›</div></button>`;
   }).join("");
-  html += `<button class="world" data-w="nov"><div class="ico w-nov">📺</div><div><b>Novelinha</b><span>Turma do Girassol: você decide o que a Bia faz.</span></div><div class="go">›</div></button>`;
-  if (config.chat) html += `<button class="world" data-w="chat"><div class="ico w-chat">${esc(perfil.luaEmoji || "🌙")}</div><div><b>Conversar com a ${esc(perfil.lua || "Lua")}</b><span>Bater papo ou treinar uma conversa.</span></div><div class="go">›</div></button>`;
+  html += `<button class="world" data-w="nov"><div class="ico w-nov">📺</div><div><b>Turma do Girassol</b><span>Você decide o que a Bia faz.</span></div><div class="go">›</div></button>`;
+  { const nv = getNovela(); html += `<button class="world" data-w="minha"><div class="ico w-nov">✏️</div><div><b>${nv.titulo ? esc(nv.titulo) : "Minha novela"}</b><span>${nv.titulo ? "Continue a escrever a sua novela." : "Você inventa tudo: nome, personagens e o que acontece."}</span></div><div class="go">›</div></button>`; }
   html += `<button class="world" data-w="alb"><div class="ico w-alb">🎁</div><div><b>Meu álbum</b><span>${getFigs().length} figurinhas coletadas.</span></div><div class="go">›</div></button>`;
   box.innerHTML = html;
   box.querySelectorAll(".world").forEach(b => b.onclick = () => {
     const w = b.dataset.w;
-    if (w === "nov") abreNov();
-    else if (w === "chat") abreChat();
+    if (w === "nov") abreGirassol();
+    else if (w === "minha") abreNov();
     else if (w === "alb") abreAlbum();
     else start(w);
   });
@@ -1126,6 +1132,8 @@ function goHome() {
   const h = new Date().getHours();
   $("humorBtn").classList.toggle("hl", !fezHumor && h >= 17);
   $("humorBtn").textContent = fezHumor ? "💬 Contar mais sobre o meu dia" : "💬 Como foi o seu dia?";
+  $("luaBtn").textContent = (perfil.luaEmoji || "🌙") + " Conversar com a " + (perfil.lua || "Lua");
+  $("luaBtn").classList.toggle("hidden", !config.chat);
   renderStreak();
   renderMdia();
   renderWorlds();
@@ -1144,10 +1152,10 @@ $("muteBtn").onclick = () => {
 };
 $("cfgBtn").onclick = () => abreOnboard(true);
 $("humorBtn").onclick = abreHumor;
+$("luaBtn").onclick = abreChat;
 
-// ---------- Novelinha ----------
+// ---------- Turma do Girassol (capítulos prontos, ela escolhe o que a Bia faz) ----------
 function capLiberado() {
-  // índice do próximo capítulo disponível e ainda não visto, ou -1
   const caps = lsJSON("mc-caps", []);
   for (let i = 0; i < C.novelinha.length; i++) {
     if (caps.includes(i)) continue;
@@ -1156,7 +1164,7 @@ function capLiberado() {
   }
   return -1;
 }
-function abreNov() {
+function abreGirassol() {
   const caps = lsJSON("mc-caps", []);
   const box = $("capList");
   box.innerHTML = "";
@@ -1170,7 +1178,115 @@ function abreNov() {
     b.onclick = () => { if (aberto) startCap(i); else speak(falta, "pt-BR"); };
     box.appendChild(b);
   });
+  show("girassol");
+}
+
+// ---------- Minha novela (ela cria tudo) ----------
+const NOVELA_PASSOS = [
+  "Onde a {p} está e o que ela vê?",
+  "O que acontece com a {p}?",
+  "O que a {p} sente?",
+  "O que ela faz?",
+  "Alguém aparece? Quem?",
+  "Como termina esse capítulo?"
+];
+const NOVELA_MAIS = ["E depois, o que acontece?", "Conte mais. O que a {p} faz agora?", "E como a {p} se sente agora?"];
+const NOVELA_ELOGIO = ["Que ideia boa! 😊", "Uau, quero saber mais! ✨", "Gostei muito disso 💛", "Que história interessante! 📺", "Você tem muita imaginação 🌟"];
+function getNovela() { const n = lsJSON("mc-novela", null); return n && typeof n === "object" ? n : { titulo: "", pers: [], caps: [] }; }
+function saveNovela(n) { lsSet("mc-novela", JSON.stringify(n)); }
+function novelaBubble(t) { return `<div class="bubble">${esc(perfil.luaEmoji || "🌙")} ${esc(t)}</div>`; }
+function novelaPerg(titulo, texto, ph, btn, multi) {
+  const campo = multi ? `<textarea class="inp" id="novIn" maxlength="500" placeholder="${ph}"></textarea>` : `<input class="inp" id="novIn" maxlength="40" placeholder="${ph}" autocomplete="off">`;
+  $("novBody").innerHTML = novelaBubble(texto) + `<label class="field">${campo}</label><button class="next show" id="novOk">${btn}</button>`;
+  speak(texto, "pt-BR");
+  $("novIn").focus();
+}
+function abreNov() {
+  const n = getNovela();
+  $("novTitulo").textContent = "📺 " + (n.titulo || "Minha novela");
   show("nov");
+  if (!n.titulo) {
+    novelaPerg("", "Vamos criar a SUA novela! Você inventa tudo. Qual vai ser o nome dela?", "Escreva o nome da novela", "Pronto");
+    $("novOk").onclick = () => {
+      const t = $("novIn").value.trim().slice(0, 40);
+      if (!t) return;
+      n.titulo = t; saveNovela(n);
+      track({ tipo: "novela", k: "titulo", texto: t });
+      abreNov();
+    };
+    return;
+  }
+  if (!n.pers.length) return novelaNovaPers(n, true);
+  novelaHub(n);
+}
+function novelaNovaPers(n, primeira) {
+  novelaPerg("", primeira ? "Quem é a personagem principal? Escreva o nome dela." : "Quem é a nova personagem? Escreva o nome.", "Nome da personagem", "Pronto");
+  $("novOk").onclick = () => {
+    const nome = $("novIn").value.trim().slice(0, 40);
+    if (!nome) return;
+    novelaPerg("", "Como a " + nome + " é? O que ela gosta? Escreva do seu jeito.", "Escreva aqui...", "Pronto", true);
+    $("novOk").onclick = () => {
+      const desc = $("novIn").value.trim().slice(0, 500);
+      n.pers.push({ nome, desc }); saveNovela(n);
+      track({ tipo: "novela", k: "pers", pers: nome, texto: desc });
+      novelaHub(n);
+    };
+  };
+}
+function novelaHub(n) {
+  const fim = n.caps.filter(c => c.fim).length;
+  let h = novelaBubble(n.caps.length ? "Que bom que você voltou! Quer escrever mais da " + n.titulo + "? 💛" : "A sua novela " + n.titulo + " vai começar! Quer escrever o primeiro capítulo? 💛");
+  h += `<button class="world" id="novNovo"><div class="ico w-nov">✏️</div><div><b>Escrever ${n.caps.length && !n.caps[n.caps.length - 1].fim ? "(continuar) o capítulo " + n.caps.length : "o capítulo " + (n.caps.length + 1)}</b><span>Você decide o que acontece.</span></div><div class="go">›</div></button>`;
+  if (n.caps.length) h += `<button class="world" id="novLer"><div class="ico w-nov">📖</div><div><b>Ler a minha novela</b><span>${fim} ${fim === 1 ? "capítulo" : "capítulos"} escritos.</span></div><div class="go">›</div></button>`;
+  h += `<button class="world" id="novPers"><div class="ico w-nov">🧑‍🎤</div><div><b>Personagens (${n.pers.length})</b><span>${esc(n.pers.map(p => p.nome).join(", "))}. Toque para criar outra.</span></div><div class="go">›</div></button>`;
+  $("novBody").innerHTML = h;
+  $("novNovo").onclick = () => novelaEscreve(n);
+  if (n.caps.length) $("novLer").onclick = () => novelaLer(n);
+  $("novPers").onclick = () => novelaNovaPers(n, false);
+}
+function novelaEscreve(n) {
+  let cap = n.caps[n.caps.length - 1];
+  if (!cap || cap.fim) { cap = { passos: [], fim: false }; n.caps.push(cap); }
+  const idx = n.caps.length;
+  const pnome = n.pers[0].nome;
+  const passo = () => {
+    const k = cap.passos.length;
+    const perg = (k < NOVELA_PASSOS.length ? NOVELA_PASSOS[k] : pick(NOVELA_MAIS)).replace("{p}", pnome);
+    $("novBody").innerHTML = `<div class="streak">Capítulo ${idx} · passo ${k + 1}</div>` + novelaBubble(perg) +
+      `<label class="field"><textarea class="inp" id="novIn" maxlength="500" placeholder="Escreva o que você quiser..."></textarea></label>
+       <button class="next show" id="novOk">Continuar ✏️</button>
+       ${k >= 2 ? '<button class="bigbtn" id="novFim" style="margin-top:10px">🎬 Terminar o capítulo</button>' : ""}`;
+    speak(perg, "pt-BR");
+    $("novIn").focus();
+    const grava = () => {
+      const t = $("novIn").value.trim().slice(0, 500);
+      if (!t) return false;
+      cap.passos.push({ q: perg, t }); saveNovela(n);
+      track({ tipo: "novela", k: "passo", cap: idx, perg, texto: t });
+      return true;
+    };
+    $("novOk").onclick = () => { if (grava()) { speak(pick(NOVELA_ELOGIO), "pt-BR"); passo(); } };
+    if (k >= 2) $("novFim").onclick = () => { if (!$("novIn").value.trim() || grava()) acabaCap(); };
+  };
+  const acabaCap = () => {
+    cap.fim = true; saveNovela(n);
+    track({ tipo: "novela", k: "fim", cap: idx });
+    state.stars += 1; saveStars();
+    $("novBody").innerHTML = novelaBubble("Capítulo " + idx + " pronto! Você ganhou uma estrela ⭐ Que história linda, " + (perfil.nome || "Clara") + "!") +
+      `<button class="next show" id="novVolta">Voltar à novela</button>`;
+    speak("Capítulo pronto! Você ganhou uma estrela.", "pt-BR");
+    $("novVolta").onclick = () => novelaHub(n);
+  };
+  passo();
+}
+function novelaLer(n) {
+  let h = `<div class="panel"><b class="t">${esc(n.titulo)}</b><div class="mut">Personagens: ${esc(n.pers.map(p => p.nome).join(", "))}</div></div>`;
+  n.caps.forEach((c, i) => {
+    h += `<div class="panel"><b class="t">Capítulo ${i + 1}${c.fim ? "" : " (em andamento)"}</b>` + c.passos.map(p => `<p style="margin:8px 0">${esc(p.t)}</p>`).join("") + `</div>`;
+  });
+  h += `<button class="next show" id="novVolta">Voltar</button>`;
+  $("novBody").innerHTML = h;
+  $("novVolta").onclick = () => novelaHub(n);
 }
 
 // ---------- álbum ----------
