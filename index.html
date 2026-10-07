@@ -21,6 +21,7 @@
     --mint: #3ddc97;
     --sky: #7cc4ff;
     --pink: #ff8ad4;
+    --accent: #ff8ad4;
     --line: rgba(255,255,255,.12);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,12 +30,12 @@
     font-family: "Trebuchet MS", "Segoe UI", sans-serif;
     background:
       radial-gradient(900px 500px at 80% -10%, #5a3d8a 0%, transparent 55%),
-      radial-gradient(700px 400px at -10% 110%, #ff7a59 0%, transparent 40%),
+      radial-gradient(700px 400px at -10% 110%, var(--accent) 0%, transparent 40%),
       var(--bg);
     color: var(--ink);
     min-height: 100%;
   }
-  button, .tap { font-family: inherit; }
+  button, input, select, textarea, .tap { font-family: inherit; }
   .app {
     max-width: 480px;
     margin: 0 auto;
@@ -43,16 +44,17 @@
   }
   header.top {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
   .brand { display: flex; align-items: center; gap: 10px; }
   .moon {
     width: 46px; height: 46px; border-radius: 16px;
-    background: linear-gradient(145deg, #ffe29a, #ff7a59);
+    background: linear-gradient(145deg, #ffe29a, var(--accent));
     display: grid; place-items: center; font-size: 26px;
-    box-shadow: 0 8px 20px rgba(255,122,89,.35);
+    box-shadow: 0 8px 20px rgba(0,0,0,.25);
   }
   h1 { font-size: 20px; margin: 0; letter-spacing: -.3px; }
+  h2 { margin: 6px 0 12px; }
   .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
   .stars {
     background: rgba(255,255,255,.08); border: 1px solid var(--line);
@@ -60,37 +62,54 @@
   }
   .side { display: flex; align-items: center; gap: 8px; }
   .mute { border: 0; background: rgba(255,255,255,.1); color: white; border-radius: 999px; width: 38px; height: 38px; font-size: 18px; cursor: pointer; }
-  .streak { margin: -4px 0 12px; color: var(--sun); font-weight: 700; font-size: 14px; }
+  .streak { margin: 0 0 12px; color: var(--sun); font-weight: 700; font-size: 14px; }
+  .bubble {
+    background: #fff8ef; color: #24183a; border-radius: 20px 20px 20px 6px;
+    padding: 12px 14px; font-size: 17px; line-height: 1.35; margin-bottom: 12px; font-weight: 700;
+    box-shadow: 0 8px 20px rgba(0,0,0,.18);
+  }
   .choice:disabled { opacity: .55; cursor: default; }
   .grid { display: grid; gap: 12px; }
   .world {
     border: 0; text-align: left; color: inherit; cursor: pointer;
-    border-radius: 22px; padding: 16px; display: grid; grid-template-columns: 64px 1fr auto;
+    border-radius: 22px; padding: 14px; display: grid; grid-template-columns: 56px 1fr auto;
     gap: 12px; align-items: center; background: var(--card);
     box-shadow: 0 10px 24px rgba(0,0,0,.18);
   }
   .world:active { transform: scale(.98); }
   .ico {
-    width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center;
-    font-size: 32px;
+    width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center;
+    font-size: 30px;
   }
   .w-math { background: #3a2a78; }
   .w-time { background: #2c3f72; }
   .w-en { background: #2d4a45; }
   .w-soc { background: #5a3058; }
+  .w-nov { background: #6b3a2a; }
+  .w-chat { background: #2a5a6b; }
+  .w-alb { background: #5a5a2a; }
   .world b { display: block; font-size: 18px; }
   .world span { color: var(--muted); font-size: 13px; }
+  .lvl { font-size: 12px; color: var(--sun); font-weight: 700; }
   .go { font-size: 22px; opacity: .7; }
   .panel {
     background: rgba(255,255,255,.06); border: 1px solid var(--line);
-    border-radius: 18px; padding: 14px; margin-top: 14px; color: var(--muted); font-size: 14px; line-height: 1.45;
+    border-radius: 18px; padding: 14px; margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.45;
   }
+  .panel b.t { color: var(--ink); font-size: 16px; display: block; margin-bottom: 8px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   .chip {
-    border: 0; border-radius: 999px; padding: 8px 12px; background: rgba(255,255,255,.1);
-    color: var(--ink); cursor: pointer;
+    border: 0; border-radius: 999px; padding: 10px 14px; background: rgba(255,255,255,.1);
+    color: var(--ink); cursor: pointer; font-size: 15px;
   }
-  .playhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .chip.on { background: var(--accent); color: #24183a; font-weight: 700; }
+  .chip.done { opacity: .6; }
+  .bigbtn {
+    width: 100%; border: 0; border-radius: 18px; padding: 14px; font-size: 17px; font-weight: 800;
+    background: rgba(255,255,255,.1); color: var(--ink); cursor: pointer; margin-bottom: 12px; text-align: left;
+  }
+  .bigbtn.hl { background: var(--accent); color: #24183a; }
+  .playhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
   .back, .speak {
     border: 0; background: rgba(255,255,255,.1); color: white; border-radius: 14px;
     padding: 10px 12px; font-size: 16px; cursor: pointer;
@@ -98,19 +117,22 @@
   .q {
     font-size: 28px; line-height: 1.2; font-weight: 800; margin: 8px 0 14px; letter-spacing: -.4px;
   }
-  .hint { color: var(--muted); font-size: 15px; margin-bottom: 12px; min-height: 22px; }
+  .q.nov { font-size: 21px; line-height: 1.3; font-weight: 700; }
+  .hint { color: var(--muted); font-size: 16px; margin-bottom: 12px; min-height: 22px; }
+  .hint.pq { color: var(--sun); font-weight: 800; font-size: 19px; }
   .stage {
     min-height: 150px; border-radius: 22px; background: rgba(255,255,255,.05);
     border: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
     gap: 18px; padding: 16px; margin-bottom: 14px; flex-wrap: wrap;
   }
   .pile { text-align: center; }
-  .objs { font-size: 34px; letter-spacing: 2px; line-height: 1.25; max-width: 180px; }
+  .objs { font-size: 30px; letter-spacing: 2px; line-height: 1.25; max-width: 220px; }
+  .objs.sm { font-size: 22px; }
   .choices { display: grid; gap: 10px; }
   .choices.two { grid-template-columns: 1fr 1fr; }
   .choice {
     border: 2px solid transparent; background: #fff8ef; color: #24183a;
-    border-radius: 18px; min-height: 72px; font-size: 22px; font-weight: 800;
+    border-radius: 18px; min-height: 68px; font-size: 22px; font-weight: 800;
     cursor: pointer; padding: 12px;
   }
   .choice.small { font-size: 18px; font-weight: 700; text-align: left; }
@@ -125,71 +147,106 @@
   .feedback.no { background: rgba(255,122,89,.18); }
   .next {
     width: 100%; margin-top: 12px; border: 0; border-radius: 16px; padding: 16px;
-    font-size: 18px; font-weight: 800; background: var(--sun); color: #2a1c08; cursor: pointer;
+    font-size: 18px; font-weight: 800; background: var(--accent); color: #24183a; cursor: pointer;
     display: none;
   }
   .next.show { display: block; }
-  .dots { display: flex; gap: 6px; }
+  .dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   .dot { width: 10px; height: 10px; border-radius: 99px; background: rgba(255,255,255,.2); }
-  .dot.on { background: var(--sun); }
-  .reward { text-align: center; padding-top: 28px; }
+  .dot.on { background: var(--accent); }
+  .reward { text-align: center; padding-top: 22px; }
   .reward .big { font-size: 72px; }
+  .reward .fig { font-size: 64px; margin: 10px 0 0; }
   .hidden { display: none !important; }
   .bar { height: 8px; background: rgba(255,255,255,.12); border-radius: 99px; overflow: hidden; margin: 8px 0 14px; }
-  .bar > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--coral), var(--sun)); }
-  .word { font-size: 40px; font-weight: 800; letter-spacing: -.5px; }
+  .bar > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--coral), var(--accent)); }
+  .word { font-size: 40px; font-weight: 800; letter-spacing: -.5px; text-align: center; }
+  .word.md { font-size: 26px; }
   .en { color: var(--sky); }
+  .splash { min-height: 80dvh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 18px; }
+  .splash .av { font-size: 96px; animation: pop .6s ease; }
+  .splash .msg { font-size: 26px; font-weight: 800; line-height: 1.3; max-width: 340px; }
+  @keyframes pop { 0% { transform: scale(.3); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+  .field { display: block; margin: 0 0 14px; }
+  .field span { display: block; color: var(--muted); font-size: 14px; margin-bottom: 6px; }
+  .inp {
+    width: 100%; border: 2px solid var(--line); background: rgba(255,255,255,.08); color: var(--ink);
+    border-radius: 14px; padding: 12px; font-size: 17px;
+  }
+  select.inp option { color: #24183a; }
+  textarea.inp { min-height: 90px; resize: vertical; }
+  .cores { display: flex; gap: 12px; flex-wrap: wrap; }
+  .cor { width: 54px; height: 54px; border-radius: 99px; border: 4px solid transparent; cursor: pointer; }
+  .cor.on { border-color: #fff8ef; }
+  .avs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .avs button { font-size: 30px; width: 56px; height: 56px; border-radius: 16px; border: 3px solid transparent; background: rgba(255,255,255,.08); cursor: pointer; }
+  .avs button.on { border-color: var(--accent); }
+  .faces { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 14px; }
+  .faces button { flex: 1; font-size: 34px; padding: 10px 0; border-radius: 16px; border: 3px solid transparent; background: rgba(255,255,255,.08); cursor: pointer; }
+  .faces button.on { border-color: var(--accent); background: rgba(255,255,255,.18); }
+  .album h3 { margin: 16px 0 8px; font-size: 16px; color: var(--sun); }
+  .figs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .figc { background: var(--card); border-radius: 14px; padding: 8px 4px; text-align: center; font-size: 11px; color: var(--muted); }
+  .figc div { font-size: 34px; }
+  .figc.off div { filter: grayscale(1); opacity: .25; }
+  .cap { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; }
+  .cap.lock { opacity: .55; }
+  .chatlog { display: flex; flex-direction: column; gap: 8px; min-height: 45dvh; max-height: 58dvh; overflow-y: auto; padding: 4px 0 10px; }
+  .msg { max-width: 85%; padding: 10px 12px; border-radius: 16px; font-size: 16px; line-height: 1.35; white-space: pre-wrap; }
+  .msg.lua { background: #fff8ef; color: #24183a; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg.eu { background: var(--accent); color: #24183a; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.wait { opacity: .6; }
+  .chatform { display: flex; gap: 8px; }
+  .chatform .inp { flex: 1; }
+  .chatform button { border: 0; border-radius: 14px; padding: 0 16px; font-weight: 800; background: var(--accent); color: #24183a; font-size: 16px; cursor: pointer; }
+  .pais { display: block; text-align: center; margin: 18px auto 0; color: var(--muted); font-size: 13px; text-decoration: none; opacity: .7; }
+  .clock { width: 170px; height: 170px; }
 </style>
 </head>
 <body>
 <div class="app">
-  <section id="home">
+  <section id="abertura" class="hidden">
+    <div class="splash">
+      <div class="av" id="abAv">🌙</div>
+      <div class="msg" id="abMsg"></div>
+      <button class="next show" id="abBtn" style="max-width:320px">Vamos! ✨</button>
+    </div>
+  </section>
+
+  <section id="onboard" class="hidden">
+    <div class="playhead">
+      <button class="back" id="obBack">‹ Voltar</button>
+      <div class="dots" id="obDots"></div>
+      <span style="width:60px"></span>
+    </div>
+    <div id="obBody"></div>
+    <button class="next show" id="obNext">Próximo ›</button>
+  </section>
+
+  <section id="home" class="hidden">
     <header class="top">
       <div class="brand">
-        <div class="moon">🌙</div>
+        <div class="moon" id="homeAv">🌙</div>
         <div>
-          <h1>Clara</h1>
-          <div class="sub">1 minuto. Um passo. Uma estrela.</div>
+          <h1 id="homeName">Clara</h1>
+          <div class="sub" id="homeSub">com a Lua</div>
         </div>
       </div>
       <div class="side">
         <button class="mute" id="muteBtn" aria-label="Som ligado ou desligado">🔊</button>
+        <button class="mute" id="cfgBtn" aria-label="Meus gostos">⚙️</button>
         <div class="stars" id="starCount">⭐ 0</div>
       </div>
     </header>
+    <div class="bubble" id="bubble"></div>
     <div class="streak hidden" id="streak"></div>
-    <div class="grid">
-      <button class="world" data-world="math">
-        <div class="ico w-math">🍎</div>
-        <div><b>Números</b><span>Contar, mais, juntar. Sem conta de cabeça.</span></div>
-        <div class="go">›</div>
-      </button>
-      <button class="world" data-world="time">
-        <div class="ico w-time">🌅</div>
-        <div><b>Tempo</b><span>Agora, depois, cedo, tarde. Com imagens.</span></div>
-        <div class="go">›</div>
-      </button>
-      <button class="world" data-world="en">
-        <div class="ico w-en">💬</div>
-        <div><b>English</b><span>Palavras úteis. Ouvir e tocar.</span></div>
-        <div class="go">›</div>
-      </button>
-      <button class="world" data-world="soc">
-        <div class="ico w-soc">🤝</div>
-        <div><b>Amigos</b><span>O que fazer para as pessoas ficarem à vontade.</span></div>
-        <div class="go">›</div>
-      </button>
+    <button class="bigbtn" id="humorBtn">💬 Como foi o seu dia?</button>
+    <div class="panel" id="mdia">
+      <b class="t">⭐ Missão do dia</b>
+      <div class="row" id="mdiaRow" style="margin-top:0"></div>
     </div>
-    <div class="panel">
-      Cada missão tem 5 passos curtos. Errou? Tente de novo, sem pressa. As estrelas ficam salvas neste celular.
-      <div class="row">
-        <button class="chip" id="parentBtn">Nota para os pais</button>
-      </div>
-      <div id="parentNote" class="hidden" style="margin-top:10px">
-        Feita para dificuldade com o abstrato: primeiro objetos, depois o número. Sem cronômetro. Sem ranking. Inglês com a voz do celular. Amigos em escolhas concretas, não em sermão. Fiquem ao lado nas primeiras vezes e digam o passo em voz alta.
-        <div class="row"><button class="chip" id="resetBtn">Zerar estrelas</button></div>
-      </div>
-    </div>
+    <div class="grid" id="worlds"></div>
+    <a class="pais" href="/pais" id="paisBtn">👨‍👩‍👧 Área dos pais</a>
   </section>
 
   <section id="play" class="hidden">
@@ -209,56 +266,140 @@
 
   <section id="reward" class="hidden">
     <div class="reward">
-      <div class="big">🌟</div>
+      <div class="big" id="rewardBig">🌟</div>
       <h2 id="rewardTitle">Missão feita</h2>
+      <div class="bubble" id="rewardLua" style="text-align:left"></div>
       <p id="rewardText"></p>
+      <div id="rewardFig" class="hidden"><div class="fig" id="rewardFigE"></div><p id="rewardFigT"></p></div>
       <button class="next show" id="againBtn">Outra missão</button>
       <button class="chip" id="homeBtn" style="margin-top:10px">Voltar ao início</button>
     </div>
   </section>
+
+  <section id="humor" class="hidden">
+    <div class="playhead"><button class="back" data-home>← Início</button><span></span></div>
+    <div class="bubble" id="humorQ"></div>
+    <div class="faces" id="faces"></div>
+    <div class="hint">O que aconteceu? (pode escolher vários)</div>
+    <div class="row" id="humorChips" style="margin:0 0 14px"></div>
+    <label class="field"><span>Quer escrever o que sente? (só se quiser)</span>
+      <textarea class="inp" id="humorTxt" maxlength="500" placeholder="Escreva aqui..."></textarea></label>
+    <button class="next show" id="humorSend">Enviar 💛</button>
+    <div class="bubble hidden" id="humorResp" style="margin-top:14px"></div>
+  </section>
+
+  <section id="nov" class="hidden">
+    <div class="playhead"><button class="back" data-home>← Início</button><b>📺 Turma do Girassol</b><span></span></div>
+    <div class="grid" id="capList"></div>
+  </section>
+
+  <section id="album" class="hidden">
+    <div class="playhead"><button class="back" data-home>← Início</button><b>🎁 Meu álbum</b><span></span></div>
+    <div class="album" id="albumBody"></div>
+  </section>
+
+  <section id="chat" class="hidden">
+    <div class="playhead"><button class="back" data-home>← Início</button><b id="chatTitle">💬 Conversar</b><span></span></div>
+    <div class="row" id="chatModes" style="margin-top:0"></div>
+    <div class="chatlog" id="chatLog"></div>
+    <form class="chatform" id="chatForm" autocomplete="off">
+      <input class="inp" id="chatIn" maxlength="300" placeholder="Escreva aqui..." />
+      <button type="submit">Enviar</button>
+    </form>
+  </section>
 </div>
+<script src="conteudo.js"></script>
 <script>
+const C = window.CONTEUDO;
 const $ = (id) => document.getElementById(id);
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsJSON(k, def) { try { const v = JSON.parse(lsGet(k)); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : ""; }
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 
 const state = {
   stars: Number(lsGet("mc-stars") || 0),
   muted: lsGet("mc-mudo") === "1",
-  world: null,
-  step: 0,
-  total: 5,
-  queue: [],
-  item: null,
-  locked: false,
-  tries: 0
+  world: null, mode: "missao", step: 0, total: 5, queue: [], item: null,
+  locked: false, tries: 0, firsts: 0, place: null, cap: null
 };
-const worlds = {
-  math: "Números",
-  time: "Tempo",
-  en: "English",
-  soc: "Amigos"
-};
+const SECOES = ["abertura", "onboard", "home", "play", "reward", "humor", "nov", "album", "chat"];
+function show(id) {
+  SECOES.forEach(s => $(s).classList.toggle("hidden", s !== id));
+  window.scrollTo(0, 0);
+}
 
+// ---------- perfil ----------
+const PERFIL_PADRAO = {
+  nome: "Clara", lua: "Lua", luaEmoji: "🌙", novelas: [], influs: [],
+  jj: true, academia: "Alliance", faixa: "Cinza", proxima: "Cinza e preta", cor: "rosa", feito: false
+};
+let perfil = Object.assign({}, PERFIL_PADRAO, lsJSON("mc-perfil", {}));
+const CORES = { rosa: "#ff8ad4", roxo: "#b48cff", azul: "#7cc4ff", verde: "#3ddc97", laranja: "#ff9f43", amarelo: "#ffc857" };
+function salvaPerfil() {
+  lsSet("mc-perfil", JSON.stringify(perfil));
+  aplicaCor();
+}
+function aplicaCor() {
+  document.documentElement.style.setProperty("--accent", CORES[perfil.cor] || CORES.rosa);
+}
+aplicaCor();
+
+function usavel(s) {
+  if (!perfil.jj && /\{(faixa|proxima|academia)\}|tatame|kimono|jiu|treino/i.test(s)) return false;
+  if (/\{dias\}/.test(s) && sequencia() < 2) return false;
+  if (/\{estrelas\}/.test(s) && state.stars < 5) return false;
+  return true;
+}
+function fill(s) {
+  const r = {
+    nome: perfil.nome || "Clara",
+    lua: perfil.lua || "Lua",
+    novela: pick(perfil.novelas) || "sua novela favorita",
+    influ: pick(perfil.influs) || "sua influencer favorita",
+    academia: perfil.academia || "academia",
+    faixa: (perfil.faixa || "").toLowerCase(),
+    proxima: (perfil.proxima || "nova").toLowerCase(),
+    estrelas: state.stars,
+    dias: sequencia()
+  };
+  return String(s).replace(/\{(\w+)\}/g, (m, k) => (k in r ? r[k] : m));
+}
+function fala(lista, evitarKey) {
+  const ok = lista.filter(usavel);
+  if (!evitarKey) return fill(pick(ok));
+  const rec = lsJSON(evitarKey, []);
+  const livres = ok.filter(s => !rec.includes(s));
+  const s = pick(livres.length ? livres : ok);
+  rec.push(s);
+  lsSet(evitarKey, JSON.stringify(rec.slice(-10)));
+  return fill(s);
+}
+
+// ---------- estrelas, som, dias ----------
 function saveStars() {
   lsSet("mc-stars", String(state.stars));
   $("starCount").textContent = "⭐ " + state.stars;
 }
 saveStars();
-
-function renderMute() {
-  $("muteBtn").textContent = state.muted ? "🔇" : "🔊";
-}
+function renderMute() { $("muteBtn").textContent = state.muted ? "🔇" : "🔊"; }
 renderMute();
 
-// Dias de uso e sequencia (so neste aparelho)
 function hojeKey(d) {
   d = d || new Date();
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
-function diasUsados() {
-  try { return JSON.parse(lsGet("mc-dias") || "[]"); } catch (e) { return []; }
-}
+function diasUsados() { return lsJSON("mc-dias", []); }
 function marcaDia() {
   const dias = diasUsados();
   const h = hojeKey();
@@ -270,7 +411,7 @@ function marcaDia() {
 function sequencia() {
   const set = new Set(diasUsados());
   const d = new Date();
-  if (!set.has(hojeKey(d))) d.setDate(d.getDate() - 1); // hoje ainda pode acontecer
+  if (!set.has(hojeKey(d))) d.setDate(d.getDate() - 1);
   let n = 0;
   while (set.has(hojeKey(d))) { n += 1; d.setDate(d.getDate() - 1); }
   return n;
@@ -281,9 +422,8 @@ function renderStreak() {
   el.classList.toggle("hidden", n < 1);
   el.textContent = "🔥 " + n + (n === 1 ? " dia seguido" : " dias seguidos");
 }
-renderStreak();
 
-// Registro de uso: vai para o servidor; se falhar, fica na fila e tenta depois
+// ---------- registro no servidor ----------
 const FILA = "mc-fila";
 function deviceId() {
   let id = lsGet("mc-id");
@@ -294,9 +434,7 @@ function deviceId() {
   }
   return id;
 }
-function getFila() {
-  try { return JSON.parse(lsGet(FILA) || "[]"); } catch (e) { return []; }
-}
+function getFila() { return lsJSON(FILA, []); }
 let enviando = false;
 async function flush() {
   if (enviando) return;
@@ -329,735 +467,409 @@ function track(ev) {
   flush();
 }
 window.addEventListener("online", flush);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) flush(); });
 flush();
+
+// ---------- config do servidor (chat, push) ----------
+let config = lsJSON("mc-config", { chat: false, vapid: null });
+async function carregaConfig() {
+  try {
+    const r = await fetch("/api/config", { cache: "no-store" });
+    if (r.ok) {
+      config = await r.json();
+      lsSet("mc-config", JSON.stringify(config));
+      if (!$("home").classList.contains("hidden")) renderWorlds();
+    }
+  } catch (e) { /* offline: usa o que estava guardado */ }
+}
+carregaConfig();
 
 function speak(text, lang, force) {
   if (!window.speechSynthesis) return;
   if (state.muted && !force) return;
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  const clean = String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, "");
+  const u = new SpeechSynthesisUtterance(clean);
   u.lang = lang || "pt-BR";
   u.rate = 0.92;
   speechSynthesis.speak(u);
 }
 
-function show(id) {
-  ["home", "play", "reward"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+// ---------- níveis ----------
+function maxNivel(w) { return C.mundos[w].niveis.length; }
+function getNiveis() { return lsJSON("mc-nivel", {}); }
+function getLvl(w) {
+  const all = getNiveis();
+  return all[w] || { n: 1, placed: false, hist: [] };
+}
+function setLvl(w, L) {
+  const all = getNiveis();
+  all[w] = L;
+  lsSet("mc-nivel", JSON.stringify(all));
+}
+function nivelInicial(w) { return Math.min(3, Math.ceil(maxNivel(w) / 2)); }
+
+// ---------- estatísticas para a missão do dia ----------
+function getStats() { return lsJSON("mc-stats", {}); }
+function bumpStats(w, ok) {
+  const s = getStats();
+  const v = s[w] || { r: [], n: 0 };
+  v.r.push(ok ? 1 : 0);
+  v.r = v.r.slice(-20);
+  v.n += 1;
+  s[w] = v;
+  lsSet("mc-stats", JSON.stringify(s));
 }
 
-function objs(emoji, n) {
-  return Array.from({length: n}, () => emoji).join(" ");
+// ---------- itens ----------
+function objs(emoji, n) { return Array.from({ length: n }, () => emoji).join(""); }
+function objRows(emoji, n) {
+  const rows = [];
+  for (let i = 0; i < n; i += 5) rows.push(objs(emoji, Math.min(5, n - i)));
+  return rows.join("<br>");
 }
-
-function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-// 3 valores diferentes (>= 1), incluindo o certo
-function opcoes(certo) {
+// 3 valores diferentes (> 0), incluindo o certo
+function opcoes(certo, step, extra) {
+  step = step || 1;
   const set = new Set([certo]);
-  for (const d of shuffle([certo + 1, certo - 1, certo + 2, certo - 2, certo + 3])) {
+  const cands = shuffle((extra || []).concat([certo + step, certo - step, certo + 2 * step, certo - 2 * step, certo + 3 * step]));
+  for (const d of cands) {
     if (set.size >= 3) break;
-    if (d >= 1) set.add(d);
+    if (d > 0 && Math.round(d * 100) === d * 100 && !set.has(d)) set.add(d);
   }
   return shuffle([...set]);
 }
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-const words = [
-  { en: "hello", pt: "olá", emoji: "👋" },
-  { en: "please", pt: "por favor", emoji: "🙏" },
-  { en: "thank you", pt: "obrigada", emoji: "💛" },
-  { en: "sorry", pt: "desculpa", emoji: "🙂" },
-  { en: "friend", pt: "amigo", emoji: "🤝" },
-  { en: "water", pt: "água", emoji: "💧" },
-  { en: "help", pt: "ajuda", emoji: "🆘" },
-  { en: "yes", pt: "sim", emoji: "✅" },
-  { en: "no", pt: "não", emoji: "🚫" },
-  { en: "stop", pt: "para", emoji: "✋" },
-  { en: "wait", pt: "espera", emoji: "⏳" },
-  { en: "happy", pt: "feliz", emoji: "😊" },
-  { en: "sad", pt: "triste", emoji: "😢" },
-  { en: "school", pt: "escola", emoji: "🏫" },
-  { en: "home", pt: "casa", emoji: "🏠" },
-  { en: "good morning", pt: "bom dia", emoji: "☀️" },
-  { en: "good night", pt: "boa noite", emoji: "🌙" },
-  { en: "eat", pt: "comer", emoji: "🍽️" },
-  { en: "drink", pt: "beber", emoji: "🥤" },
-  { en: "book", pt: "livro", emoji: "📖" },
-  { en: "dog", pt: "cachorro", emoji: "🐶" },
-  { en: "cat", pt: "gato", emoji: "🐱" },
-  { en: "red", pt: "vermelho", emoji: "🟥" },
-  { en: "blue", pt: "azul", emoji: "🟦" },
-  { en: "big", pt: "grande", emoji: "🐘" },
-  { en: "small", pt: "pequeno", emoji: "🐜" },
-  { en: "mother", pt: "mãe", emoji: "👩" },
-  { en: "bathroom", pt: "banheiro", emoji: "🚻" },
-  { en: "excuse me", pt: "com licença", emoji: "🙋" },
-  { en: "I don't understand", pt: "não entendi", emoji: "🤷" }
-];
-
-const social = [
-  {
-    q: "Alguém diz oi.",
-    stage: "👋",
-    hint: "O que você faz?",
-    choices: [
-      { t: "Olho e digo oi", ok: true, why: "Um oi curto abre a porta. Você não precisa de um discurso." },
-      { t: "Ignoro e viro o rosto", ok: false, why: "Virar o rosto parece rejeição, mesmo sem ser essa a ideia." },
-      { t: "Grito o nome bem alto", ok: false, why: "Volume alto assusta. Voz normal já basta." }
-    ]
-  },
-  {
-    q: "Você quer sentar com um grupo.",
-    stage: "🪑",
-    hint: "Como você entra?",
-    choices: [
-      { t: "Pergunto: posso sentar?", ok: true, why: "Pedir lugar mostra respeito pelo espaço deles." },
-      { t: "Sento em cima da mochila", ok: false, why: "Sentar no meio, sem perguntar, afasta as pessoas." },
-      { t: "Fico olhando calada 5 minutos", ok: false, why: "Olhar fixo sem falar deixa os outros desconfortáveis." }
-    ]
-  },
-  {
-    q: "Uma pessoa está falando.",
-    stage: "🗣️",
-    hint: "Ainda não é a sua vez.",
-    choices: [
-      { t: "Espero ela parar", ok: true, why: "Esperar a pausa é o sinal de 'agora posso falar'." },
-      { t: "Corto e conto a minha história", ok: false, why: "Cortar no meio parece que a história dela não importa." },
-      { t: "Bato palmas para calar", ok: false, why: "Palmas ou barulhos no meio da fala afastam." }
-    ]
-  },
-  {
-    q: "Você não entendeu a piada.",
-    stage: "🤔",
-    hint: "Todo mundo está rindo.",
-    choices: [
-      { t: "Sorrio e pergunto depois", ok: true, why: "Não precisa entender tudo. Perguntar depois é normal." },
-      { t: "Digo que a piada é idiota", ok: false, why: "Atacar a piada fecha o grupo." },
-      { t: "Repito a piada 4 vezes", ok: false, why: "Repetir muito cansa quem já entendeu." }
-    ]
-  },
-  {
-    q: "Você está muito perto do rosto dela.",
-    stage: "😐",
-    hint: "Ela dá um passo para trás.",
-    choices: [
-      { t: "Dou um passo para trás", ok: true, why: "Um braço de distância costuma ser confortável." },
-      { t: "Chego ainda mais perto", ok: false, why: "Se a pessoa recua, o corpo dela já disse 'espaço'." },
-      { t: "Seguro o braço para explicar", ok: false, why: "Tocar sem convite assusta." }
-    ]
-  },
-  {
-    q: "Você perdeu o jogo.",
-    stage: "🎮",
-    hint: "A outra pessoa ganhou.",
-    choices: [
-      { t: "Digo: boa, você ganhou", ok: true, why: "Uma frase curta mantém o jogo possível amanhã." },
-      { t: "Jogo o celular longe", ok: false, why: "Quebrar coisas acaba a brincadeira e a confiança." },
-      { t: "Digo que ele trapaceou", ok: false, why: "Acusar sem prova vira discussão." }
-    ]
-  },
-  {
-    q: "Você quer um copo de água na casa de alguém.",
-    stage: "💧",
-    hint: "Não é a sua cozinha.",
-    choices: [
-      { t: "Peço: posso beber água?", ok: true, why: "Pedir é o caminho. Please / por favor ajuda." },
-      { t: "Abro todos os armários", ok: false, why: "Armário dos outros é privado." },
-      { t: "Bebo da garrafa dela", ok: false, why: "Garrafa pessoal não se divide sem perguntar." }
-    ]
-  },
-  {
-    q: "O colega está triste e calado.",
-    stage: "😢",
-    hint: "Você não sabe a razão.",
-    choices: [
-      { t: "Pergunto: você está bem?", ok: true, why: "Uma pergunta curta basta. Se disser não, você para." },
-      { t: "Rio e mando animar", ok: false, why: "Rir de rosto triste parece zoação." },
-      { t: "Já conto o meu problema", ok: false, why: "Primeiro o momento é dela." }
-    ]
-  },
-  {
-    q: "Você quer mostrar um vídeo.",
-    stage: "📱",
-    hint: "Eles estão conversando.",
-    choices: [
-      { t: "Espero e pergunto se querem ver", ok: true, why: "Perguntar dá escolha. Vídeo sem pausa invade." },
-      { t: "Coloco o vídeo no máximo", ok: false, why: "Som alto por cima da conversa afasta as pessoas." },
-      { t: "Mostro 10 vídeos seguidos", ok: false, why: "Um já basta. Depois devolvo a conversa." }
-    ]
-  },
-  {
-    q: "Alguém diz: agora não posso falar.",
-    stage: "⏳",
-    hint: "Você queria contar uma coisa.",
-    choices: [
-      { t: "Digo ok e falo mais tarde", ok: true, why: "Aceitar o 'depois' mostra que você ouviu." },
-      { t: "Continuo falando mesmo assim", ok: false, why: "Continuar falando depois do não cansa e afasta." },
-      { t: "Fico brava em silêncio do lado", ok: false, why: "Ficar colada e brava também é pressão." }
-    ]
-  },
-  {
-    q: "Um colega chama: quer jogar com a gente?",
-    stage: "🎲",
-    hint: "Você quer jogar.",
-    choices: [
-      { t: "Digo: sim, quero!", ok: true, why: "Dizer sim com clareza mostra que você quer entrar." },
-      { t: "Fico calada e saio andando", ok: false, why: "Sem resposta, ele pensa que você não quer." },
-      { t: "Digo que o jogo é chato", ok: false, why: "Criticar o jogo afasta quem convidou." }
-    ]
-  },
-  {
-    q: "Te convidaram para uma festa. Você não quer ir.",
-    stage: "🎉",
-    hint: "Como você responde?",
-    choices: [
-      { t: "Agradeço e digo que não posso", ok: true, why: "Agradecer e recusar com educação é suficiente." },
-      { t: "Digo que a festa vai ser horrível", ok: false, why: "Falar mal da festa magoa quem convidou." },
-      { t: "Nunca respondo a mensagem", ok: false, why: "Sem resposta a pessoa fica sem saber se você vem." }
-    ]
-  },
-  {
-    q: "Você precisa de ajuda com a tarefa.",
-    stage: "📚",
-    hint: "Ninguém percebeu.",
-    choices: [
-      { t: "Peço: pode me ajudar?", ok: true, why: "Pedir em voz clara é o jeito mais rápido de receber ajuda." },
-      { t: "Fico parada esperando adivinharem", ok: false, why: "As pessoas não adivinham. É preciso pedir." },
-      { t: "Pego o caderno do colega sem avisar", ok: false, why: "Pegar sem pedir parece falta de respeito." }
-    ]
-  },
-  {
-    q: "Alguém elogia o seu desenho.",
-    stage: "🎨",
-    hint: "O que você diz?",
-    choices: [
-      { t: "Digo: obrigada!", ok: true, why: "Obrigada é a resposta simples e boa para um elogio." },
-      { t: "Digo que está feio", ok: false, why: "Discordar do elogio faz a pessoa se sentir sem graça." },
-      { t: "Viro as costas sem falar", ok: false, why: "Sem resposta, parece que você ignorou." }
-    ]
-  },
-  {
-    q: "Você esbarrou sem querer em uma pessoa.",
-    stage: "💥",
-    hint: "Ela fez uma cara de dor.",
-    choices: [
-      { t: "Digo: desculpa, você está bem?", ok: true, why: "Pedir desculpa mostra que foi sem querer." },
-      { t: "Digo que a culpa é dela", ok: false, why: "Acusar sem ter certeza vira briga." },
-      { t: "Saio andando como se nada fosse", ok: false, why: "Ir embora parece que você não se importa." }
-    ]
-  },
-  {
-    q: "A professora explica. Você tem uma dúvida.",
-    stage: "🙋",
-    hint: "A sala está em silêncio.",
-    choices: [
-      { t: "Levanto a mão e pergunto", ok: true, why: "Mão levantada é o sinal de 'quero perguntar'." },
-      { t: "Grito a pergunta de longe", ok: false, why: "Gritar atrapalha a explicação." },
-      { t: "Converso com o colega do lado", ok: false, why: "Conversar baixo também atrapalha quem está ouvindo." }
-    ]
-  },
-  {
-    q: "Uma amiga conta um segredo para você.",
-    stage: "🤫",
-    hint: "Ela pediu para não contar.",
-    choices: [
-      { t: "Guardo o segredo", ok: true, why: "Guardar segredo faz a pessoa confiar em você." },
-      { t: "Conto para a turma toda", ok: false, why: "Contar o segredo quebra a confiança." },
-      { t: "Escrevo no grupo da turma", ok: false, why: "O que vai para o grupo todo mundo vê." }
-    ]
-  },
-  {
-    q: "Você está com muita raiva.",
-    stage: "😠",
-    hint: "O que ajuda?",
-    choices: [
-      { t: "Respiro fundo e me afasto um pouco", ok: true, why: "Respirar e dar espaço ajuda a raiva a baixar." },
-      { t: "Bato na mesa", ok: false, why: "Bater assusta os outros e não resolve." },
-      { t: "Grito com quem está por perto", ok: false, why: "Quem está perto não tem culpa e se afasta." }
-    ]
-  },
-  {
-    q: "Um colega pede o seu lápis emprestado.",
-    stage: "✏️",
-    hint: "Você pode emprestar.",
-    choices: [
-      { t: "Empresto e peço de volta depois", ok: true, why: "Emprestar e combinar a volta mantém a amizade." },
-      { t: "Pego de volta no meio da tarefa dele", ok: false, why: "Tirar na hora atrapalha. Combine antes." },
-      { t: "Digo sim e depois escondo o lápis", ok: false, why: "Dizer sim e não cumprir deixa a pessoa chateada." }
-    ]
-  },
-  {
-    q: "No grupo do celular todo mundo está conversando.",
-    stage: "💬",
-    hint: "Você quer entrar na conversa.",
-    choices: [
-      { t: "Escrevo uma mensagem curta sobre o assunto", ok: true, why: "Uma mensagem curta no assunto entra bem na conversa." },
-      { t: "Mando 20 mensagens seguidas", ok: false, why: "Muitas mensagens seguidas cansam o grupo." },
-      { t: "Mando um áudio de 5 minutos", ok: false, why: "Áudio muito longo é difícil de ouvir no meio da conversa." }
-    ]
-  },
-  {
-    q: "A conversa mudou de assunto.",
-    stage: "🔄",
-    hint: "Você ainda queria falar do seu.",
-    choices: [
-      { t: "Acompanho o assunto novo e falo do meu depois", ok: true, why: "Esperar uma pausa é melhor que forçar a volta." },
-      { t: "Volto ao meu assunto toda hora", ok: false, why: "Voltar toda hora faz os outros se cansarem." },
-      { t: "Fico em silêncio, brava", ok: false, why: "Ficar brava sem falar deixa o clima ruim." }
-    ]
-  },
-  {
-    q: "Você ganhou um presente que não gostou.",
-    stage: "🎁",
-    hint: "A pessoa está olhando para você.",
-    choices: [
-      { t: "Digo: obrigada por lembrar de mim", ok: true, why: "Agradecer o carinho é o que importa na hora." },
-      { t: "Digo que é feio", ok: false, why: "Falar isso magoa quem escolheu com carinho." },
-      { t: "Devolvo na hora", ok: false, why: "Devolver na hora é muito duro com quem deu." }
-    ]
-  },
-  {
-    q: "Um colega está sozinho no recreio.",
-    stage: "🧍",
-    hint: "Ele parece triste.",
-    choices: [
-      { t: "Convido: quer ficar com a gente?", ok: true, why: "Um convite simples faz a pessoa se sentir parte." },
-      { t: "Rio dele de longe", ok: false, why: "Rir de quem está sozinho magoa muito." },
-      { t: "Finjo que não vi", ok: false, why: "Ignorar deixa a pessoa ainda mais sozinha." }
-    ]
-  }
-];
-
-function mathItem(kind) {
-  const emoji = pick(["🍎", "⭐", "🍪", "🐶", "🎈"]);
-  if (kind === "count") {
-    const n = 1 + Math.floor(Math.random() * 6);
-    const opts = opcoes(n);
-    return {
-      key: "Contar " + n + " objetos",
-      kind,
-      q: "Quantos você vê?",
-      hint: "Conte no dedo, um por um.",
-      speak: "Quantos você vê? Conte um a um.",
-      stage: `<div class="objs">${objs(emoji, n)}</div>`,
-      choices: opts.map(v => ({ t: String(v), ok: v === n, why: v === n ? `São ${n}.` : `Conte de novo. São ${n}.` }))
-    };
-  }
-  if (kind === "more") {
-    let a = 1 + Math.floor(Math.random() * 5);
-    let b = 1 + Math.floor(Math.random() * 5);
-    if (a === b) b = Math.min(6, a + 1);
-    return {
-      key: "Onde tem mais: " + a + " contra " + b,
-      kind,
-      q: "Onde tem mais?",
-      hint: "Olhe os dois grupos. Toque no maior.",
-      speak: "Onde tem mais?",
-      stage: `<div class="pile"><div class="objs">${objs(emoji, a)}</div><div>A</div></div><div class="pile"><div class="objs">${objs("🌙", b)}</div><div>B</div></div>`,
-      choices: [
-        { t: "Grupo A", ok: a > b, why: a > b ? "A tem mais objetos." : "B tem mais. Conte os dois." },
-        { t: "Grupo B", ok: b > a, why: b > a ? "B tem mais objetos." : "A tem mais. Conte os dois." }
-      ]
-    };
-  }
-  if (kind === "add") {
-    const a = 1 + Math.floor(Math.random() * 3);
-    const b = 1 + Math.floor(Math.random() * 3);
-    const sum = a + b;
-    const opts = opcoes(sum);
-    return {
-      key: "Juntar " + a + " + " + b,
-      kind,
-      q: "Junte os dois grupos. Quantos ficam?",
-      hint: "Primeiro um grupo, depois o outro.",
-      speak: "Junte os dois grupos. Quantos ficam?",
-      stage: `<div class="pile"><div class="objs">${objs(emoji, a)}</div></div><div style="font-size:28px">+</div><div class="pile"><div class="objs">${objs(emoji, b)}</div></div>`,
-      choices: opts.map(v => ({ t: String(v), ok: v === sum, why: v === sum ? `${a} e ${b} fazem ${sum}.` : `Conte tudo junto. São ${sum}.` }))
-    };
-  }
-  const start = 1 + Math.floor(Math.random() * 3);
-  const seq = [start, start + 1, start + 2];
-  const ans = start + 3;
-  const opts = shuffle([ans, ans + 1, ans - 1]);
+function euro(v) { return (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(".", ",")) + " €"; }
+function numItem(o) {
+  // o: key, q, hint, stage, certo, fmt, step, extra, why(v), nivel
+  const fmt = o.fmt || String;
   return {
-    key: "Número depois de " + seq[2],
-    kind,
-    q: "Qual número vem depois?",
-    hint: seq.join("  ·  ") + "  ·  ?",
-    speak: "Qual número vem depois?",
-    stage: `<div class="word">${seq.join("  ")}  ?</div>`,
-    choices: opts.map(v => ({ t: String(v), ok: v === ans, why: v === ans ? `Depois é ${ans}.` : `A fila sobe de um em um. Depois é ${ans}.` }))
-  };
-}
-
-const timeBank = [
-    {
-      q: "É de manhã. O sol está subindo.",
-      stage: "🌅",
-      hint: "Que parte do dia é?",
-      choices: [
-        { t: "Manhã", ok: true, why: "Sol subindo = manhã." },
-        { t: "Noite", ok: false, why: "À noite o sol não está subindo." },
-        { t: "Meia-noite", ok: false, why: "Meia-noite é o meio da noite, tudo escuro." }
-      ]
-    },
-    {
-      q: "Você já jantou. Está escuro. Você vai dormir.",
-      stage: "🌙",
-      hint: "Isto é cedo ou tarde?",
-      choices: [
-        { t: "Tarde / noite", ok: true, why: "Depois do jantar e de escuro, é tarde." },
-        { t: "De manhã cedo", ok: false, why: "De manhã você ainda não jantou." }
-      ]
-    },
-    {
-      q: "A escola começa às 9. Você chega às 8.",
-      stage: "🏫",
-      hint: "Você chegou...",
-      choices: [
-        { t: "Cedo", ok: true, why: "Antes da hora = cedo." },
-        { t: "Tarde", ok: false, why: "Tarde é depois da hora." },
-        { t: "Ao mesmo tempo", ok: false, why: "8 é antes de 9." }
-      ]
-    },
-    {
-      q: "A escola começa às 9. Você chega às 10.",
-      stage: "⏰",
-      hint: "Você chegou...",
-      choices: [
-        { t: "Tarde", ok: true, why: "Depois da hora = tarde." },
-        { t: "Cedo", ok: false, why: "Cedo seria antes das 9." }
-      ]
-    },
-    {
-      q: "Primeiro você lava as mãos. Depois come.",
-      stage: "🧼🍽️",
-      hint: "O que acontece primeiro?",
-      choices: [
-        { t: "Lavar as mãos", ok: true, why: "Primeiro é o que vem antes." },
-        { t: "Comer", ok: false, why: "Comer vem depois, não primeiro." }
-      ]
-    },
-    {
-      q: "A mãe diz: já vamos, daqui a pouco.",
-      stage: "🚪",
-      hint: "Daqui a pouco quer dizer...",
-      choices: [
-        { t: "Em breve, é esperar pouco", ok: true, why: "Daqui a pouco = espera curta, não é agora." },
-        { t: "Semana que vem", ok: false, why: "Semana que vem é muito mais longe." },
-        { t: "Nunca", ok: false, why: "Não é nunca. É esperar um pouquinho." }
-      ]
-    },
-    {
-      q: "A casa da avó fica a 2 minutos andando.",
-      stage: "🏡",
-      hint: "Está perto ou longe?",
-      choices: [
-        { t: "Perto", ok: true, why: "Dois minutos andando é perto." },
-        { t: "Muito longe", ok: false, why: "Longe seria horas de caminhada, não dois minutos." }
-      ]
-    },
-    {
-      q: "O trem sai agora.",
-      stage: "🚆",
-      hint: "Agora quer dizer...",
-      choices: [
-        { t: "Neste momento", ok: true, why: "Agora = já, neste instante." },
-        { t: "Amanhã", ok: false, why: "Amanhã é outro dia." },
-        { t: "No ano passado", ok: false, why: "O ano passado já foi." }
-      ]
-    },
-    {
-      q: "Hoje é segunda-feira. Que dia vem amanhã?",
-      stage: "📅",
-      hint: "Pense na ordem da semana.",
-      choices: [
-        { t: "Terça-feira", ok: true, why: "Depois da segunda vem a terça." },
-        { t: "Domingo", ok: false, why: "Domingo vem antes da segunda." },
-        { t: "Quarta-feira", ok: false, why: "Quarta vem depois da terça." }
-      ]
-    },
-    {
-      q: "Ontem foi domingo. Que dia é hoje?",
-      stage: "📅",
-      hint: "Hoje vem depois de ontem.",
-      choices: [
-        { t: "Segunda-feira", ok: true, why: "Depois do domingo vem a segunda." },
-        { t: "Sábado", ok: false, why: "Sábado vem antes do domingo." },
-        { t: "Terça-feira", ok: false, why: "Terça vem dois dias depois do domingo." }
-      ]
-    },
-    {
-      q: "A aula acaba às 12. Agora são 11:50.",
-      stage: "🕛",
-      hint: "Falta muito ou pouco?",
-      choices: [
-        { t: "Falta pouco", ok: true, why: "São só 10 minutos." },
-        { t: "Já acabou", ok: false, why: "Ainda são 11:50, antes das 12." },
-        { t: "Falta muito", ok: false, why: "10 minutos é pouco tempo." }
-      ]
-    },
-    {
-      q: "O filme dura 2 horas. Ele começou às 3.",
-      stage: "🎬",
-      hint: "A que horas ele termina?",
-      choices: [
-        { t: "Às 5", ok: true, why: "3 mais 2 horas dá 5." },
-        { t: "Às 4", ok: false, why: "Às 4 só passou 1 hora." },
-        { t: "Às 6", ok: false, why: "Às 6 teriam passado 3 horas." }
-      ]
-    },
-    {
-      q: "Quanto tempo demora para escovar os dentes?",
-      stage: "🪥",
-      hint: "Pense no dia a dia.",
-      choices: [
-        { t: "Uns 2 minutos", ok: true, why: "Escovar leva uns 2 minutos." },
-        { t: "Uma hora", ok: false, why: "Uma hora é tempo demais para escovar." },
-        { t: "Um dia inteiro", ok: false, why: "Um dia tem 24 horas." }
-      ]
-    },
-    {
-      q: "Primeiro você calça o tênis. Depois sai de casa.",
-      stage: "👟🚪",
-      hint: "O que vem depois?",
-      choices: [
-        { t: "Sair de casa", ok: true, why: "Depois é o que vem na segunda parte." },
-        { t: "Calçar o tênis", ok: false, why: "Calçar o tênis vem primeiro." }
-      ]
-    },
-    {
-      q: "Quantos dias tem uma semana?",
-      stage: "🗓️",
-      hint: "Segunda, terça, quarta...",
-      choices: [
-        { t: "7 dias", ok: true, why: "A semana tem 7 dias." },
-        { t: "5 dias", ok: false, why: "5 são só os dias de aula. A semana tem 7." },
-        { t: "10 dias", ok: false, why: "10 dias é mais que uma semana." }
-      ]
-    },
-    {
-      q: "Depois do inverno vem uma estação.",
-      stage: "🌸",
-      hint: "Qual é ela?",
-      choices: [
-        { t: "Primavera", ok: true, why: "Depois do inverno vem a primavera." },
-        { t: "Outono", ok: false, why: "O outono vem antes do inverno." },
-        { t: "Verão", ok: false, why: "O verão vem depois da primavera." }
-      ]
-    },
-    {
-      q: "O ônibus passa às 7:00. Você chega às 7:15.",
-      stage: "🚌",
-      hint: "Você chegou...",
-      choices: [
-        { t: "Tarde", ok: true, why: "Depois da hora do ônibus é tarde." },
-        { t: "Cedo", ok: false, why: "Cedo seria antes das 7:00." },
-        { t: "Na hora certa", ok: false, why: "Na hora certa seria às 7:00." }
-      ]
-    },
-    {
-      q: "Faltam 5 minutos para o recreio.",
-      stage: "🔔",
-      hint: "Quando ele começa?",
-      choices: [
-        { t: "Daqui a pouco", ok: true, why: "5 minutos é pouco tempo." },
-        { t: "Só amanhã", ok: false, why: "Amanhã é outro dia." },
-        { t: "Já começou", ok: false, why: "Ainda faltam 5 minutos." }
-      ]
-    },
-    {
-      q: "É meio-dia e você está com fome.",
-      stage: "🍲",
-      hint: "Que refeição é essa?",
-      choices: [
-        { t: "Almoço", ok: true, why: "Ao meio-dia é hora do almoço." },
-        { t: "Café da manhã", ok: false, why: "O café da manhã é cedo, quando acordamos." },
-        { t: "Jantar", ok: false, why: "O jantar é à noite." }
-      ]
-    },
-    {
-      q: "O aniversário dela é em dezembro. Agora é janeiro.",
-      stage: "🎂",
-      hint: "Falta pouco ou muito?",
-      choices: [
-        { t: "Falta muito", ok: true, why: "De janeiro a dezembro são quase 11 meses." },
-        { t: "Falta pouco", ok: false, why: "Pouco seria uns dias." },
-        { t: "É hoje", ok: false, why: "Hoje é janeiro, não dezembro." }
-      ]
-    },
-    {
-      q: "Ela tomou café, escovou os dentes e foi para a escola.",
-      stage: "🏫",
-      hint: "O que veio por último?",
-      choices: [
-        { t: "Foi para a escola", ok: true, why: "O último da lista é a escola." },
-        { t: "Tomou café", ok: false, why: "Tomar café foi o primeiro." },
-        { t: "Escovou os dentes", ok: false, why: "Escovar foi o do meio." }
-      ]
-    },
-    {
-      q: "A prova é amanhã. Quando é bom estudar?",
-      stage: "📝",
-      hint: "Pense no tempo que falta.",
-      choices: [
-        { t: "Hoje", ok: true, why: "Hoje ainda dá tempo, antes da prova." },
-        { t: "Semana passada", ok: false, why: "A semana passada já foi, não dá para voltar." },
-        { t: "Depois da prova", ok: false, why: "Depois da prova não ajuda mais." }
-      ]
-    },
-    {
-      q: "Você vai dormir às 9 da noite e acorda às 7 da manhã.",
-      stage: "😴",
-      hint: "Você dormiu...",
-      choices: [
-        { t: "A noite toda", ok: true, why: "Das 9 às 7 é a noite inteira." },
-        { t: "Só um minuto", ok: false, why: "Um minuto é bem pouco." },
-        { t: "Uma semana", ok: false, why: "Uma semana tem 7 dias." }
-      ]
-    }
-];
-
-function timeItem(item) {
-  return {
-    key: item.q,
-    q: item.q,
-    hint: item.hint,
-    speak: item.q + " " + item.hint,
-    stage: `<div class="word">${item.stage}</div>`,
-    choices: shuffle(item.choices)
-  };
-}
-
-function enItem(w, kind) {
-  const distract = shuffle(words.filter(x => x.en !== w.en)).slice(0, 2);
-  if (kind === "hear") {
-    return {
-      key: "Ouvir: " + w.en,
-      q: "Toque na palavra em inglês.",
-      hint: "Significa: " + w.pt,
-      speak: w.en,
-      lang: "en-GB",
-      stage: `<div class="word">${w.emoji}</div>`,
-      choices: shuffle([w, ...distract]).map(x => ({
-        t: x.en, ok: x.en === w.en,
-        why: x.en === w.en ? `${w.en} = ${w.pt}` : `Esta é ${w.en}.`
-      }))
-    };
-  }
-  return {
-    key: "Significado: " + w.en,
-    q: w.en,
-    hint: "O que quer dizer?",
-    speak: w.en,
-    lang: "en-GB",
-    stage: `<div class="word en">${w.en}</div>`,
-    choices: shuffle([w, ...distract]).map(x => ({
-      t: x.emoji + "  " + x.pt, ok: x.en === w.en,
-      why: x.en === w.en ? `Sim. ${w.en} = ${w.pt}` : `Quer dizer ${w.pt}.`
+    key: o.key, q: o.q, hint: o.hint || "", speak: o.q, stage: o.stage || "",
+    choices: opcoes(o.certo, o.step, o.extra).map(v => ({
+      t: fmt(v), ok: v === o.certo,
+      why: v === o.certo ? o.okWhy : o.noWhy
     }))
   };
 }
+const EMOJIS = ["🍎", "⭐", "🍪", "🐶", "🎈", "🧁", "🦋"];
+const GOLPES = [["raspagem", 2], ["passagem", 3], ["montada", 4], ["joelho na barriga", 2], ["pegada nas costas", 4]];
+const LOJA = [["sumo", 1], ["sandes", 2.5], ["gelado", 1.5], ["caderno", 3], ["revista", 4], ["pulseira", 5], ["caneta", 1], ["bolo", 2]];
 
-function socItem(s) {
+function mathItem(n) {
+  const emoji = pick(EMOJIS);
+  if (n === 1) {
+    const k = pick(["count", "count", "more", "next"]);
+    if (k === "count") {
+      const v = rnd(3, 20);
+      return numItem({ key: "Contar " + v, q: "Quantos você vê?", hint: "Conte de 5 em 5 linhas, um por um.",
+        stage: `<div class="objs ${v > 10 ? "sm" : ""}">${objRows(emoji, v)}</div>`, certo: v,
+        okWhy: `São ${v}.`, noWhy: `Conte de novo, devagar. São ${v}.` });
+    }
+    if (k === "more") {
+      const a = rnd(2, 12);
+      let b = rnd(2, 12);
+      if (a === b) b = a + 2;
+      return {
+        key: "Mais: " + a + " x " + b, q: "Onde tem mais?", hint: "Toque no grupo maior.", speak: "Onde tem mais?",
+        stage: `<div class="pile"><div class="objs sm">${objRows(emoji, a)}</div><div>A</div></div><div class="pile"><div class="objs sm">${objRows("🌙", b)}</div><div>B</div></div>`,
+        choices: [
+          { t: "Grupo A", ok: a > b, why: a > b ? `A tem ${a}, B tem ${b}.` : `B tem ${b}, A tem ${a}. B tem mais.` },
+          { t: "Grupo B", ok: b > a, why: b > a ? `B tem ${b}, A tem ${a}.` : `A tem ${a}, B tem ${b}. A tem mais.` }
+        ]
+      };
+    }
+    const s = rnd(1, 16);
+    return numItem({ key: "Depois de " + (s + 2), q: "Qual número vem depois?", stage: `<div class="word">${s}  ${s + 1}  ${s + 2}  ?</div>`,
+      certo: s + 3, okWhy: `Depois de ${s + 2} vem ${s + 3}.`, noWhy: `A fila sobe de 1 em 1. Depois de ${s + 2} vem ${s + 3}.` });
+  }
+  if (n === 2) {
+    const k = pick(["fig", "eps", "golpes", "sub", "influ"]);
+    if (k === "golpes" && perfil.jj) {
+      const g = shuffle(GOLPES).slice(0, rnd(2, 3));
+      const tot = g.reduce((a, x) => a + x[1], 0);
+      return numItem({ key: "Placar " + g.map(x => x[0]).join("+"), q: "No treino você fez: " + g.map(x => x[0] + " (" + x[1] + ")").join(" + ") + ". Quantos pontos?",
+        hint: "Some os pontos de cada golpe.", stage: `<div class="word">🥋 ${g.map(x => x[1]).join(" + ")} = ?</div>`, certo: tot,
+        okWhy: `${g.map(x => x[1]).join(" + ")} = ${tot} pontos!`, noWhy: `Some: ${g.map(x => x[1]).join(" + ")} = ${tot}.` });
+    }
+    if (k === "sub" || k === "influ") {
+      const a = rnd(6, 20), b = rnd(1, a - 2), r = a - b;
+      const q = k === "influ" ? fill(`A {influ} postou ${a} vídeos. Você já viu ${b}. Quantos faltam?`)
+        : fill(`{nome} tinha ${a} figurinhas. Deu ${b} para a amiga. Quantas sobraram?`);
+      return numItem({ key: (k === "influ" ? "Vídeos " : "Tirar ") + a + "-" + b, q, hint: `${a} − ${b} = ?`,
+        stage: a <= 12 ? `<div class="objs sm">${objRows(emoji, r)}</div><div class="objs sm" style="opacity:.3">${objRows(emoji, b)}</div>` : `<div class="word">${a} − ${b}</div>`,
+        certo: r, okWhy: `${a} − ${b} = ${r}.`, noWhy: `Tire ${b} de ${a}. Ficam ${r}.` });
+    }
+    const a = rnd(2, 12), b = rnd(2, 8), s = a + b;
+    const q = k === "eps" ? fill(`Você viu ${a} episódios de {novela} ontem e ${b} hoje. Quantos ao todo?`)
+      : fill(`{nome} tem ${a} figurinhas. Ganhou mais ${b}. Quantas tem agora?`);
+    return numItem({ key: "Somar " + a + "+" + b, q, hint: `${a} + ${b} = ?`,
+      stage: s <= 14 ? `<div class="pile"><div class="objs sm">${objRows(emoji, a)}</div></div><div style="font-size:28px">+</div><div class="pile"><div class="objs sm">${objRows(emoji, b)}</div></div>` : `<div class="word">${a} + ${b}</div>`,
+      certo: s, okWhy: `${a} + ${b} = ${s}.`, noWhy: `Junte tudo: ${a} + ${b} = ${s}.` });
+  }
+  if (n === 3) {
+    const [x, y] = shuffle(LOJA).slice(0, 2);
+    if (Math.random() < 0.5) {
+      const tot = x[1] + y[1];
+      return numItem({ key: "Loja " + x[0] + "+" + y[0], q: `Na cantina: ${x[0]} ${euro(x[1])} e ${y[0]} ${euro(y[1])}. Quanto é tudo?`,
+        hint: "Some os dois preços.", stage: `<div class="word md">💶 ${euro(x[1])} + ${euro(y[1])}</div>`, certo: tot, step: tot % 1 ? 0.5 : 1, fmt: euro,
+        okWhy: `${euro(x[1])} + ${euro(y[1])} = ${euro(tot)}.`, noWhy: `Some: ${euro(x[1])} + ${euro(y[1])} = ${euro(tot)}.` });
+    }
+    const pago = x[1] <= 4 ? 5 : 10, troco = pago - x[1];
+    return numItem({ key: "Troco " + x[0] + " " + pago, q: `O ${x[0]} custa ${euro(x[1])}. Você paga com ${euro(pago)}. Qual é o troco?`,
+      hint: `${euro(pago)} − ${euro(x[1])} = ?`, stage: `<div class="word md">💶 ${euro(pago)} − ${euro(x[1])}</div>`, certo: troco, step: troco % 1 ? 0.5 : 1, fmt: euro,
+      okWhy: `${euro(pago)} − ${euro(x[1])} = ${euro(troco)} de troco.`, noWhy: `Tire o preço do que pagou: ${euro(troco)}.` });
+  }
+  if (n === 4) {
+    const a = pick([2, 3, 4, 5, 10]), b = rnd(2, 5), p = a * b;
+    const ctx = pick([["sacos", "balas", "🍬"], ["caixas", "lápis", "✏️"], ["mesas", "colegas", "🧒"], ["pacotes", "figurinhas", "🃏"]]);
+    return numItem({ key: "Grupos " + b + "x" + a, q: `${b} ${ctx[0]} com ${a} ${ctx[1]} cada. Quantos ${ctx[1]} ao todo?`,
+      hint: `${b} grupos de ${a}: ${b} × ${a}`, stage: p <= 25 ? Array.from({ length: b }, () => `<div class="pile"><div class="objs sm">${objRows(ctx[2], a)}</div></div>`).join("") : `<div class="word">${b} × ${a}</div>`,
+      certo: p, extra: [a + b, p + a, p - a], okWhy: `${b} × ${a} = ${p}.`, noWhy: `Some ${b} vezes o ${a}: ${Array(b).fill(a).join(" + ")} = ${p}.` });
+  }
+  if (n === 5) {
+    const k = pick(["metade", "dobro", "d50", "d10", "d25"]);
+    if (k === "metade" || k === "dobro") {
+      const v = k === "metade" ? 2 * rnd(2, 20) : rnd(3, 25), r = k === "metade" ? v / 2 : v * 2;
+      return numItem({ key: k + " " + v, q: `Quanto é ${k === "metade" ? "a metade" : "o dobro"} de ${v}?`,
+        hint: k === "metade" ? "Metade = dividir em 2 partes iguais." : "Dobro = duas vezes.", stage: `<div class="word">${k === "metade" ? "½" : "2×"} ${v}</div>`,
+        certo: r, extra: [v + 2, r + 2], okWhy: `${k === "metade" ? "Metade" : "O dobro"} de ${v} é ${r}.`, noWhy: k === "metade" ? `${r} + ${r} = ${v}. A metade é ${r}.` : `${v} + ${v} = ${r}.` });
+    }
+    const pct = k === "d50" ? 50 : k === "d10" ? 10 : 25;
+    const preco = pct === 25 ? pick([20, 40, 80, 100]) : pct === 10 ? pick([10, 20, 30, 40, 50, 70]) : pick([10, 16, 20, 30, 40, 60]);
+    const desc = preco * pct / 100;
+    if (pct === 50) {
+      return numItem({ key: "Desconto 50 " + preco, q: `Uma camiseta custa ${euro(preco)}. Tem 50% de desconto. Quanto fica?`,
+        hint: "50% = metade.", stage: `<div class="word md">👕 ${euro(preco)} −50%</div>`, certo: preco - desc, fmt: euro, extra: [preco],
+        okWhy: `50% é metade. Fica ${euro(preco - desc)}.`, noWhy: `50% = metade de ${euro(preco)} = ${euro(preco - desc)}.` });
+    }
+    return numItem({ key: "Pct " + pct + " " + preco, q: `Quanto é ${pct}% de ${euro(preco)}?`,
+      hint: pct === 10 ? "10% = dividir por 10." : "25% = um quarto = metade da metade.", stage: `<div class="word md">${pct}% de ${euro(preco)}</div>`,
+      certo: desc, fmt: euro, okWhy: `${pct}% de ${euro(preco)} = ${euro(desc)}.`, noWhy: pct === 10 ? `${preco} ÷ 10 = ${desc}.` : `Metade de ${preco} é ${preco / 2}, metade disso é ${desc}.` });
+  }
+  if (n === 6) {
+    const k = pick(["a+", "+b", "-", "x"]);
+    if (k === "x") {
+      const b = rnd(2, 5), x = rnd(2, 10), c = b * x;
+      return numItem({ key: "? x " + b + " = " + c, q: "Qual número falta?", stage: `<div class="word">? × ${b} = ${c}</div>`,
+        hint: `Que número vezes ${b} dá ${c}?`, certo: x, okWhy: `${x} × ${b} = ${c}.`, noWhy: `Experimente: ${x} × ${b} = ${c}.` });
+    }
+    if (k === "-") {
+      const b = rnd(2, 9), c = rnd(3, 15), x = b + c;
+      return numItem({ key: "? - " + b + " = " + c, q: "Qual número falta?", stage: `<div class="word">? − ${b} = ${c}</div>`,
+        hint: `Dica: ${c} + ${b}`, certo: x, okWhy: `${x} − ${b} = ${c}.`, noWhy: `Faça ao contrário: ${c} + ${b} = ${x}.` });
+    }
+    const a = rnd(2, 12), x = rnd(2, 15), c = a + x;
+    const txt = k === "a+" ? `${a} + ? = ${c}` : `? + ${a} = ${c}`;
+    return numItem({ key: txt, q: "Qual número falta?", stage: `<div class="word">${txt}</div>`,
+      hint: `Dica: ${c} − ${a}`, certo: x, okWhy: `${a} + ${x} = ${c}.`, noWhy: `Faça ao contrário: ${c} − ${a} = ${x}.` });
+  }
+  // nível 7: proporção
+  const k = pick(["receita", "preco", "unit"]);
+  if (k === "receita") {
+    const ovos = rnd(2, 4), f = pick([2, 3]);
+    return numItem({ key: "Receita " + ovos + "x" + f, q: `Para 2 pessoas, a receita usa ${ovos} ovos. Para ${2 * f} pessoas?`,
+      hint: `${2 * f} pessoas é ${f} vezes mais.`, stage: `<div class="word md">🥚 2 → ${ovos} · ${2 * f} → ?</div>`, certo: ovos * f, extra: [ovos + 2 * f],
+      okWhy: `${f} vezes mais pessoas, ${f} vezes mais ovos: ${ovos * f}.`, noWhy: `${ovos} × ${f} = ${ovos * f} ovos.` });
+  }
+  if (k === "preco") {
+    const p = rnd(2, 5), q = rnd(3, 6);
+    return numItem({ key: "Preço " + p + "x" + q, q: `Um caderno custa ${euro(p)}. Quanto custam ${q} cadernos?`,
+      hint: `${q} × ${p}`, stage: `<div class="word md">📒 1 → ${euro(p)} · ${q} → ?</div>`, certo: p * q, fmt: euro, extra: [p + q],
+      okWhy: `${q} × ${p} = ${euro(p * q)}.`, noWhy: `${q} vezes ${euro(p)} = ${euro(p * q)}.` });
+  }
+  const u = rnd(2, 5), qn = rnd(2, 4);
+  return numItem({ key: "Unit " + qn + "/" + u, q: `${qn} pulseiras custam ${euro(u * qn)}. Quanto custa 1?`,
+    hint: `Divida ${u * qn} por ${qn}.`, stage: `<div class="word md">📿 ${qn} → ${euro(u * qn)} · 1 → ?</div>`, certo: u, fmt: euro,
+    okWhy: `${u * qn} ÷ ${qn} = ${euro(u)}.`, noWhy: `${qn} × ${u} = ${u * qn}. Então 1 custa ${euro(u)}.` });
+}
+
+function clockSVG(h, m) {
+  const ha = ((h % 12) + m / 60) * 30, ma = m * 6;
+  let marks = "";
+  for (let i = 1; i <= 12; i++) {
+    const a = i * 30 * Math.PI / 180;
+    marks += `<text x="${50 + 38 * Math.sin(a)}" y="${54 - 38 * Math.cos(a)}" font-size="10" text-anchor="middle" fill="#24183a" font-weight="700">${i}</text>`;
+  }
+  return `<svg class="clock" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff8ef"/>${marks}
+    <line x1="50" y1="50" x2="${50 + 22 * Math.sin(ha * Math.PI / 180)}" y2="${50 - 22 * Math.cos(ha * Math.PI / 180)}" stroke="#24183a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="50" y1="50" x2="${50 + 34 * Math.sin(ma * Math.PI / 180)}" y2="${50 - 34 * Math.cos(ma * Math.PI / 180)}" stroke="#ff7a59" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="50" cy="50" r="3" fill="#24183a"/></svg>`;
+}
+function hm(h, m) { return h + ":" + String(m).padStart(2, "0"); }
+function timeGen(n) {
+  if (n === 3) {
+    const h = rnd(1, 12), m = pick([0, 0, 30]);
+    const certo = hm(h, m);
+    const cands = shuffle([hm(h % 12 + 1, m), hm(h, m ? 0 : 30), hm(h === 1 ? 12 : h - 1, m), hm(m === 30 ? 6 : 12, h * 5 % 60)]);
+    const set = [certo];
+    for (const c of cands) { if (set.length >= 3) break; if (!set.includes(c)) set.push(c); }
+    return {
+      key: "Relógio " + certo, q: "Que horas são?", hint: "Ponteiro pequeno = hora. Grande = minutos.", speak: "Que horas são?",
+      stage: clockSVG(h, m),
+      choices: shuffle(set).map(t => ({ t, ok: t === certo, why: t === certo ? `São ${certo}.` : `O pequeno está no ${h}${m ? " e meio" : ""}, o grande no ${m ? "6" : "12"}. São ${certo}.` }))
+    };
+  }
+  const ctx = pick(usavelCtx());
+  const diff = pick([5, 10, 15, 20, 30, 45]);
+  const ini = rnd(14 * 12, 21 * 12) * 5; // minutos do dia, múltiplos de 5
+  const fim = ini + diff;
+  const f = (t) => hm(Math.floor(t / 60), t % 60);
+  const opts = new Set([diff]);
+  for (const d of shuffle([diff + 5, diff - 5, diff + 10, diff * 2, 60])) { if (opts.size >= 3) break; if (d > 0 && !opts.has(d)) opts.add(d); }
   return {
-    key: s.q,
-    q: s.q,
-    hint: s.hint,
-    speak: s.q + " " + s.hint,
-    stage: `<div class="word">${s.stage}</div>`,
-    choices: shuffle(s.choices).map(c => ({ t: c.t, ok: c.ok, why: c.why }))
+    key: "Falta " + ctx.k + " " + diff, q: fill(ctx.t.replace("#FIM", f(fim))) + ` Agora são ${f(ini)}.`, hint: "Quanto tempo falta?", speak: "",
+    stage: `<div class="word md">🕒 ${f(ini)} → ${f(fim)}</div>`,
+    choices: shuffle([...opts]).map(d => ({ t: d + " minutos", ok: d === diff, why: d === diff ? `De ${f(ini)} a ${f(fim)} são ${diff} minutos.` : `Conte de ${f(ini)} até ${f(fim)}: ${diff} minutos.` }))
+  };
+}
+function usavelCtx() {
+  return [
+    { k: "live", t: "A live da {influ} começa às #FIM." },
+    { k: "novela", t: "O episódio de {novela} começa às #FIM." },
+    { k: "treino", t: "O treino na {academia} começa às #FIM." },
+    { k: "autocarro", t: "O autocarro passa às #FIM." },
+    { k: "jantar", t: "O jantar é às #FIM." }
+  ].filter(c => usavel(c.t));
+}
+
+function bankItem(x) {
+  return {
+    key: x.q, q: fill(x.q), hint: fill(x.hint), speak: fill(x.q + " " + x.hint),
+    stage: `<div class="word">${esc(x.stage)}</div>`,
+    choices: shuffle(x.choices).map(c => ({ t: fill(c.t), ok: c.ok, why: fill(c.why) }))
+  };
+}
+function wordItem(w, kind, lista, nivel) {
+  const distract = shuffle(lista.filter(x => x.en !== w.en)).slice(0, 2);
+  if (kind === "hear") {
+    return {
+      key: "Ouvir: " + w.en, q: "Toque no que você ouviu.", hint: "Significa: " + w.pt, speak: w.en, lang: "en-GB",
+      stage: `<div class="word">${w.emoji}</div>`,
+      choices: shuffle([w, ...distract]).map(x => ({ t: x.en, ok: x.en === w.en, why: x.en === w.en ? `${w.en} = ${w.pt}` : `Esta é "${w.en}".` }))
+    };
+  }
+  return {
+    key: "Significado: " + w.en, q: w.en, hint: "O que quer dizer?", speak: w.en, lang: "en-GB",
+    stage: `<div class="word en ${nivel > 1 ? "md" : ""}">${esc(w.en)}</div>`,
+    choices: shuffle([w, ...distract]).map(x => ({ t: x.emoji + "  " + x.pt, ok: x.en === w.en, why: x.en === w.en ? `Sim! ${w.en} = ${w.pt}` : `"${w.en}" quer dizer ${w.pt}.` }))
+  };
+}
+function dialogoItem(d) {
+  return {
+    key: "Diálogo: " + d.diz, q: "Alguém diz:", hint: "Quer dizer: " + d.pt, speak: d.diz, lang: "en-GB",
+    stage: `<div class="word en md">"${esc(d.diz)}"</div>`,
+    choices: shuffle([d.certo, ...d.errados]).map(t => ({ t, ok: t === d.certo, why: t === d.certo ? "Boa resposta! Combina com a pergunta." : `Essa não combina. Uma boa resposta é: "${d.certo}"` }))
+  };
+}
+function conversaItem(c) {
+  return {
+    key: "Conversa: " + c.diz, q: c.sit, hint: "Qual a melhor resposta?", speak: c.diz, lang: "en-GB",
+    stage: `<div class="word en md">"${esc(c.diz)}"</div>`,
+    choices: shuffle([c.certo, ...c.errados]).map(t => ({ t, ok: t === c.certo, why: t === c.certo ? c.why : `Melhor: "${c.certo}". ${c.why}` }))
   };
 }
 
-// Perguntas que ela errou e ainda nao acertou de primeira (so neste aparelho)
-function getErros() {
-  try { return JSON.parse(lsGet("mc-erros") || "{}"); } catch (e) { return {}; }
+// Candidatos de um mundo num nível: [{key, make()}]
+function candidatos(w, n) {
+  if (w === "time") {
+    const out = C.tempo.filter(x => x.n === n && usavel(x.q + x.hint)).map(x => ({ key: x.q, make: () => bankItem(x) }));
+    if (n === 3 || n === 4) for (let i = 0; i < 8; i++) { const it = timeGen(n); out.push({ key: it.key, make: () => it }); }
+    return out;
+  }
+  if (w === "soc") return C.social.filter(x => x.n === n && usavel(x.q + x.hint)).map(x => ({ key: x.q, make: () => bankItem(x) }));
+  if (w === "en") {
+    if (n === 1 || n === 2) {
+      const lista = n === 1 ? C.words : C.frases;
+      const out = [];
+      lista.forEach(x => ["hear", "mean"].forEach(k => out.push({ key: (k === "hear" ? "Ouvir: " : "Significado: ") + x.en, make: () => wordItem(x, k, lista, n) })));
+      return out;
+    }
+    if (n === 3) return C.dialogos.map(d => ({ key: "Diálogo: " + d.diz, make: () => dialogoItem(d) }));
+    return C.conversa.map(c => ({ key: "Conversa: " + c.diz, make: () => conversaItem(c) }));
+  }
+  const out = [];
+  for (let i = 0; i < 12; i++) { const it = mathItem(n); out.push({ key: it.key, make: () => it }); }
+  return out;
 }
+
+// Perguntas que ela errou e ainda não acertou de primeira (só neste aparelho)
+function getErros() { return lsJSON("mc-erros", {}); }
 function bumpErro(chave, d) {
   const e = getErros();
   const n = (e[chave] || 0) + d;
   if (n > 0) e[chave] = Math.min(n, 5); else delete e[chave];
   lsSet("mc-erros", JSON.stringify(e));
 }
-
-// Escolhe n sem repetir; ate 2 das que ela errou antes
-function sorteia(cands, n, mundo) {
+// Escolhe n sem repetir; até 2 das que ela errou antes
+function sorteia(cands, n, mundo, usadas) {
   const e = getErros();
-  const erradas = shuffle(cands.filter(c => e[mundo + "|" + c.key]));
-  const resto = shuffle(cands.filter(c => !e[mundo + "|" + c.key]));
+  const vistos = new Set(usadas || []);
+  const uniq = [];
+  for (const c of cands) { if (!vistos.has(c.key)) { vistos.add(c.key); uniq.push(c); } }
+  const erradas = shuffle(uniq.filter(c => e[mundo + "|" + c.key]));
+  const resto = shuffle(uniq.filter(c => !e[mundo + "|" + c.key]));
   const out = erradas.slice(0, 2);
   for (const c of resto) { if (out.length >= n) break; out.push(c); }
   for (const c of erradas.slice(2)) { if (out.length >= n) break; out.push(c); }
   return shuffle(out);
 }
-
-function missaoNumeros(n) {
-  const e = getErros();
-  const tipos = ["count", "more", "add", "next"];
-  const pesos = tipos.slice();
-  tipos.forEach(k => { for (let i = 0; i < (e["math|#" + k] || 0); i++) pesos.push(k); });
-  const out = [], vistas = new Set();
-  for (let t = 0; t < 60 && out.length < n; t++) {
-    const it = mathItem(pick(pesos));
-    if (vistas.has(it.key)) continue;
-    vistas.add(it.key);
-    out.push(it);
-  }
-  return out;
+function geraItens(w, n, qtd, usadas) {
+  let cands = candidatos(w, n);
+  if (cands.length < qtd && n > 1) cands = cands.concat(candidatos(w, n - 1));
+  return sorteia(cands, qtd, w, usadas).map(c => {
+    const it = c.make();
+    it.key = c.key;
+    it.nivel = n;
+    return it;
+  });
 }
 
-function buildMission(world, n) {
-  if (world === "math") return missaoNumeros(n);
-  if (world === "time") return sorteia(timeBank.map(x => ({ key: x.q, x })), n, "time").map(c => timeItem(c.x));
-  if (world === "soc") return sorteia(social.map(x => ({ key: x.q, x })), n, "soc").map(c => socItem(c.x));
-  const combos = [];
-  words.forEach(w => ["hear", "mean"].forEach(kind => combos.push({ key: (kind === "hear" ? "Ouvir: " : "Significado: ") + w.en, w, kind })));
-  return sorteia(combos, n, "en").map(c => enItem(c.w, c.kind));
-}
-
+// ---------- jogo ----------
 function renderItem() {
   state.locked = false;
   state.tries = 0;
+  if (state.mode === "colocacao" && !state.queue[state.step]) {
+    const usadas = state.queue.map(x => x.key);
+    const it = geraItens(state.world, state.place.cur, 1, usadas)[0] || geraItens(state.world, 1, 1, usadas)[0];
+    state.queue.push(it);
+  }
   state.item = state.queue[state.step];
-  $("q").textContent = state.item.q;
-  $("hint").textContent = state.item.hint;
-  $("stage").innerHTML = state.item.stage;
+  const it = state.item;
+  const nov = state.mode === "nov";
+  $("q").className = "q" + (nov ? " nov" : "");
+  $("q").textContent = it.q;
+  $("hint").className = "hint" + (nov && it.hint ? " pq" : "");
+  $("hint").textContent = it.hint;
+  $("stage").innerHTML = it.stage;
   $("feedback").className = "feedback";
   $("feedback").textContent = "";
   $("nextBtn").classList.remove("show");
   $("bar").style.width = (state.step / state.total * 100) + "%";
-  $("dots").innerHTML = Array.from({length: state.total}, (_, i) =>
+  $("dots").innerHTML = Array.from({ length: state.total }, (_, i) =>
     `<div class="dot ${i < state.step ? "on" : ""}"></div>`).join("");
   const box = $("choices");
-  box.className = "choices" + (state.item.choices.length === 2 ? " two" : "");
+  box.className = "choices" + (it.choices.length === 2 ? " two" : "");
   box.innerHTML = "";
-  state.item.choices.forEach((c, idx) => {
+  it.choices.forEach((c, idx) => {
     const b = document.createElement("button");
     b.className = "choice" + (c.t.length > 12 ? " small" : "");
     b.textContent = c.t;
     b.onclick = () => answer(idx);
     box.appendChild(b);
   });
-  speak(state.item.speak || state.item.q, state.item.lang || "pt-BR");
+  if (!it.choices.length) {
+    $("nextBtn").textContent = state.step + 1 >= state.total ? "Fim do capítulo ✨" : "Continuar ›";
+    $("nextBtn").classList.add("show");
+  }
+  const falar = it.lang ? it.speak : (it.speak || it.q) + (nov && it.hint ? ". " + it.hint : "");
+  speak(falar, it.lang || "pt-BR");
 }
 
 function registraErro(chosen) {
   const it = state.item;
   const certa = it.choices.find(c => c.ok);
-  if (state.tries === 1) {
-    bumpErro(state.world + "|" + (it.key || it.q), 1);
-    if (it.kind) bumpErro("math|#" + it.kind, 1);
-  }
+  if (state.tries === 1) bumpErro(state.world + "|" + it.key, 1);
   track({
-    tipo: "erro", mundo: state.world, perg: it.key || it.q, q: it.q,
+    tipo: "erro", mundo: state.world, perg: it.key, q: it.q,
     esc: chosen.t, certa: certa ? certa.t : "", why: certa ? certa.why : ""
   });
 }
@@ -1065,12 +877,13 @@ function registraErro(chosen) {
 function answer(idx) {
   if (state.locked) return;
   const buttons = [...$("choices").children];
-  const chosen = state.item.choices[idx];
+  const it = state.item;
+  const chosen = it.choices[idx];
   const fb = $("feedback");
   state.tries += 1;
   if (!chosen.ok) registraErro(chosen);
-  // Errou na 1a tentativa (e ha mais de 2 opcoes): deixa tentar de novo sem mostrar a resposta
-  const retry = !chosen.ok && state.tries === 1 && state.item.choices.length > 2;
+  // Errou na 1a tentativa (e há mais de 2 opções): tenta de novo sem mostrar a resposta
+  const retry = !chosen.ok && state.tries === 1 && it.choices.length > 2;
   if (retry) {
     buttons[idx].classList.add("bad");
     buttons[idx].disabled = true;
@@ -1082,51 +895,246 @@ function answer(idx) {
   state.locked = true;
   const firstTry = chosen.ok && state.tries === 1;
   buttons.forEach((b, i) => {
-    if (state.item.choices[i].ok) b.classList.add("good");
+    if (it.choices[i].ok) b.classList.add("good");
     if (i === idx && !chosen.ok) b.classList.add("bad");
   });
   fb.className = "feedback show " + (chosen.ok ? "ok" : "no");
-  fb.textContent = (chosen.ok ? "Boa. " : "Quase. ") + chosen.why;
+  fb.textContent = (chosen.ok ? "Boa! " : "Quase. ") + chosen.why;
   if (firstTry) {
     state.stars += 1;
+    state.firsts += 1;
     saveStars();
-    bumpErro(state.world + "|" + (state.item.key || state.item.q), -1);
-    if (state.item.kind) bumpErro("math|#" + state.item.kind, -1);
+    bumpErro(state.world + "|" + it.key, -1);
   }
+  if (state.mode === "colocacao") {
+    const p = state.place;
+    if (firstTry) { p.maxOk = Math.max(p.maxOk, p.cur); p.cur = Math.min(maxNivel(state.world), p.cur + 1); }
+    else p.cur = Math.max(1, p.cur - 1);
+  }
+  if (state.world !== "nov") bumpStats(state.world, firstTry);
   marcaDia();
-  renderStreak();
-  track({ tipo: "resp", mundo: state.world, ok: firstTry, tent: state.tries === 1 ? 1 : 2, perg: state.item.key || state.item.q });
+  const ev = { tipo: "resp", mundo: state.world, ok: firstTry, tent: state.tries === 1 ? 1 : 2, perg: it.key };
+  if (it.nivel) ev.nivel = it.nivel;
+  track(ev);
   $("nextBtn").classList.add("show");
-  $("nextBtn").textContent = state.step + 1 >= state.total ? "Ver estrela" : "Próxima";
+  $("nextBtn").textContent = state.step + 1 >= state.total ? "Ver estrela ⭐" : "Próxima";
   speak(fb.textContent, "pt-BR");
 }
 
 function start(world) {
   state.world = world;
   state.step = 0;
-  state.queue = buildMission(world, state.total);
+  state.firsts = 0;
+  const L = getLvl(world);
+  if (!L.placed) {
+    state.mode = "colocacao";
+    state.place = { cur: nivelInicial(world), maxOk: 0 };
+    state.queue = [];
+    state.total = 5;
+  } else {
+    state.mode = "missao";
+    state.queue = geraItens(world, L.n, 5);
+    state.total = state.queue.length;
+  }
   show("play");
   renderItem();
 }
 
+function startCap(i) {
+  const cap = C.novelinha[i];
+  state.world = "nov";
+  state.mode = "nov";
+  state.cap = i;
+  state.step = 0;
+  state.firsts = 0;
+  state.queue = cap.cenas.map((c, j) => ({
+    key: "Cap" + (i + 1) + "-cena" + (j + 1),
+    q: fill(c.texto),
+    hint: c.pergunta ? fill(c.pergunta.q) : "",
+    stage: `<div class="word">${esc(c.emoji)}</div>`,
+    choices: c.pergunta ? shuffle(c.pergunta.opcoes).map(o => ({ t: fill(o.t), ok: o.ok, why: fill(o.why) })) : []
+  }));
+  state.total = state.queue.length;
+  show("play");
+  renderItem();
+}
+
+// ---------- figurinhas ----------
+function getFigs() { return lsJSON("mc-figs", []); }
+function ganhaFig(id) {
+  const figs = getFigs();
+  if (!id) {
+    const livres = C.figurinhas.filter(f => !f.especial && !figs.includes(f.id));
+    if (!livres.length) return null;
+    id = pick(livres).id;
+  }
+  if (figs.includes(id)) return null;
+  figs.push(id);
+  lsSet("mc-figs", JSON.stringify(figs));
+  return figInfo(id);
+}
+function figInfo(id) {
+  if (id.startsWith("fx-")) return { id, e: "🥋", t: "Faixa " + id.slice(3), col: "Faixas" };
+  return C.figurinhas.find(f => f.id === id);
+}
+
+// ---------- fim de missão ----------
+function terminaMissao() {
+  const w = state.world;
+  let titulo = "Missão de " + C.mundos[w].nome + " feita!";
+  let texto = state.firsts + " de " + state.total + " de primeira. Estrelas: " + state.stars + ".";
+  let fig = null;
+  let big = "🌟";
+  if (state.mode === "nov") {
+    const caps = lsJSON("mc-caps", []);
+    if (!caps.includes(state.cap)) { caps.push(state.cap); lsSet("mc-caps", JSON.stringify(caps)); }
+    const cap = C.novelinha[state.cap];
+    titulo = "Capítulo " + (state.cap + 1) + " concluído!";
+    big = cap.emoji;
+    fig = ganhaFig(cap.fig);
+    const prox = C.novelinha[state.cap + 1];
+    texto = prox ? (state.stars >= prox.estrelas ? "O próximo capítulo já está liberado! 📺" : "Faltam " + (prox.estrelas - state.stars) + " estrelas para o próximo capítulo. Faça missões para liberar! ⭐") : "Você viu todos os capítulos! Novos em breve 🌻";
+    track({ tipo: "missao", mundo: "nov" });
+  } else {
+    const L = getLvl(w);
+    const de = L.placed ? L.n : 0;
+    if (state.mode === "colocacao") {
+      L.n = state.place.maxOk || 1;
+      L.placed = true;
+      L.hist = [];
+      titulo = "Pronto! Já sei o seu nível em " + C.mundos[w].nome;
+      texto = "Nível " + L.n + ": " + C.mundos[w].niveis[L.n - 1] + ". Vamos crescer juntas!";
+    } else {
+      L.hist = (L.hist || []).concat(state.firsts).slice(-2);
+      if (L.hist.length >= 2 && L.hist.every(s => s >= 4) && L.n < maxNivel(w)) {
+        L.n += 1; L.hist = [];
+        big = "🚀";
+        titulo = "Você subiu para o nível " + L.n + "!";
+        texto = "Agora: " + C.mundos[w].niveis[L.n - 1] + ".";
+      } else if (state.firsts <= 2 && L.n > 1) {
+        L.n -= 1; L.hist = []; // desce sem anunciar
+      }
+    }
+    setLvl(w, L);
+    if (L.n !== de) track({ tipo: "nivel", mundo: w, de, para: L.n });
+    track({ tipo: "missao", mundo: w });
+    fig = ganhaFig();
+  }
+  marcaMdia(w);
+  $("rewardBig").textContent = big;
+  $("rewardTitle").textContent = titulo;
+  $("rewardText").textContent = texto;
+  $("rewardLua").textContent = (perfil.luaEmoji || "🌙") + " " + fala(C.fimMissao);
+  $("rewardFig").classList.toggle("hidden", !fig);
+  if (fig) { $("rewardFigE").textContent = fig.e; $("rewardFigT").textContent = "Figurinha nova: " + fig.t + "!"; }
+  $("againBtn").textContent = state.mode === "nov" ? "Ver capítulos" : "Outra missão";
+  show("reward");
+  speak(titulo + ". " + $("rewardLua").textContent, "pt-BR");
+}
+
 $("nextBtn").onclick = () => {
   state.step += 1;
-  if (state.step >= state.total) {
-    $("rewardTitle").textContent = "Missão de " + worlds[state.world] + " feita";
-    $("rewardText").textContent = "5 passos. Estrelas guardadas: " + state.stars + ". Pode parar ou fazer outra.";
-    track({ tipo: "missao", mundo: state.world });
-    show("reward");
-    speak("Missão feita. Muito bem.", "pt-BR");
-  } else renderItem();
+  if (state.step >= state.total) terminaMissao();
+  else renderItem();
 };
-$("againBtn").onclick = () => start(state.world);
+$("againBtn").onclick = () => {
+  if (state.mode === "nov") abreNov();
+  else if (state.mode === "faixa") start(getMdia().lista.find(w => w !== "nov") || "math");
+  else start(state.world);
+};
+
+// ---------- missão do dia ----------
+function getMdia() {
+  let m = lsJSON("mc-mdia", null);
+  if (m && m.dia === hojeKey()) return m;
+  const stats = getStats();
+  const ws = ["math", "time", "en", "soc"];
+  const taxa = (w) => { const r = (stats[w] || {}).r || []; return r.length ? r.reduce((a, b) => a + b, 0) / r.length : 0.5; };
+  const fraco = ws.slice().sort((a, b) => taxa(a) - taxa(b) || ((stats[a] || {}).n || 0) - ((stats[b] || {}).n || 0))[0];
+  const fav = ws.filter(w => w !== fraco).sort((a, b) => ((stats[b] || {}).n || 0) - ((stats[a] || {}).n || 0))[0];
+  const terceiro = capLiberado() >= 0 ? "nov" : pick(ws.filter(w => w !== fraco && w !== fav));
+  m = { dia: hojeKey(), lista: [fraco, fav, terceiro], feitas: [] };
+  lsSet("mc-mdia", JSON.stringify(m));
+  return m;
+}
+function marcaMdia(w) {
+  const m = getMdia();
+  if (m.lista.includes(w) && !m.feitas.includes(w)) {
+    m.feitas.push(w);
+    lsSet("mc-mdia", JSON.stringify(m));
+  }
+}
+function renderMdia() {
+  const m = getMdia();
+  const row = $("mdiaRow");
+  row.innerHTML = "";
+  m.lista.forEach(w => {
+    const b = document.createElement("button");
+    const feita = m.feitas.includes(w);
+    b.className = "chip" + (feita ? " done" : " on");
+    b.textContent = (feita ? "✅ " : C.mundos[w].emoji + " ") + C.mundos[w].nome;
+    b.onclick = () => (w === "nov" ? abreNov() : start(w));
+    row.appendChild(b);
+  });
+  if (m.feitas.length === m.lista.length) {
+    const s = document.createElement("div");
+    s.style.marginTop = "8px";
+    s.textContent = "Missão do dia completa! Você é demais 🏆";
+    row.appendChild(s);
+  }
+}
+
+// ---------- home ----------
+function horaFala() {
+  const h = new Date().getHours();
+  const base = h < 12 ? C.falasHome.manha : h < 19 ? C.falasHome.tarde : C.falasHome.noite;
+  return fala(Math.random() < 0.7 ? base : C.falasHome.geral);
+}
+function renderWorlds() {
+  const box = $("worlds");
+  const ws = ["math", "time", "en", "soc"];
+  const descr = {
+    math: "Contas do dia a dia, dinheiro, pontos.",
+    time: "Horas, dias, quanto falta.",
+    en: "Palavras e conversas em inglês.",
+    soc: "Como agir com colegas e amigas."
+  };
+  let html = ws.map(w => {
+    const L = getLvl(w);
+    return `<button class="world" data-w="${w}"><div class="ico w-${w}">${C.mundos[w].emoji}</div>
+      <div><b>${C.mundos[w].nome}</b><span>${descr[w]}</span><div class="lvl">${L.placed ? "Nível " + L.n + " de " + maxNivel(w) : "Teste rápido para começar"}</div></div><div class="go">›</div></button>`;
+  }).join("");
+  html += `<button class="world" data-w="nov"><div class="ico w-nov">📺</div><div><b>Novelinha</b><span>Turma do Girassol: você decide o que a Bia faz.</span></div><div class="go">›</div></button>`;
+  if (config.chat) html += `<button class="world" data-w="chat"><div class="ico w-chat">${esc(perfil.luaEmoji || "🌙")}</div><div><b>Conversar com a ${esc(perfil.lua || "Lua")}</b><span>Bater papo ou treinar uma conversa.</span></div><div class="go">›</div></button>`;
+  html += `<button class="world" data-w="alb"><div class="ico w-alb">🎁</div><div><b>Meu álbum</b><span>${getFigs().length} figurinhas coletadas.</span></div><div class="go">›</div></button>`;
+  box.innerHTML = html;
+  box.querySelectorAll(".world").forEach(b => b.onclick = () => {
+    const w = b.dataset.w;
+    if (w === "nov") abreNov();
+    else if (w === "chat") abreChat();
+    else if (w === "alb") abreAlbum();
+    else start(w);
+  });
+}
 function goHome() {
   if (window.speechSynthesis) speechSynthesis.cancel();
+  $("homeAv").textContent = perfil.luaEmoji || "🌙";
+  $("homeName").textContent = perfil.nome || "Clara";
+  $("homeSub").textContent = "com a " + (perfil.lua || "Lua") + (perfil.jj ? " · faixa " + (perfil.faixa || "").toLowerCase() : "");
+  $("bubble").textContent = (perfil.luaEmoji || "🌙") + " " + horaFala();
+  const fezHumor = lsGet("mc-humor-dia") === hojeKey();
+  const h = new Date().getHours();
+  $("humorBtn").classList.toggle("hl", !fezHumor && h >= 17);
+  $("humorBtn").textContent = fezHumor ? "💬 Contar mais sobre o meu dia" : "💬 Como foi o seu dia?";
   renderStreak();
+  renderMdia();
+  renderWorlds();
+  saveStars();
   show("home");
 }
 $("homeBtn").onclick = goHome;
 $("backBtn").onclick = goHome;
+document.querySelectorAll("[data-home]").forEach(b => b.onclick = goHome);
 $("speakBtn").onclick = () => speak(state.item ? (state.item.speak || state.item.q) : "Clara", state.item && state.item.lang || "pt-BR", true);
 $("muteBtn").onclick = () => {
   state.muted = !state.muted;
@@ -1134,14 +1142,384 @@ $("muteBtn").onclick = () => {
   if (state.muted && window.speechSynthesis) speechSynthesis.cancel();
   renderMute();
 };
-document.querySelectorAll(".world").forEach(b => b.onclick = () => start(b.dataset.world));
-$("resetBtn").onclick = () => {
-  if (confirm("Zerar as estrelas?")) { state.stars = 0; saveStars(); }
-};
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+$("cfgBtn").onclick = () => abreOnboard(true);
+$("humorBtn").onclick = abreHumor;
+
+// ---------- Novelinha ----------
+function capLiberado() {
+  // índice do próximo capítulo disponível e ainda não visto, ou -1
+  const caps = lsJSON("mc-caps", []);
+  for (let i = 0; i < C.novelinha.length; i++) {
+    if (caps.includes(i)) continue;
+    const ok = i === 0 || (caps.includes(i - 1) && state.stars >= C.novelinha[i].estrelas);
+    return ok ? i : -1;
+  }
+  return -1;
 }
-$("parentBtn").onclick = () => $("parentNote").classList.toggle("hidden");
+function abreNov() {
+  const caps = lsJSON("mc-caps", []);
+  const box = $("capList");
+  box.innerHTML = "";
+  C.novelinha.forEach((cap, i) => {
+    const visto = caps.includes(i);
+    const aberto = i === 0 || (caps.includes(i - 1) && state.stars >= cap.estrelas);
+    const b = document.createElement("button");
+    b.className = "world cap" + (aberto ? "" : " lock");
+    const falta = !caps.includes(i - 1) && i > 0 ? "Veja o capítulo " + i + " primeiro" : "Faltam " + Math.max(0, cap.estrelas - state.stars) + " estrelas ⭐";
+    b.innerHTML = `<div class="ico w-nov">${aberto ? cap.emoji : "🔒"}</div><div><b>Capítulo ${i + 1}: ${esc(cap.titulo)}</b><span>${visto ? "✅ Visto — pode ver de novo" : aberto ? "Novo! Toque para ver" : falta}</span></div>`;
+    b.onclick = () => { if (aberto) startCap(i); else speak(falta, "pt-BR"); };
+    box.appendChild(b);
+  });
+  show("nov");
+}
+
+// ---------- álbum ----------
+function abreAlbum() {
+  const figs = getFigs();
+  const cols = {};
+  C.figurinhas.forEach(f => { (cols[f.col] = cols[f.col] || []).push(f); });
+  let html = `<div class="panel">${figs.length} figurinhas. Cada missão feita dá uma figurinha nova!</div>`;
+  if (perfil.jj) {
+    const fx = figs.filter(id => id.startsWith("fx-")).map(figInfo);
+    html += `<h3>🥋 Minhas faixas</h3><div class="figs">${fx.map(f => `<div class="figc"><div>${f.e}</div>${esc(f.t)}</div>`).join("") || `<div class="figc"><div>🥋</div>Faixa ${esc(perfil.faixa)}</div>`}</div>`;
+  }
+  for (const [col, lista] of Object.entries(cols)) {
+    html += `<h3>${esc(col)}</h3><div class="figs">${lista.map(f => figs.includes(f.id)
+      ? `<div class="figc"><div>${f.e}</div>${esc(f.t)}</div>`
+      : `<div class="figc off"><div>${f.e}</div>?</div>`).join("")}</div>`;
+  }
+  $("albumBody").innerHTML = html;
+  show("album");
+}
+
+// ---------- como foi o dia ----------
+let humorSel = { rosto: -1, chips: [] };
+function abreHumor() {
+  humorSel = { rosto: -1, chips: [] };
+  $("humorQ").textContent = (perfil.luaEmoji || "🌙") + " " + fill("Oi, {nome}! Como foi o seu dia hoje?");
+  $("faces").innerHTML = "";
+  C.humor.rostos.forEach((r, i) => {
+    const b = document.createElement("button");
+    b.textContent = r.e;
+    b.title = r.t;
+    b.onclick = () => { humorSel.rosto = i; [...$("faces").children].forEach((x, j) => x.classList.toggle("on", j === i)); speak(r.t, "pt-BR"); };
+    $("faces").appendChild(b);
+  });
+  $("humorChips").innerHTML = "";
+  C.humor.chips.filter(c => usavel(c.t + c.r)).forEach(c => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = c.t;
+    b.onclick = () => {
+      const i = humorSel.chips.indexOf(c.t);
+      if (i >= 0) humorSel.chips.splice(i, 1); else humorSel.chips.push(c.t);
+      b.classList.toggle("on", i < 0);
+    };
+    $("humorChips").appendChild(b);
+  });
+  $("humorTxt").value = "";
+  $("humorResp").classList.add("hidden");
+  $("humorSend").classList.remove("hidden");
+  show("humor");
+  speak($("humorQ").textContent, "pt-BR");
+}
+$("humorSend").onclick = () => {
+  const texto = $("humorTxt").value.trim().slice(0, 500);
+  if (humorSel.rosto < 0 && !humorSel.chips.length && !texto) {
+    $("humorResp").textContent = "Escolha um rostinho ou escreva alguma coisa 💛";
+    $("humorResp").classList.remove("hidden");
+    return;
+  }
+  track({ tipo: "humor", rosto: humorSel.rosto, chips: humorSel.chips, texto });
+  lsSet("mc-humor-dia", hojeKey());
+  lsSet("mc-humor-ult", JSON.stringify({ dia: hojeKey(), chips: humorSel.chips, rosto: humorSel.rosto }));
+  marcaDia();
+  const partes = [];
+  if (humorSel.rosto >= 0) partes.push(C.humor.rostos[humorSel.rosto].r);
+  const graves = ["Tive um problema", "Riram de mim", "Fiquei sozinha"];
+  const chipR = C.humor.chips.find(c => humorSel.chips.includes(c.t) && graves.includes(c.t)) || C.humor.chips.find(c => humorSel.chips.includes(c.t));
+  if (chipR) partes.push(chipR.r);
+  if (texto) partes.push(C.humor.texto);
+  const resp = (perfil.luaEmoji || "🌙") + " " + fill(partes.slice(0, 2).join(" "));
+  $("humorResp").textContent = resp;
+  $("humorResp").classList.remove("hidden");
+  $("humorSend").classList.add("hidden");
+  speak(resp, "pt-BR");
+};
+
+// ---------- chat ----------
+let chat = { modo: "papo", cenario: null, msgs: [], esperando: false };
+function abreChat() {
+  const box = $("chatModes");
+  box.innerHTML = "";
+  const modos = [{ id: "papo", t: "💬 Conversar" }].concat(C.cenarios.filter(c => usavel(c.papel + c.t)).map(c => ({ id: c.id, t: c.e + " Treinar: " + c.t })));
+  modos.forEach(m => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.dataset.m = m.id;
+    b.textContent = m.t;
+    b.onclick = () => iniciaChat(m.id);
+    box.appendChild(b);
+  });
+  $("chatTitle").textContent = (perfil.luaEmoji || "🌙") + " " + (perfil.lua || "Lua");
+  show("chat");
+  iniciaChat(chat.modo || "papo");
+}
+function iniciaChat(id) {
+  chat = { modo: id === "papo" ? "papo" : "treino", cenario: id === "papo" ? null : id, msgs: [], esperando: false };
+  [...$("chatModes").children].forEach(b => b.classList.toggle("on", b.dataset.m === id));
+  $("chatLog").innerHTML = "";
+  const cen = C.cenarios.find(c => c.id === id);
+  const oi = cen
+    ? fill(`Vamos treinar! Imagina: ${cen.t.toLowerCase()}. Eu faço o papel da outra menina. Começa você: diga oi! 😊`)
+    : fill("Oi, {nome}! Que bom te ver. Sobre o que vamos conversar hoje? 😊");
+  addMsg("lua", oi);
+  chat.msgs.push({ role: "assistant", content: oi });
+}
+function addMsg(quem, txt, extra) {
+  const d = document.createElement("div");
+  d.className = "msg " + quem + (extra ? " " + extra : "");
+  d.textContent = txt;
+  $("chatLog").appendChild(d);
+  $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  return d;
+}
+$("chatForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const txt = $("chatIn").value.trim().slice(0, 300);
+  if (!txt || chat.esperando) return;
+  $("chatIn").value = "";
+  addMsg("eu", txt);
+  chat.msgs.push({ role: "user", content: txt });
+  chat.esperando = true;
+  const w = addMsg("lua", "digitando...", "wait");
+  let resp = fill("Não consegui responder agora. Tenta daqui a pouco 💛");
+  try {
+    const r = await fetch("/api/conversa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: deviceId(), modo: chat.modo, cenario: chat.cenario, msgs: chat.msgs.slice(-10) })
+    });
+    if (r.ok) resp = (await r.json()).resposta || resp;
+    else if (r.status === 429) resp = fill("Por hoje já conversamos bastante, {nome}! Amanhã tem mais 💛 Que tal uma missão?");
+    else if (r.status === 403) resp = "A conversa está desligada agora. Fala com os seus pais 💛";
+  } catch (err) {
+    resp = "Estou sem internet agora. Enquanto isso, que tal uma missão? 💛";
+  }
+  w.remove();
+  addMsg("lua", resp);
+  chat.msgs.push({ role: "assistant", content: resp });
+  chat.esperando = false;
+  speak(resp, "pt-BR");
+};
+
+// ---------- onboarding / meus gostos ----------
+const NOVELAS = ["Carrossel", "Caverna Encantada", "Go! Viva do Seu Jeito", "A Infância de Romeu e Julieta", "Chiquititas", "Cúmplices de um Resgate"];
+const AVATARES = ["🌙", "🦄", "🐱", "🌸", "⭐", "🐼", "🦋", "🐰"];
+let ob = { passo: 0, editando: false, p: null };
+const PASSOS = ["eu", "novelas", "influs", "jj", "cor", "push"];
+function abreOnboard(editando) {
+  ob = { passo: 0, editando, p: JSON.parse(JSON.stringify(perfil)) };
+  renderOb();
+  show("onboard");
+}
+function renderOb() {
+  const p = ob.p;
+  const passo = PASSOS[ob.passo];
+  $("obDots").innerHTML = PASSOS.map((_, i) => `<div class="dot ${i <= ob.passo ? "on" : ""}"></div>`).join("");
+  $("obBack").style.visibility = ob.passo === 0 && !ob.editando ? "hidden" : "visible";
+  $("obNext").textContent = ob.passo === PASSOS.length - 1 ? "Pronto! ✨" : "Próximo ›";
+  const body = $("obBody");
+  let h = "";
+  if (passo === "eu") {
+    h = `<div class="bubble">${esc(p.luaEmoji)} Oi! Eu vou ser a sua companheira aqui. Vamos nos conhecer?</div>
+      <label class="field"><span>Como você se chama?</span><input class="inp" id="obNome" maxlength="30" value="${esc(p.nome)}"></label>
+      <label class="field"><span>Que nome você quer me dar?</span><input class="inp" id="obLua" maxlength="20" value="${esc(p.lua)}"></label>
+      <div class="field"><span>Escolha o meu rostinho</span><div class="avs" id="obAvs">${AVATARES.map(a => `<button data-a="${a}" class="${a === p.luaEmoji ? "on" : ""}">${a}</button>`).join("")}</div></div>`;
+  } else if (passo === "novelas") {
+    const outras = p.novelas.filter(n => !NOVELAS.includes(n));
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quais novelas você ama? Pode escolher várias!</div>
+      <div class="row" id="obNov">${NOVELAS.map(n => `<button class="chip ${p.novelas.includes(n) ? "on" : ""}" data-n="${esc(n)}">${esc(n)}</button>`).join("")}</div>
+      <label class="field" style="margin-top:14px"><span>Outra novela ou série que você gosta</span><input class="inp" id="obNovOutra" maxlength="40" value="${esc(outras.join(", "))}"></label>`;
+  } else if (passo === "influs") {
+    const vals = p.influs.concat(["", "", "", "", ""]).slice(0, 5);
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quem você mais gosta de assistir? Escreva até 5 nomes.</div>
+      ${vals.map((v, i) => `<label class="field"><span>Influencer ${i + 1}</span><input class="inp obInf" maxlength="30" value="${esc(v)}"></label>`).join("")}`;
+  } else if (passo === "jj") {
+    const opts = (sel) => C.faixas.map(f => `<option ${f === sel ? "selected" : ""}>${esc(f)}</option>`).join("");
+    h = `<div class="bubble">${esc(p.luaEmoji)} Me conta do seu esporte!</div>
+      <div class="row" style="margin:0 0 14px"><button class="chip ${p.jj ? "on" : ""}" id="obJjS">🥋 Faço jiu-jitsu</button><button class="chip ${!p.jj ? "on" : ""}" id="obJjN">Não faço</button></div>
+      <div id="obJjBox" class="${p.jj ? "" : "hidden"}">
+        <label class="field"><span>Nome da academia</span><input class="inp" id="obAcad" maxlength="30" value="${esc(p.academia)}"></label>
+        <label class="field"><span>Minha faixa agora</span><select class="inp" id="obFaixa">${opts(p.faixa)}</select></label>
+        <label class="field"><span>Próxima faixa</span><select class="inp" id="obProx">${opts(p.proxima)}</select></label>
+        ${ob.editando ? `<button class="bigbtn hl" id="obMudei">🎉 Mudei de faixa!</button>` : ""}
+      </div>`;
+  } else if (passo === "cor") {
+    h = `<div class="bubble">${esc(p.luaEmoji)} Qual é a sua cor favorita?</div>
+      <div class="cores">${Object.entries(CORES).map(([k, v]) => `<button class="cor ${p.cor === k ? "on" : ""}" data-c="${k}" style="background:${v}" aria-label="${k}"></button>`).join("")}</div>`;
+  } else {
+    const iosFora = isIOS() && !isStandalone();
+    const pushOk = "Notification" in window && Notification.permission === "granted";
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quer que eu te mande bom dia às 7, pergunte do seu dia às 19 e diga boa noite às 21?</div>
+      ${iosFora ? `<div class="panel"><b class="t">Primeiro, coloque a app na tela inicial:</b>1. Toque em compartilhar (quadrado com seta ⬆️).<br>2. Toque em "Adicionar à Tela de Início".<br>3. Abra a Clara pela tela inicial e volte aqui.</div>` : ""}
+      ${pushOk ? `<div class="panel">✅ As mensagens já estão ligadas!</div>` : `<button class="bigbtn hl" id="obPush">🔔 Sim, quero!</button>`}
+      <div class="hint" id="obPushMsg"></div>`;
+  }
+  body.innerHTML = h;
+  // ligações
+  if (passo === "eu") $("obAvs").querySelectorAll("button").forEach(b => b.onclick = () => {
+    p.luaEmoji = b.dataset.a;
+    $("obAvs").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  });
+  if (passo === "novelas") $("obNov").querySelectorAll(".chip").forEach(b => b.onclick = () => {
+    const n = b.dataset.n, i = p.novelas.indexOf(n);
+    if (i >= 0) p.novelas.splice(i, 1); else p.novelas.push(n);
+    b.classList.toggle("on", i < 0);
+  });
+  if (passo === "jj") {
+    $("obJjS").onclick = () => { p.jj = true; lePasso(); renderOb(); };
+    $("obJjN").onclick = () => { p.jj = false; lePasso(); renderOb(); };
+    if ($("obMudei")) $("obMudei").onclick = () => mudeiFaixa();
+  }
+  if (passo === "cor") body.querySelectorAll(".cor").forEach(b => b.onclick = () => {
+    p.cor = b.dataset.c;
+    body.querySelectorAll(".cor").forEach(x => x.classList.toggle("on", x === b));
+    document.documentElement.style.setProperty("--accent", CORES[p.cor]);
+  });
+  if (passo === "push" && $("obPush")) $("obPush").onclick = async () => {
+    $("obPushMsg").textContent = await ativarPush();
+  };
+}
+function lePasso() {
+  const p = ob.p;
+  const passo = PASSOS[ob.passo];
+  if (passo === "eu") {
+    p.nome = $("obNome").value.trim().slice(0, 30) || "Clara";
+    p.lua = $("obLua").value.trim().slice(0, 20) || "Lua";
+  } else if (passo === "novelas") {
+    const outras = $("obNovOutra").value.split(",").map(s => s.trim()).filter(Boolean).slice(0, 3);
+    p.novelas = p.novelas.filter(n => NOVELAS.includes(n)).concat(outras);
+  } else if (passo === "influs") {
+    p.influs = [...document.querySelectorAll(".obInf")].map(i => i.value.trim().slice(0, 30)).filter(Boolean).slice(0, 5);
+  } else if (passo === "jj" && $("obAcad")) {
+    p.academia = $("obAcad").value.trim().slice(0, 30) || "academia";
+    p.faixa = $("obFaixa").value;
+    p.proxima = $("obProx").value;
+  }
+}
+function mudeiFaixa() {
+  lePasso();
+  const p = ob.p;
+  const nova = p.proxima;
+  const i = C.faixas.indexOf(nova);
+  p.faixa = nova;
+  p.proxima = C.faixas[Math.min(C.faixas.length - 1, i + 1)] || nova;
+  perfil = Object.assign({}, perfil, p);
+  salvaPerfil();
+  track({ tipo: "perfil", perfil: perfilEnvio() });
+  const fig = ganhaFig("fx-" + nova);
+  state.stars += 5;
+  saveStars();
+  $("rewardBig").textContent = "🥋";
+  $("rewardTitle").textContent = "Faixa " + nova.toLowerCase() + "! Parabéns!";
+  $("rewardLua").textContent = (perfil.luaEmoji || "🌙") + " " + fill("Que orgulho, {nome}! Todo o seu esforço no tatame valeu a pena. Você ganhou 5 estrelas de presente! 🎉");
+  $("rewardText").textContent = "Próxima meta: faixa " + p.proxima.toLowerCase() + ".";
+  $("rewardFig").classList.toggle("hidden", !fig);
+  if (fig) { $("rewardFigE").textContent = fig.e; $("rewardFigT").textContent = "Figurinha especial: " + fig.t + "!"; }
+  state.mode = "faixa";
+  $("againBtn").textContent = "Fazer uma missão";
+  show("reward");
+  speak($("rewardTitle").textContent + " " + $("rewardLua").textContent, "pt-BR");
+}
+function perfilEnvio() {
+  const { nome, lua, novelas, influs, jj, academia, faixa, proxima, cor } = perfil;
+  return { nome, lua, novelas, influs, jj, academia, faixa, proxima, cor };
+}
+$("obNext").onclick = () => {
+  lePasso();
+  if (ob.passo < PASSOS.length - 1) { ob.passo += 1; renderOb(); return; }
+  perfil = Object.assign({}, perfil, ob.p, { feito: true });
+  salvaPerfil();
+  track({ tipo: "perfil", perfil: perfilEnvio() });
+  goHome();
+};
+$("obBack").onclick = () => {
+  if (ob.passo === 0) { aplicaCor(); goHome(); return; }
+  lePasso();
+  ob.passo -= 1;
+  renderOb();
+};
+
+// ---------- notificações ----------
+function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+function isStandalone() { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; }
+function b64ToBytes(s) {
+  const pad = "=".repeat((4 - s.length % 4) % 4);
+  const raw = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+async function ativarPush() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    return isIOS() ? "Coloque a app na tela inicial primeiro (veja acima)." : "Este celular não aceita mensagens da app.";
+  }
+  await carregaConfig();
+  if (!config.vapid) return "As mensagens ainda não estão prontas no servidor. Tente mais tarde.";
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") return "Tudo bem! Dá para ligar depois em ⚙️.";
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(config.vapid) });
+    const r = await fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: deviceId(), sub: sub.toJSON() }) });
+    if (!r.ok) throw new Error("servidor");
+    lsSet("mc-push", "1");
+    return "✅ Combinado! Amanhã às 7 tem bom dia 💛";
+  } catch (e) {
+    return "Não consegui ligar agora. Tente de novo com internet.";
+  }
+}
+// Renova a inscrição no servidor (caso o servidor tenha perdido ou a inscrição mudou)
+async function renovaPush() {
+  if (lsGet("mc-push") !== "1" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: deviceId(), sub: sub.toJSON() }) }).catch(() => {});
+  } catch (e) {}
+}
+
+// ---------- abertura ----------
+const params = new URLSearchParams(location.search);
+let destino = params.get("abrir");
+if (destino) history.replaceState(null, "", "/");
+function abertura() {
+  $("abAv").textContent = perfil.luaEmoji || "🌙";
+  $("abMsg").textContent = fala(C.aberturas, "mc-abert");
+  show("abertura");
+  speak($("abMsg").textContent, "pt-BR");
+}
+$("abBtn").onclick = () => {
+  if (destino === "humor") { destino = null; abreHumor(); return; }
+  goHome();
+};
+let escondidoEm = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { escondidoEm = Date.now(); return; }
+  flush();
+  carregaConfig();
+  // Voltou depois de 1 hora: nova mensagem de abertura
+  if (perfil.feito && escondidoEm && Date.now() - escondidoEm > 3600e3 && $("play").classList.contains("hidden")) abertura();
+});
+navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (e) => {
+  if (e.data && e.data.abrir === "humor") abreHumor();
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").then(renovaPush).catch(() => {}));
+}
+if (!perfil.feito) abreOnboard(false);
+else abertura();
 </script>
 </body>
 </html>
