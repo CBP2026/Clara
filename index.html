@@ -86,6 +86,9 @@
   .w-en { background: #2d4a45; }
   .w-soc { background: #5a3058; }
   .w-nov { background: #6b3a2a; }
+  .w-music { background: #2a3f6b; }
+  .cantchip { display: inline-flex; align-items: center; gap: 6px; }
+  .cantchip b { cursor: pointer; opacity: .7; }
   .w-chat { background: #2a5a6b; }
   .w-alb { background: #5a5a2a; }
   .world b { display: block; font-size: 18px; }
@@ -294,6 +297,11 @@
     <div class="grid" id="capList"></div>
   </section>
 
+  <section id="musica" class="hidden">
+    <div class="playhead"><button class="back" data-home>← Início</button><b>🎵 Música</b><span></span></div>
+    <div id="musBody"></div>
+  </section>
+
   <section id="nov" class="hidden">
     <div class="playhead"><button class="back" data-home>← Início</button><b id="novTitulo">📺 Minha novela</b><span></span></div>
     <div id="novBody"></div>
@@ -339,7 +347,7 @@ const state = {
   world: null, mode: "missao", step: 0, total: 5, queue: [], item: null,
   locked: false, tries: 0, firsts: 0, place: null, cap: null
 };
-const SECOES = ["abertura", "onboard", "home", "play", "reward", "humor", "nov", "girassol", "album", "chat"];
+const SECOES = ["abertura", "onboard", "home", "play", "reward", "humor", "nov", "girassol", "musica", "album", "chat"];
 function show(id) {
   SECOES.forEach(s => $(s).classList.toggle("hidden", s !== id));
   window.scrollTo(0, 0);
@@ -347,7 +355,7 @@ function show(id) {
 
 // ---------- perfil ----------
 const PERFIL_PADRAO = {
-  nome: "Clara", lua: "Lua", luaEmoji: "🌙", novelas: [], influs: [],
+  nome: "Clara", lua: "Lua", luaEmoji: "🌙", novelas: [], cantores: [], influs: [],
   jj: true, academia: "Alliance", faixa: "Cinza", proxima: "Cinza e preta", cor: "rosa", feito: false
 };
 let perfil = Object.assign({}, PERFIL_PADRAO, lsJSON("mc-perfil", {}));
@@ -1001,6 +1009,11 @@ function terminaMissao() {
     const prox = C.novelinha[state.cap + 1];
     texto = prox ? (state.stars >= prox.estrelas ? "O próximo capítulo já está liberado! 📺" : "Faltam " + (prox.estrelas - state.stars) + " estrelas para o próximo capítulo. Faça missões para liberar! ⭐") : "Você viu todos os capítulos! Novos em breve 🌻";
     track({ tipo: "missao", mundo: "nov" });
+  } else if (state.mode === "musica") {
+    titulo = "Quiz de música feito!";
+    big = "🎵";
+    track({ tipo: "missao", mundo: "music" });
+    fig = ganhaFig();
   } else {
     const L = getLvl(w);
     const de = L.placed ? L.n : 0;
@@ -1033,7 +1046,7 @@ function terminaMissao() {
   $("rewardLua").textContent = (perfil.luaEmoji || "🌙") + " " + fala(C.fimMissao);
   $("rewardFig").classList.toggle("hidden", !fig);
   if (fig) { $("rewardFigE").textContent = fig.e; $("rewardFigT").textContent = "Figurinha nova: " + fig.t + "!"; }
-  $("againBtn").textContent = state.mode === "nov" ? "Ver capítulos" : "Outra missão";
+  $("againBtn").textContent = state.mode === "nov" ? "Ver capítulos" : state.mode === "musica" ? "Outro quiz" : "Outra missão";
   show("reward");
   speak(titulo + ". " + $("rewardLua").textContent, "pt-BR");
 }
@@ -1045,6 +1058,7 @@ $("nextBtn").onclick = () => {
 };
 $("againBtn").onclick = () => {
   if (state.mode === "nov") abreGirassol();
+  else if (state.mode === "musica") startMusica();
   else if (state.mode === "faixa") start(getMdia().lista.find(w => w !== "nov") || "math");
   else start(state.world);
 };
@@ -1111,6 +1125,7 @@ function renderWorlds() {
       <div><b>${C.mundos[w].nome}</b><span>${descr[w]}</span><div class="lvl">${L.placed ? "Nível " + L.n + " de " + maxNivel(w) : "Teste rápido para começar"}</div></div><div class="go">›</div></button>`;
   }).join("");
   html += `<button class="world" data-w="nov"><div class="ico w-nov">📺</div><div><b>Turma do Girassol</b><span>Você decide o que a Bia faz.</span></div><div class="go">›</div></button>`;
+  html += `<button class="world" data-w="music"><div class="ico w-music">🎵</div><div><b>Música</b><span>${perfil.cantores.length ? "Quiz e curiosidades dos seus cantores." : "Escolha os seus cantores e jogue."}</span></div><div class="go">›</div></button>`;
   { const nv = getNovela(); html += `<button class="world" data-w="minha"><div class="ico w-nov">✏️</div><div><b>${nv.titulo ? esc(nv.titulo) : "Minha novela"}</b><span>${nv.titulo ? "Continue a escrever a sua novela." : "Você inventa tudo: nome, personagens e o que acontece."}</span></div><div class="go">›</div></button>`; }
   html += `<button class="world" data-w="alb"><div class="ico w-alb">🎁</div><div><b>Meu álbum</b><span>${getFigs().length} figurinhas coletadas.</span></div><div class="go">›</div></button>`;
   box.innerHTML = html;
@@ -1118,6 +1133,7 @@ function renderWorlds() {
     const w = b.dataset.w;
     if (w === "nov") abreGirassol();
     else if (w === "minha") abreNov();
+    else if (w === "music") abreMusica();
     else if (w === "alb") abreAlbum();
     else start(w);
   });
@@ -1289,6 +1305,173 @@ function novelaLer(n) {
   $("novVolta").onclick = () => novelaHub(n);
 }
 
+// ---------- Música (os cantores são dela: ela coloca e tira quando quiser) ----------
+function normNome(s) { return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, ""); }
+function distEdit(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+// Acha o cantor no banco de curiosidades (tolera erro de escrita). null = só perguntas abertas.
+function achaArtista(nome) {
+  const n = normNome(nome);
+  if (n.length < 3) return null;
+  for (const a of C.musica) {
+    const nomes = [a.nome].concat(a.apelidos || []).map(normNome);
+    for (const x of nomes) {
+      if (x === n) return a;
+      if (n.length >= 4 && x.startsWith(n)) return a;
+      if (n.length >= 5 && distEdit(x, n) <= (n.length >= 8 ? 2 : 1)) return a;
+    }
+  }
+  return null;
+}
+// Editor de lista: chips com ✕, campo e botão Adicionar
+function montaCantores(box, lista, onChange) {
+  const draw = () => {
+    box.innerHTML = `<div class="row" style="margin:0 0 12px">${lista.map((c, i) => `<span class="chip on cantchip">${esc(c)} <b data-i="${i}" aria-label="Tirar ${esc(c)}">✕</b></span>`).join("") || '<span class="mut">Ainda não tem nenhum.</span>'}</div>
+      ${lista.length < 10 ? `<div class="chatform"><input class="inp" id="cantIn" maxlength="40" placeholder="Nome do cantor ou grupo" autocomplete="off"><button type="button" id="cantAdd">Adicionar</button></div>` : '<div class="mut">Máximo de 10. Tire um para colocar outro.</div>'}`;
+    box.querySelectorAll("b[data-i]").forEach(b => b.onclick = () => { lista.splice(Number(b.dataset.i), 1); draw(); if (onChange) onChange(); });
+    const add = () => {
+      const v = $("cantIn").value.trim().slice(0, 40);
+      if (!v || lista.some(x => normNome(x) === normNome(v))) { $("cantIn").value = ""; return; }
+      lista.push(v); draw(); if (onChange) onChange(); $("cantIn").focus();
+    };
+    if ($("cantAdd")) {
+      $("cantAdd").onclick = add;
+      $("cantIn").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
+    }
+  };
+  draw();
+}
+// Dados guardados dos cantores que ela confirmou (vindos do Deezer pelo servidor)
+function getArtistas() { return lsJSON("mc-artistas", {}); }
+function dadosDe(nome) {
+  const d = getArtistas()[normNome(nome)];
+  return d && d.musicas && d.musicas.length ? { id: "dz" + d.id, nome: d.nome, e: "🎵", musicas: d.musicas, albuns: d.albuns || [], fatos: [] } : null;
+}
+function artistaDe(nome) { return achaArtista(nome) || dadosDe(nome); }
+function musicaItens() {
+  const mine = perfil.cantores.map(artistaDe).filter(Boolean);
+  const unicos = [...new Map(mine.map(a => [a.id, a])).values()];
+  const pool = unicos.concat(C.musica.filter(b => !unicos.some(u => u.id === b.id)));
+  const outros = (a) => shuffle(pool.filter(x => x.id !== a.id));
+  const cands = [];
+  unicos.forEach(a => {
+    (a.albuns || []).forEach(al => {
+      cands.push({ key: a.nome + " álbum: " + al, make: () => {
+        const falsos = shuffle(outros(a).flatMap(x => x.albuns || [])).slice(0, 2);
+        if (falsos.length < 2) return null;
+        return { q: "Qual álbum é de " + a.nome + "?", hint: "Toque no certo.", speak: "Qual álbum é de " + a.nome + "?", stage: `<div class="word">💿</div>`,
+          choices: shuffle([{ t: al, ok: true, why: al + " é de " + a.nome + "." }].concat(falsos.map(f => ({ t: f, ok: false, why: "Não. O certo é " + al + "." })))) };
+      } });
+    });
+    a.musicas.forEach(m => {
+      cands.push({ key: "Quem canta: " + m, make: () => {
+        const falsos = outros(a).slice(0, 2);
+        return { q: "Quem canta “" + m + "”?", hint: "Escolha o cantor.", speak: "Quem canta " + m + "?", stage: `<div class="word en md">🎵 ${esc(m)}</div>`,
+          choices: shuffle([{ t: a.nome, ok: true, why: m + " é de " + a.nome + "." }].concat(falsos.map(f => ({ t: f.nome, ok: false, why: "Essa é de " + a.nome + "." })))) };
+      } });
+      cands.push({ key: a.nome + ": " + m, make: () => {
+        const falsas = shuffle(outros(a).flatMap(x => x.musicas)).slice(0, 2);
+        return { q: "Qual música é de " + a.nome + "?", hint: "Toque na certa.", speak: "Qual música é de " + a.nome + "?", stage: `<div class="word">${a.e}</div>`,
+          choices: shuffle([{ t: m, ok: true, why: m + " é de " + a.nome + "." }].concat(falsas.map(f => ({ t: f, ok: false, why: "Não. A certa é " + m + "." })))) };
+      } });
+    });
+    a.fatos.forEach(f => cands.push({ key: a.nome + ": " + f.q, make: () => ({
+      q: f.q, hint: "Você sabe?", speak: f.q, stage: `<div class="word">${a.e}</div>`,
+      choices: shuffle([{ t: f.certa, ok: true, why: f.why }].concat(f.erradas.map(e => ({ t: e, ok: false, why: f.why })))) }) }));
+  });
+  return sorteia(cands, 8, "music").map(c => { const it = c.make(); if (it) it.key = c.key; return it; }).filter(Boolean).slice(0, 5);
+}
+function startMusica() {
+  const itens = musicaItens();
+  if (!itens.length) return abreMusica();
+  state.world = "music"; state.mode = "musica"; state.step = 0; state.firsts = 0;
+  state.queue = itens; state.total = itens.length;
+  show("play");
+  renderItem();
+}
+function abreMusica() {
+  show("musica");
+  const sem = perfil.cantores.filter(c => !artistaDe(c));
+  const tem = perfil.cantores.some(artistaDe);
+  let h = novelaBubble(perfil.cantores.length ? "Que bom falar de música! Esses são os seus cantores. Pode tirar ou colocar quando quiser." : "Quais cantores ou grupos você gosta? Escreva um de cada vez.");
+  h += '<div id="cantEd"></div><div style="height:12px"></div>';
+  if (tem) h += `<button class="world" id="musQuiz"><div class="ico w-music">🎮</div><div><b>Quiz de música</b><span>Quem canta, qual música é de quem e curiosidades.</span></div><div class="go">›</div></button>`;
+  if (perfil.cantores.length) h += `<button class="world" id="musConta"><div class="ico w-music">💬</div><div><b>Conta pra ${esc(perfil.lua || "Lua")}</b><span>Quais músicas você conhece de cada um.</span></div><div class="go">›</div></button>`;
+  if (sem.length) h += `<div class="mut" style="margin-top:8px">Ainda não tenho quiz de: ${esc(sem.join(", "))}. Mas você pode me contar as músicas deles!</div>`;
+  $("musBody").innerHTML = h;
+  procuraArtista();
+  montaCantores($("cantEd"), perfil.cantores, () => {
+    salvaPerfil();
+    track({ tipo: "perfil", perfil: perfilEnvio() });
+    abreMusica();
+  });
+  if ($("musQuiz")) $("musQuiz").onclick = startMusica;
+  if ($("musConta")) $("musConta").onclick = () => musicaConta(0);
+}
+// Procura o próximo cantor sem dados; ela confirma pela foto se é o certo.
+const triedArt = new Set();
+async function procuraArtista() {
+  const nome = perfil.cantores.find(c => !artistaDe(c) && !triedArt.has(normNome(c)) && getArtistas()[normNome(c)] !== false);
+  if (!nome) return;
+  triedArt.add(normNome(nome));
+  let cands = [];
+  try {
+    const r = await fetch("/api/artista?q=" + encodeURIComponent(nome));
+    if (r.ok) cands = (await r.json()).candidatos || [];
+  } catch (e) { return; }
+  if (!cands.length || $("musica").classList.contains("hidden")) return;
+  let i = 0;
+  const box = document.createElement("div");
+  box.className = "panel";
+  box.id = "artConf";
+  const draw = () => {
+    const c = cands[i];
+    if (!c) {
+      box.innerHTML = `Não achei <b>${esc(nome)}</b> certinho. Sem problema, você ainda pode me contar as músicas!`;
+      const A = getArtistas(); A[normNome(nome)] = false; lsSet("mc-artistas", JSON.stringify(A));
+      return;
+    }
+    box.innerHTML = `<div class="t">É este o ${esc(nome)}?</div>
+      <div style="display:flex;gap:12px;align-items:center">${c.foto ? `<img src="${esc(c.foto)}" alt="" width="72" height="72" style="border-radius:50%;object-fit:cover">` : ""}<b style="font-size:18px">${esc(c.nome)}</b></div>
+      <div class="row" style="margin-top:10px"><button class="chip on" id="artSim">✅ Sim, é este</button><button class="chip" id="artNao">Não é</button></div>`;
+    $("artSim").onclick = async () => {
+      $("artSim").disabled = true;
+      try {
+        const r = await fetch("/api/artista?id=" + c.id);
+        if (r.ok) { const d = await r.json(); const A = getArtistas(); A[normNome(nome)] = d; lsSet("mc-artistas", JSON.stringify(A)); }
+      } catch (e) { /* tenta de novo outro dia */ }
+      abreMusica();
+    };
+    $("artNao").onclick = () => { i += 1; draw(); };
+  };
+  const ed = $("cantEd");
+  if (ed && ed.parentNode) ed.parentNode.insertBefore(box, ed);
+  draw();
+}
+function musicaConta(i) {
+  const lista = perfil.cantores;
+  if (i >= lista.length) return abreMusica();
+  const a = lista[i];
+  $("musBody").innerHTML = novelaBubble("Qual música de " + a + " você mais gosta? Pode escrever mais de uma.") +
+    `<label class="field"><input class="inp" id="musIn" maxlength="300" placeholder="Escreva aqui..." autocomplete="off"></label>
+     <button class="next show" id="musOk">Pronto</button><button class="bigbtn" id="musPula" style="margin-top:10px">Pular</button>`;
+  speak("Qual música de " + a + " você mais gosta?", "pt-BR");
+  $("musIn").focus();
+  $("musOk").onclick = () => {
+    const t = $("musIn").value.trim().slice(0, 300);
+    if (!t) return;
+    track({ tipo: "musica", artista: a, texto: t });
+    speak(pick(NOVELA_ELOGIO), "pt-BR");
+    musicaConta(i + 1);
+  };
+  $("musPula").onclick = () => musicaConta(i + 1);
+}
+
 // ---------- álbum ----------
 function abreAlbum() {
   const figs = getFigs();
@@ -1433,7 +1616,7 @@ $("chatForm").onsubmit = async (e) => {
 const NOVELAS = ["Carrossel", "Caverna Encantada", "Go! Viva do Seu Jeito", "A Infância de Romeu e Julieta", "Chiquititas", "Cúmplices de um Resgate"];
 const AVATARES = ["🌙", "🦄", "🐱", "🌸", "⭐", "🐼", "🦋", "🐰"];
 let ob = { passo: 0, editando: false, p: null };
-const PASSOS = ["eu", "novelas", "influs", "jj", "cor", "push"];
+const PASSOS = ["eu", "novelas", "cantores", "influs", "jj", "cor", "push"];
 function abreOnboard(editando) {
   ob = { passo: 0, editando, p: JSON.parse(JSON.stringify(perfil)) };
   renderOb();
@@ -1457,6 +1640,8 @@ function renderOb() {
     h = `<div class="bubble">${esc(p.luaEmoji)} Quais novelas você ama? Pode escolher várias!</div>
       <div class="row" id="obNov">${NOVELAS.map(n => `<button class="chip ${p.novelas.includes(n) ? "on" : ""}" data-n="${esc(n)}">${esc(n)}</button>`).join("")}</div>
       <label class="field" style="margin-top:14px"><span>Outra novela ou série que você gosta</span><input class="inp" id="obNovOutra" maxlength="40" value="${esc(outras.join(", "))}"></label>`;
+  } else if (passo === "cantores") {
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quais cantores ou grupos você mais gosta? Escreva um de cada vez. Depois você pode tirar ou colocar outros quando quiser.</div><div id="cantEd"></div>`;
   } else if (passo === "influs") {
     const vals = p.influs.concat(["", "", "", "", ""]).slice(0, 5);
     h = `<div class="bubble">${esc(p.luaEmoji)} Quem você mais gosta de assistir? Escreva até 5 nomes.</div>
@@ -1493,6 +1678,7 @@ function renderOb() {
     if (i >= 0) p.novelas.splice(i, 1); else p.novelas.push(n);
     b.classList.toggle("on", i < 0);
   });
+  if (passo === "cantores") montaCantores($("cantEd"), p.cantores, null);
   if (passo === "jj") {
     $("obJjS").onclick = () => { p.jj = true; lePasso(); renderOb(); };
     $("obJjN").onclick = () => { p.jj = false; lePasso(); renderOb(); };
@@ -1516,6 +1702,9 @@ function lePasso() {
   } else if (passo === "novelas") {
     const outras = $("obNovOutra").value.split(",").map(s => s.trim()).filter(Boolean).slice(0, 3);
     p.novelas = p.novelas.filter(n => NOVELAS.includes(n)).concat(outras);
+  } else if (passo === "cantores") {
+    const inp = $("cantIn");
+    if (inp && inp.value.trim() && p.cantores.length < 10) p.cantores.push(inp.value.trim().slice(0, 40));
   } else if (passo === "influs") {
     p.influs = [...document.querySelectorAll(".obInf")].map(i => i.value.trim().slice(0, 30)).filter(Boolean).slice(0, 5);
   } else if (passo === "jj" && $("obAcad")) {
@@ -1549,8 +1738,8 @@ function mudeiFaixa() {
   speak($("rewardTitle").textContent + " " + $("rewardLua").textContent, "pt-BR");
 }
 function perfilEnvio() {
-  const { nome, lua, novelas, influs, jj, academia, faixa, proxima, cor } = perfil;
-  return { nome, lua, novelas, influs, jj, academia, faixa, proxima, cor };
+  const { nome, lua, novelas, cantores, influs, jj, academia, faixa, proxima, cor } = perfil;
+  return { nome, lua, novelas, cantores, influs, jj, academia, faixa, proxima, cor };
 }
 $("obNext").onclick = () => {
   lePasso();

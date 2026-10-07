@@ -45,7 +45,8 @@
         "Manter uma conversa com colegas da idade"
       ]
     },
-    nov: { nome: "Novelinha", emoji: "📺", niveis: [] }
+    nov: { nome: "Novelinha", emoji: "📺", niveis: [] },
+    music: { nome: "Música", emoji: "🎵", niveis: [] }
   };
 
   // ---------------- English ----------------
@@ -749,6 +750,77 @@
         { emoji: "🚗💛", texto: "No carro, a Bia conta tudo para o pai. 'Hoje eu fiz uma amiga de verdade.' Novos capítulos em breve! 🌻" }
       ]
     }
+  ];
+
+  // ---------------- Música: cantores, músicas e curiosidades ----------------
+  // Só factos conferidos. f.certa + f.erradas (2) formam as 3 opções.
+  C.musica = [
+    { id: "ariana", nome: "Ariana Grande", e: "💜",
+      musicas: ["thank u, next", "7 rings", "positions", "Side to Side", "Into You", "Break Free", "yes, and?", "we can't be friends"],
+      fatos: [
+        { q: "Que personagem a Ariana Grande fazia na série Victorious?", certa: "Cat Valentine", erradas: ["Maya Hart", "Alex Russo"], why: "Ela era a Cat Valentine, a amiga de cabelo ruivo." },
+        { q: "No filme Wicked, que personagem a Ariana faz?", certa: "Glinda", erradas: ["Elphaba", "Dorothy"], why: "Ela é a Glinda. A Elphaba é a Cynthia Erivo." },
+        { q: "Qual penteado é a marca registrada da Ariana?", certa: "Rabo de cavalo alto", erradas: ["Franja curta", "Cabelo bem curto"], why: "O rabo de cavalo alto é a marca dela." }
+      ] },
+    { id: "taylor", nome: "Taylor Swift", e: "🦋",
+      musicas: ["Shake It Off", "Love Story", "Blank Space", "Anti-Hero", "Cruel Summer", "You Belong with Me"],
+      fatos: [
+        { q: "Como são chamados os fãs da Taylor Swift?", certa: "Swifties", erradas: ["Arianators", "Beliebers"], why: "Os fãs da Taylor são os Swifties." },
+        { q: "Como se chama a turnê mais famosa da Taylor?", certa: "The Eras Tour", erradas: ["Sweetener Tour", "Short n' Sweet Tour"], why: "É a The Eras Tour, com músicas de todas as fases dela." },
+        { q: "Qual é o número da sorte da Taylor Swift?", certa: "13", erradas: ["7", "21"], why: "O número da sorte dela é o 13." }
+      ] },
+    { id: "billie", nome: "Billie Eilish", e: "💚",
+      musicas: ["bad guy", "Ocean Eyes", "Happier Than Ever", "BIRDS OF A FEATHER", "What Was I Made For?"],
+      fatos: [
+        { q: "Quem escreve as músicas junto com a Billie Eilish?", certa: "O irmão, Finneas", erradas: ["O pai", "Um primo"], why: "O irmão dela, o Finneas, faz as músicas com ela." },
+        { q: "“What Was I Made For?” é de qual filme?", certa: "Barbie", erradas: ["Wicked", "Frozen"], why: "Ela cantou essa música no filme Barbie." }
+      ] },
+    { id: "olivia", nome: "Olivia Rodrigo", e: "💜",
+      musicas: ["drivers license", "good 4 u", "vampire", "deja vu", "traitor"],
+      fatos: [
+        { q: "Quais são os dois álbuns da Olivia Rodrigo?", certa: "SOUR e GUTS", erradas: ["1989 e Midnights", "Positions e Sweetener"], why: "Os álbuns dela são SOUR e GUTS." },
+        { q: "Em qual série ela atuou antes de ficar famosa na música?", certa: "High School Musical: A Série", erradas: ["Victorious", "Garota Conhece o Mundo"], why: "Ela fez a Nini em High School Musical: A Série." }
+      ] },
+    { id: "sabrina", nome: "Sabrina Carpenter", e: "☕",
+      musicas: ["Espresso", "Please Please Please", "Nonsense", "Feather", "Taste"],
+      fatos: [
+        { q: "“Espresso” está em qual álbum da Sabrina Carpenter?", certa: "Short n' Sweet", erradas: ["SOUR", "Midnights"], why: "Espresso está no álbum Short n' Sweet." },
+        { q: "Em qual série da Disney a Sabrina fez a Maya?", certa: "Garota Conhece o Mundo", erradas: ["Os Feiticeiros de Waverly Place", "Victorious"], why: "Ela era a Maya em Garota Conhece o Mundo." }
+      ] },
+    { id: "dua", nome: "Dua Lipa", e: "🪩",
+      musicas: ["Levitating", "New Rules", "Don't Start Now", "Dance the Night", "Houdini"],
+      fatos: [
+        { q: "Em que cidade a Dua Lipa nasceu?", certa: "Londres", erradas: ["Nova York", "Paris"], why: "Ela nasceu em Londres." },
+        { q: "“Dance the Night” faz parte de qual filme?", certa: "Barbie", erradas: ["Wicked", "Moana"], why: "É uma música do filme Barbie." }
+      ] },
+    { id: "selena", nome: "Selena Gomez", e: "🌟",
+      musicas: ["Lose You to Love Me", "Calm Down", "Come & Get It", "Love You Like a Love Song", "Who Says"],
+      fatos: [
+        { q: "Que personagem a Selena Gomez fazia em Os Feiticeiros de Waverly Place?", certa: "Alex Russo", erradas: ["Cat Valentine", "Maya Hart"], why: "Ela era a Alex Russo." },
+        { q: "Com qual cantor a Selena fez “Calm Down”?", certa: "Rema", erradas: ["Khalid", "Finneas"], why: "Calm Down é a parceria da Selena com o Rema." }
+      ] },
+    { id: "anitta", nome: "Anitta", e: "🇧🇷",
+      musicas: ["Envolver", "Girl from Rio", "Medicina", "Vai Malandra"],
+      fatos: [
+        { q: "De que cidade é a Anitta?", certa: "Rio de Janeiro", erradas: ["São Paulo", "Lisboa"], why: "Ela é do Rio de Janeiro." },
+        { q: "De que país é a Anitta?", certa: "Brasil", erradas: ["Portugal", "Estados Unidos"], why: "Ela é brasileira." }
+      ] },
+    { id: "katseye", nome: "KATSEYE", e: "👁️", apelidos: ["kateseye", "katseye", "kats eye", "katseyes"],
+      musicas: ["Touch", "Gnarly", "Gabriela", "Debut"],
+      fatos: [
+        { q: "Quantas integrantes tem o KATSEYE?", certa: "6", erradas: ["4", "8"], why: "São seis: Sophia, Manon, Daniela, Lara, Megan e Yoonchae." },
+        { q: "Qual programa formou o grupo KATSEYE?", certa: "Dream Academy", erradas: ["The Voice", "Ídolos"], why: "O grupo nasceu no Dream Academy." },
+        { q: "O KATSEYE foi criado por quais empresas?", certa: "HYBE e Geffen Records", erradas: ["Disney e Netflix", "Spotify e YouTube"], why: "O grupo é da HYBE junto com a Geffen Records." },
+        { q: "Como se chama o primeiro EP do KATSEYE?", certa: "SIS (Soft Is Strong)", erradas: ["Beautiful Chaos", "Dream Academy"], why: "O primeiro EP é SIS (Soft Is Strong). Beautiful Chaos veio depois." }
+      ] },
+    { id: "barbara", nome: "Bárbara Tinoco", e: "🎸", apelidos: ["barbara tinoco", "bárbara tinoco", "barbara"],
+      musicas: ["Antes Dela Dizer Que Sim", "Sei Lá", "Outras Línguas", "Na Minha Escola"],
+      fatos: [
+        { q: "De que país é a Bárbara Tinoco?", certa: "Portugal", erradas: ["Brasil", "Estados Unidos"], why: "Ela é portuguesa." },
+        { q: "Em qual programa de TV a Bárbara apareceu em 2018?", certa: "The Voice Portugal", erradas: ["Dança com as Estrelas", "Big Brother"], why: "Ela ficou conhecida no The Voice Portugal." },
+        { q: "Qual é o primeiro álbum da Bárbara Tinoco?", certa: "Bárbara", erradas: ["Hormonal", "Sei Lá"], why: "O primeiro álbum se chama Bárbara." },
+        { q: "Ela foi a primeira artista portuguesa a ter um concerto em qual plataforma?", certa: "Disney+", erradas: ["Netflix", "YouTube"], why: "Foi a primeira com concerto no Disney+." }
+      ] }
   ];
 
   // ---------------- Treino de conversa (chat) ----------------

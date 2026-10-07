@@ -75,7 +75,7 @@ const files = {
   "/icon-512.png": ["icon-512.png", "image/png"]
 };
 
-const mundos = { math: "Números", time: "Tempo", en: "English", soc: "Amigos", nov: "Novelinha" };
+const mundos = { math: "Números", time: "Tempo", en: "English", soc: "Amigos", nov: "Novelinha", music: "Música" };
 
 // ---------- limite simples por IP ----------
 const hits = new Map();
@@ -171,7 +171,7 @@ function limpaPerfil(p) {
   if (!p || typeof p !== "object") return null;
   return {
     nome: txt(p.nome, 30), lua: txt(p.lua, 20),
-    novelas: lista(p.novelas, 9, 40), influs: lista(p.influs, 5, 30),
+    novelas: lista(p.novelas, 9, 40), cantores: lista(p.cantores, 10, 40), influs: lista(p.influs, 5, 30),
     jj: !!p.jj, academia: txt(p.academia, 30), faixa: txt(p.faixa, 20), proxima: txt(p.proxima, 20), cor: txt(p.cor, 10)
   };
 }
@@ -180,7 +180,7 @@ const COM_MUNDO = ["missao", "resp", "erro", "nivel"];
 function limpaEvento(b) {
   if (!b || typeof b !== "object") return null;
   if (typeof b.id !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(b.id)) return null;
-  const tipo = ["missao", "resp", "erro", "nivel", "perfil", "humor", "novela"].includes(b.tipo) ? b.tipo : null;
+  const tipo = ["missao", "resp", "erro", "nivel", "perfil", "humor", "novela", "musica"].includes(b.tipo) ? b.tipo : null;
   if (!tipo) return null;
   if (COM_MUNDO.includes(tipo) && !Object.prototype.hasOwnProperty.call(mundos, b.mundo)) return null;
   const ev = { t: new Date().toISOString(), id: b.id, tipo };
@@ -217,6 +217,13 @@ function limpaEvento(b) {
     ev.pers = txt(b.pers, 40);
     ev.perg = txt(b.perg, 120);
     ev.texto = txt(b.texto, 500);
+    const r = temRisco(ev.texto);
+    if (r) { ev.alerta = true; ev.motivo = "texto: " + r; }
+  }
+  if (tipo === "musica") {
+    ev.artista = txt(b.artista, 40);
+    ev.texto = txt(b.texto, 300);
+    if (!ev.artista || !ev.texto) return null;
     const r = temRisco(ev.texto);
     if (r) { ev.alerta = true; ev.motivo = "texto: " + r; }
   }
@@ -291,7 +298,7 @@ function perfilAtual(id) {
   if (id && estado.perfis[id]) return estado.perfis[id];
   let melhor = null;
   for (const p of Object.values(estado.perfis)) if (!melhor || p.t > melhor.t) melhor = p;
-  return melhor || { nome: "Clara", lua: "Lua", novelas: [], influs: [], jj: true, academia: "Alliance", faixa: "Cinza", proxima: "Cinza e preta" };
+  return melhor || { nome: "Clara", lua: "Lua", novelas: [], cantores: [], influs: [], jj: true, academia: "Alliance", faixa: "Cinza", proxima: "Cinza e preta" };
 }
 function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : ""; }
 function preenche(s, p) {
@@ -403,6 +410,7 @@ function promptSistema(p, modo, cenario, humor) {
   const gostos = [
     p.novelas && p.novelas.length ? "novelas: " + p.novelas.join(", ") : "",
     p.influs && p.influs.length ? "influencers: " + p.influs.join(", ") : "",
+    p.cantores && p.cantores.length ? "cantores e música: " + p.cantores.join(", ") : "",
     p.jj ? "jiu-jitsu na academia " + (p.academia || "") + " (faixa " + (p.faixa || "") + ", quer chegar à " + (p.proxima || "") + ")" : ""
   ].filter(Boolean).join("; ");
   let s = `Você é ${p.lua || "Lua"}, a amiga virtual da ${p.nome || "Clara"} dentro de uma app educativa.
@@ -412,7 +420,7 @@ Ela gosta de: ${gostos || "novelas e vídeos"}.
 Como escrever: português do Brasil; no máximo 3 frases curtas (até 15 palavras cada), sendo uma delas a pergunta quando ela falar de sentimentos; palavras simples; no máximo 1 emoji; tom alegre, carinhoso e paciente.
 
 O que você faz:
-- Conversa sobre os gostos dela e elogia o esforço dela.
+- Conversa sobre os gostos dela (incluindo os cantores: pode perguntar qual música ela mais gosta, mas não fale da vida pessoal dos artistas nem invente factos) e elogia o esforço dela.
 - Ensina com gentileza como agir com meninas da idade dela: perguntar de volta, ouvir, esperar a vez, falar baixo, respeitar o espaço, não insistir, perceber quando a outra não quer conversar, assuntos que adolescentes costumam falar (música, séries, escola, desporto). Nunca ridicularize os gostos dela: diga que são ótimos para falar com quem também gosta.
 - Sugere as missões da app (Números, Tempo, English, Amigos, Novelinha).
 - Tem um jeito de ouvir como uma psicóloga carinhosa: aqui ela pode escrever à vontade, sem pressa e sem ser julgada. Quando ela disser como se sente, 1) valide o sentimento ("faz sentido ficar assim"), 2) faça UMA pergunta aberta e simples para entender o motivo ("o que aconteceu?", "foi hoje ou já faz uns dias?", "foi na escola, em casa ou com alguma pessoa?", "o que foi o pior?"), 3) espere a resposta antes de aconselhar. Nunca faça mais de uma pergunta por mensagem. Se ela der pouca resposta, aceite o ritmo dela.
@@ -622,6 +630,7 @@ function painel(res) {
   const grupos = new Map(); // erros agrupados por pergunta, em todo o historico
   const humores = [];
   const novela = [];
+  const musica = [];
   const niveis = {}; // mundo -> [{quando, para}]
   let ultimo = 0;
 
@@ -636,6 +645,7 @@ function painel(res) {
   for (const ev of evs) {
     if (ev.tipo === "humor") { humores.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "perfil") continue;
+    if (ev.tipo === "musica") { musica.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "novela") { novela.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "nivel") { (niveis[ev.mundo] = niveis[ev.mundo] || []).push(ev); continue; }
     if (ev.quando > ultimo && ev.tipo !== "erro") ultimo = ev.quando;
@@ -715,6 +725,7 @@ function painel(res) {
   const alertas = [];
   for (const h of humores) if (h.alerta && h.quando >= limiteAlerta) alertas.push({ q: h.quando, txt: "Como foi o dia: " + (h.motivo || "") + (h.texto ? " — “" + h.texto + "”" : "") });
   for (const n of novela) if (n.alerta && n.quando >= limiteAlerta) alertas.push({ q: n.quando, txt: "Novela: ela escreveu “" + n.texto + "”" + (n.motivo ? " · " + n.motivo : "") });
+  for (const m of musica) if (m.alerta && m.quando >= limiteAlerta) alertas.push({ q: m.quando, txt: "Música (" + m.artista + "): ela escreveu “" + m.texto + "”" + (m.motivo ? " · " + m.motivo : "") });
   for (const c of conversas) if (c.alerta && c.quando >= limiteAlerta) alertas.push({ q: c.quando, txt: "Conversa (" + c.origem + "): ela escreveu “" + c.user + "”" + (c.motivo ? " · " + c.motivo : "") });
   // humor triste/raiva 3 dias seguidos
   const humorPorDia = {};
@@ -782,6 +793,11 @@ function painel(res) {
   // ---- perfil e configuracao ----
   const p = perfilAtual();
   const temPerfil = Object.keys(estado.perfis).length > 0;
+  const musicaUlt = {};
+  for (const m of musica) musicaUlt[m.artista] = m.texto;
+  const musicaHtml = Object.keys(musicaUlt).length
+    ? `<ul class="erros">${Object.keys(musicaUlt).map((a) => `<li><b>${esc(a)}</b>: ${esc(musicaUlt[a])}</li>`).join("")}</ul>`
+    : '<span class="mut">Ela ainda não contou quais músicas conhece.</span>';
   let novelaHtml = "";
   {
     let titulo = "";
@@ -800,6 +816,7 @@ function painel(res) {
   const perfilHtml = temPerfil ? `<div>Nome: <b>${esc(p.nome)}</b> · companheira: <b>${esc(p.lua)}</b></div>
     <div>Novelas: ${esc((p.novelas || []).join(", ") || "–")}</div>
     <div>Influencers: ${esc((p.influs || []).join(", ") || "–")}</div>
+    <div>Cantores: ${esc((p.cantores || []).join(", ") || "–")}</div>
     <div>Jiu-jitsu: ${p.jj ? esc(p.academia + " · faixa " + p.faixa + " → " + p.proxima) : "não"}</div>` : `<span class="mut">Ela ainda não preencheu “Do que você gosta?”.</span>`;
   const up = estado.ultimoPush;
   const chatPronto = !!veniceKey;
@@ -886,6 +903,9 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
 
 <h2>A novela que ela está criando</h2>
 <div class="card">${novelaHtml}</div>
+
+<h2>Música: o que ela contou</h2>
+<div class="card">${musicaHtml}</div>
 
 <h2>Do que ela gosta</h2>
 <div class="card">${perfilHtml}</div>
@@ -982,6 +1002,67 @@ function areaPais(req, res, rota) {
   else painel(res);
 }
 
+
+// ---------- Deezer: músicas e álbuns reais dos cantores que ela escolhe ----------
+const artistasFile = path.join(dataDir, "artistas.json");
+let artistasCache = {};
+try { artistasCache = JSON.parse(fs.readFileSync(artistasFile, "utf8")); } catch (e) { /* vazio */ }
+function salvaArtistas() { try { fs.writeFileSync(artistasFile, JSON.stringify(artistasCache)); } catch (e) { console.warn("artistas.json:", e.message); } }
+async function deezer(rota) {
+  const r = await fetch("https://api.deezer.com" + rota, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error("deezer " + r.status);
+  const j = await r.json();
+  if (j && j.error) throw new Error("deezer erro");
+  return j;
+}
+const RUIDO_ALBUM = /commentary|\blive\b|deluxe|remaster|edition|version|remix|karaoke|instrumental|acoustic/i;
+function semRepetir(lista, max) {
+  const visto = new Set();
+  const out = [];
+  for (const t of lista) {
+    const k = t.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!k || visto.has(k)) continue;
+    visto.add(k);
+    out.push(t);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+async function buscaCandidatos(q) {
+  const j = await deezer("/search/artist?limit=3&q=" + encodeURIComponent(q));
+  return (j.data || []).slice(0, 3).map((a) => ({ id: a.id, nome: String(a.name).slice(0, 60), foto: a.picture_medium || "" }));
+}
+async function dadosArtista(id) {
+  const [top, alb, info] = await Promise.all([
+    deezer("/artist/" + id + "/top?limit=50"), deezer("/artist/" + id + "/albums?limit=100"), deezer("/artist/" + id)
+  ]);
+  // Só faixas do próprio artista e sem conteúdo explícito
+  const musicas = semRepetir((top.data || []).filter((t) => t.artist && t.artist.id === id && !t.explicit_lyrics).map((t) => String(t.title_short || t.title)), 15);
+  const albuns = semRepetir((alb.data || []).filter((a) => a.record_type === "album" && !a.explicit_lyrics && !RUIDO_ALBUM.test(a.title)).map((a) => String(a.title)), 10);
+  return { id, nome: String(info.name).slice(0, 60), foto: info.picture_medium || "", musicas, albuns };
+}
+async function getArtista(req, res) {
+  if (limited(clientIp(req))) { res.writeHead(429); res.end(); return; }
+  const u = new URL(req.url, "http://x");
+  try {
+    const id = u.searchParams.get("id");
+    if (id) {
+      if (!/^\d{1,12}$/.test(id)) { json(res, 400, { erro: "id" }); return; }
+      const k = "id:" + id;
+      if (!artistasCache[k]) { artistasCache[k] = await dadosArtista(Number(id)); salvaArtistas(); }
+      json(res, 200, artistasCache[k]);
+      return;
+    }
+    const q = txt(u.searchParams.get("q"), 40).trim();
+    if (q.length < 2) { json(res, 400, { erro: "q" }); return; }
+    const k = "q:" + q.toLowerCase();
+    if (!artistasCache[k]) { artistasCache[k] = { candidatos: await buscaCandidatos(q) }; salvaArtistas(); }
+    json(res, 200, artistasCache[k]);
+  } catch (e) {
+    json(res, 502, { erro: "indisponivel" });
+  }
+}
+
 // ---------- servidor ----------
 const server = http.createServer((req, res) => {
   let rota = "/";
@@ -996,6 +1077,11 @@ const server = http.createServer((req, res) => {
     if (rota === "/api/evento") postEvento(req, res);
     else if (rota === "/api/push") postPush(req, res);
     else postConversa(req, res);
+    return;
+  }
+  if (rota === "/api/artista") {
+    if (req.method !== "GET") { res.writeHead(405, { Allow: "GET" }); res.end(); return; }
+    getArtista(req, res);
     return;
   }
   if (rota === "/api/config") {
