@@ -12,3 +12,8 @@ Cada missão tem 5 passos. As estrelas ficam salvas no celular.
 O botão 🔊 no topo liga e desliga a voz.
 
 O uso (tema, acertos e hora) é registrado no servidor para os pais acompanharem em /pais.
+
+Notificações: aceite o pedido na app (⚙️). No iPhone, coloque primeiro na tela inicial.
+A conversa com a companheira precisa de VENICE_API_KEY no servidor e de estar ligada em /pais.
+
+Variáveis do servidor: PAIS_SENHA, VENICE_API_KEY, PAIS_TZ e CLARA_TZ (padrão Europe/Lisbon), DATA_DIR, VAPID_PUBLIC/VAPID_PRIVATE/VAPID_CONTATO (opcionais). Detalhes no README.md.

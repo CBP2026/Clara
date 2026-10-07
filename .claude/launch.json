@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "clara",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 8080,
+      "env": { "PAIS_SENHA": "teste", "DATA_DIR": "./data" }
+    }
+  ]
+}

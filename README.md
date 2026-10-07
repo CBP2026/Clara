@@ -15,6 +15,14 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 
 Tempo e Amigos têm 23 perguntas cada; English tem 30 palavras em 2 formatos; Números gera combinações. Cada missão tem 5 perguntas **sem repetição**, e até 2 delas são perguntas que ela errou antes e ainda não acertou de primeira (guardado no próprio aparelho).
 
+## Companheira, níveis e Novelinha
+
+- Perfil e onboarding (⚙️), níveis adaptativos com teste de colocação, missão do dia, Novelinha (capítulos liberados por estrelas), álbum de figurinhas e humor do dia.
+- Conteúdo em `conteudo.js` (carregado pelo navegador e pelo servidor).
+- Conversa: `/api/conversa` usa a Venice com filtro de entrada, filtro de saída e moderador. Os pais ligam/desligam no painel.
+- Notificações push (`web-push`): lembretes às 07h, 19h e 21h (`CLARA_TZ`). No iPhone, só funcionam com a app na tela inicial. O painel tem botão de teste.
+- Painel dos pais também mostra alertas, humor, evolução e conversas.
+
 ## Rodar local
 
 ```bash
@@ -29,7 +37,13 @@ O serviço lê `railway.toml` e roda `node server.js`. A variável `PORT` é inj
 
 1. Crie um **Volume** no serviço, com ponto de montagem `/data`. Sem ele, o histórico some a cada deploy.
 2. Defina a variável de ambiente `PAIS_SENHA` com uma senha longa.
-3. Opcional: `PAIS_TZ` (padrão `America/Sao_Paulo`) e `DATA_DIR` (padrão `/data`).
-4. Abra `https://SEU-APP.up.railway.app/pais`.
+3. `VENICE_API_KEY`: chave da Venice. Sem ela a conversa com a companheira fica desligada (o resto funciona).
+4. Opcionais:
+   - `PAIS_TZ` (padrão `Europe/Lisbon`): fuso do painel dos pais.
+   - `CLARA_TZ` (padrão `Europe/Lisbon`): fuso dos lembretes (07h, 19h, 21h).
+   - `DATA_DIR` (padrão `/data`).
+   - `VENICE_MODELO` (padrão `venice-uncensored-1-2`) e `VENICE_MODERADOR` (padrão `qwen3-5-9b`).
+   - `VAPID_PUBLIC`, `VAPID_PRIVATE`, `VAPID_CONTATO`: chaves das notificações push. Se ausentes, são geradas e guardadas em `/data` (precisa de Volume para não mudarem a cada deploy).
+5. Abra `https://SEU-APP.up.railway.app/pais`.
 
 Se o celular estiver sem internet, os registros ficam numa fila no aparelho e são enviados na próxima abertura (a hora do aparelho também é gravada).
