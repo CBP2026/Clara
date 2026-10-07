@@ -58,7 +58,7 @@
   .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
   .stars {
     background: rgba(255,255,255,.08); border: 1px solid var(--line);
-    border-radius: 999px; padding: 8px 12px; font-weight: 700;
+    border-radius: 999px; padding: 8px 12px; font-weight: 700; white-space: nowrap;
   }
   .side { display: flex; align-items: center; gap: 8px; }
   .mute { border: 0; background: rgba(255,255,255,.1); color: white; border-radius: 999px; width: 38px; height: 38px; font-size: 18px; cursor: pointer; }
@@ -560,7 +560,7 @@ function mathItem(n) {
     const k = pick(["count", "count", "more", "next"]);
     if (k === "count") {
       const v = rnd(3, 20);
-      return numItem({ key: "Contar " + v, q: "Quantos você vê?", hint: "Conte de 5 em 5 linhas, um por um.",
+      return numItem({ key: "Contar " + v, q: "Quantos você vê?", hint: "Cada linha tem 5. Conte um por um.",
         stage: `<div class="objs ${v > 10 ? "sm" : ""}">${objRows(emoji, v)}</div>`, certo: v,
         okWhy: `São ${v}.`, noWhy: `Conte de novo, devagar. São ${v}.` });
     }
@@ -1452,7 +1452,7 @@ $("obBack").onclick = () => {
 };
 
 // ---------- notificações ----------
-function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+function isIOS() { return !/Android/.test(navigator.userAgent) && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)); }
 function isStandalone() { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; }
 function b64ToBytes(s) {
   const pad = "=".repeat((4 - s.length % 4) % 4);
