@@ -6,8 +6,9 @@
 <meta name="theme-color" content="#1b1430" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>Missões Curtas</title>
+<title>Clara</title>
 <link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
 <style>
   :root {
     --bg: #1b1430;
@@ -57,6 +58,10 @@
     background: rgba(255,255,255,.08); border: 1px solid var(--line);
     border-radius: 999px; padding: 8px 12px; font-weight: 700;
   }
+  .side { display: flex; align-items: center; gap: 8px; }
+  .mute { border: 0; background: rgba(255,255,255,.1); color: white; border-radius: 999px; width: 38px; height: 38px; font-size: 18px; cursor: pointer; }
+  .streak { margin: -4px 0 12px; color: var(--sun); font-weight: 700; font-size: 14px; }
+  .choice:disabled { opacity: .55; cursor: default; }
   .grid { display: grid; gap: 12px; }
   .world {
     border: 0; text-align: left; color: inherit; cursor: pointer;
@@ -143,12 +148,16 @@
       <div class="brand">
         <div class="moon">🌙</div>
         <div>
-          <h1>Missões Curtas</h1>
+          <h1>Clara</h1>
           <div class="sub">1 minuto. Um passo. Uma estrela.</div>
         </div>
       </div>
-      <div class="stars" id="starCount">⭐ 0</div>
+      <div class="side">
+        <button class="mute" id="muteBtn" aria-label="Som ligado ou desligado">🔊</button>
+        <div class="stars" id="starCount">⭐ 0</div>
+      </div>
     </header>
+    <div class="streak hidden" id="streak"></div>
     <div class="grid">
       <button class="world" data-world="math">
         <div class="ico w-math">🍎</div>
@@ -172,13 +181,13 @@
       </button>
     </div>
     <div class="panel">
-      Cada missão tem 5 passos curtos. Errou? Tenta de novo, sem pressa. As estrelas ficam salvas neste celular.
+      Cada missão tem 5 passos curtos. Errou? Tente de novo, sem pressa. As estrelas ficam salvas neste celular.
       <div class="row">
-        <button class="chip" id="resetBtn">Zerar estrelas</button>
         <button class="chip" id="parentBtn">Nota para os pais</button>
       </div>
       <div id="parentNote" class="hidden" style="margin-top:10px">
         Feita para dificuldade com o abstrato: primeiro objetos, depois o número. Sem cronômetro. Sem ranking. Inglês com a voz do celular. Amigos em escolhas concretas, não em sermão. Fiquem ao lado nas primeiras vezes e digam o passo em voz alta.
+        <div class="row"><button class="chip" id="resetBtn">Zerar estrelas</button></div>
       </div>
     </div>
   </section>
@@ -195,7 +204,7 @@
     <div class="stage" id="stage"></div>
     <div class="choices" id="choices"></div>
     <div class="feedback" id="feedback"></div>
-    <button class="next" id="nextBtn">Seguinte</button>
+    <button class="next" id="nextBtn">Próxima</button>
   </section>
 
   <section id="reward" class="hidden">
@@ -210,13 +219,18 @@
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
 const state = {
-  stars: Number(localStorage.getItem("mc-stars") || 0),
+  stars: Number(lsGet("mc-stars") || 0),
+  muted: lsGet("mc-mudo") === "1",
   world: null,
   step: 0,
   total: 5,
   item: null,
-  locked: false
+  locked: false,
+  tries: 0
 };
 const worlds = {
   math: "Números",
@@ -226,13 +240,100 @@ const worlds = {
 };
 
 function saveStars() {
-  localStorage.setItem("mc-stars", String(state.stars));
+  lsSet("mc-stars", String(state.stars));
   $("starCount").textContent = "⭐ " + state.stars;
 }
 saveStars();
 
-function speak(text, lang) {
+function renderMute() {
+  $("muteBtn").textContent = state.muted ? "🔇" : "🔊";
+}
+renderMute();
+
+// Dias de uso e sequencia (so neste aparelho)
+function hojeKey(d) {
+  d = d || new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function diasUsados() {
+  try { return JSON.parse(lsGet("mc-dias") || "[]"); } catch (e) { return []; }
+}
+function marcaDia() {
+  const dias = diasUsados();
+  const h = hojeKey();
+  if (!dias.includes(h)) {
+    dias.push(h);
+    lsSet("mc-dias", JSON.stringify(dias.slice(-60)));
+  }
+}
+function sequencia() {
+  const set = new Set(diasUsados());
+  const d = new Date();
+  if (!set.has(hojeKey(d))) d.setDate(d.getDate() - 1); // hoje ainda pode acontecer
+  let n = 0;
+  while (set.has(hojeKey(d))) { n += 1; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function renderStreak() {
+  const n = sequencia();
+  const el = $("streak");
+  el.classList.toggle("hidden", n < 1);
+  el.textContent = "🔥 " + n + (n === 1 ? " dia seguido" : " dias seguidos");
+}
+renderStreak();
+
+// Registro de uso: vai para o servidor; se falhar, fica na fila e tenta depois
+const FILA = "mc-fila";
+function deviceId() {
+  let id = lsGet("mc-id");
+  if (!id) {
+    id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+      : "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    lsSet("mc-id", id);
+  }
+  return id;
+}
+function getFila() {
+  try { return JSON.parse(lsGet(FILA) || "[]"); } catch (e) { return []; }
+}
+let enviando = false;
+async function flush() {
+  if (enviando) return;
+  enviando = true;
+  try {
+    let fila = getFila();
+    while (fila.length) {
+      let r;
+      try {
+        r = await fetch("/api/evento", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fila[0]),
+          keepalive: true
+        });
+      } catch (e) { break; }
+      if (!(r.ok || (r.status >= 400 && r.status < 500 && r.status !== 429))) break;
+      fila = getFila();
+      fila.shift();
+      lsSet(FILA, JSON.stringify(fila));
+    }
+  } finally { enviando = false; }
+}
+function track(ev) {
+  ev.id = deviceId();
+  ev.td = Date.now();
+  const fila = getFila();
+  fila.push(ev);
+  lsSet(FILA, JSON.stringify(fila.slice(-200)));
+  flush();
+}
+window.addEventListener("online", flush);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) flush(); });
+flush();
+
+function speak(text, lang, force) {
   if (!window.speechSynthesis) return;
+  if (state.muted && !force) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang || "pt-BR";
@@ -249,6 +350,15 @@ function objs(emoji, n) {
 }
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+// 3 valores diferentes (>= 1), incluindo o certo
+function opcoes(certo) {
+  const set = new Set([certo]);
+  for (const d of shuffle([certo + 1, certo - 1, certo + 2, certo - 2, certo + 3])) {
+    if (set.size >= 3) break;
+    if (d >= 1) set.add(d);
+  }
+  return shuffle([...set]);
+}
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -333,7 +443,7 @@ const social = [
     hint: "A outra pessoa ganhou.",
     choices: [
       { t: "Digo: boa, você ganhou", ok: true, why: "Uma frase curta mantém o jogo possível amanhã." },
-      { t: "Joguei o celular", ok: false, why: "Quebrar coisas acaba a brincadeira e a confiança." },
+      { t: "Jogo o celular longe", ok: false, why: "Quebrar coisas acaba a brincadeira e a confiança." },
       { t: "Digo que ele trapaceou", ok: false, why: "Acusar sem prova vira discussão." }
     ]
   },
@@ -350,7 +460,7 @@ const social = [
   {
     q: "O colega está triste e calado.",
     stage: "😢",
-    hint: "Não sabes a razão.",
+    hint: "Você não sabe a razão.",
     choices: [
       { t: "Pergunto: você está bem?", ok: true, why: "Uma pergunta curta basta. Se disser não, você para." },
       { t: "Rio e mando animar", ok: false, why: "Rir de rosto triste parece zoação." },
@@ -384,14 +494,14 @@ function mathItem() {
   const emoji = pick(["🍎", "⭐", "🍪", "🐶", "🎈"]);
   if (kind === "count") {
     const n = 1 + Math.floor(Math.random() * 6);
-    const opts = shuffle([n, n + 1, Math.max(1, n - 1), n + 2]).slice(0, 3);
-    if (!opts.includes(n)) opts[0] = n;
+    const opts = opcoes(n);
     return {
+      key: "Contar " + n,
       q: "Quantos você vê?",
       hint: "Conte no dedo, um por um.",
       speak: "Quantos você vê? Conte um a um.",
       stage: `<div class="objs">${objs(emoji, n)}</div>`,
-      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === n, why: v === n ? `São ${n}.` : `Conte de novo. São ${n}.` }))
+      choices: opts.map(v => ({ t: String(v), ok: v === n, why: v === n ? `São ${n}.` : `Conte de novo. São ${n}.` }))
     };
   }
   if (kind === "more") {
@@ -399,6 +509,7 @@ function mathItem() {
     let b = 1 + Math.floor(Math.random() * 5);
     if (a === b) b = Math.min(6, a + 1);
     return {
+      key: "Onde tem mais: " + a + " x " + b,
       q: "Onde tem mais?",
       hint: "Olhe os dois grupos. Toque no maior.",
       speak: "Onde tem mais?",
@@ -413,14 +524,14 @@ function mathItem() {
     const a = 1 + Math.floor(Math.random() * 3);
     const b = 1 + Math.floor(Math.random() * 3);
     const sum = a + b;
-    const opts = shuffle([sum, sum + 1, Math.max(1, sum - 1)]).slice(0, 3);
-    if (!opts.includes(sum)) opts[0] = sum;
+    const opts = opcoes(sum);
     return {
+      key: "Juntar " + a + " + " + b,
       q: "Junte os dois grupos. Quantos ficam?",
       hint: "Primeiro um grupo, depois o outro.",
       speak: "Junte os dois grupos. Quantos ficam?",
       stage: `<div class="pile"><div class="objs">${objs(emoji, a)}</div></div><div style="font-size:28px">+</div><div class="pile"><div class="objs">${objs(emoji, b)}</div></div>`,
-      choices: shuffle(opts).map(v => ({ t: String(v), ok: v === sum, why: v === sum ? `${a} e ${b} fazem ${sum}.` : `Conte tudo junto. São ${sum}.` }))
+      choices: opts.map(v => ({ t: String(v), ok: v === sum, why: v === sum ? `${a} e ${b} fazem ${sum}.` : `Conte tudo junto. São ${sum}.` }))
     };
   }
   const start = 1 + Math.floor(Math.random() * 3);
@@ -428,6 +539,7 @@ function mathItem() {
   const ans = start + 3;
   const opts = shuffle([ans, ans + 1, ans - 1]);
   return {
+    key: "Depois de " + seq[2],
     q: "Qual número vem depois?",
     hint: seq.join("  ·  ") + "  ·  ?",
     speak: "Qual número vem depois?",
@@ -443,9 +555,9 @@ function timeItem() {
       stage: "🌅",
       hint: "Que parte do dia é?",
       choices: [
-        { t: "Manhã", ok: true, why: "Sol a subir = manhã." },
-        { t: "Noite", ok: false, why: "À noite o sol já não está a subir." },
-        { t: "Meia-noite", ok: false, why: "Meia-noite é a meio da noite, escuro." }
+        { t: "Manhã", ok: true, why: "Sol subindo = manhã." },
+        { t: "Noite", ok: false, why: "À noite o sol não está subindo." },
+        { t: "Meia-noite", ok: false, why: "Meia-noite é o meio da noite, tudo escuro." }
       ]
     },
     {
@@ -454,7 +566,7 @@ function timeItem() {
       hint: "Isto é cedo ou tarde?",
       choices: [
         { t: "Tarde / noite", ok: true, why: "Depois do jantar e de escuro, é tarde." },
-        { t: "De manhã cedo", ok: false, why: "De manhã ainda não jantaste." }
+        { t: "De manhã cedo", ok: false, why: "De manhã você ainda não jantou." }
       ]
     },
     {
@@ -490,7 +602,7 @@ function timeItem() {
       stage: "🚪",
       hint: "Daqui a pouco quer dizer...",
       choices: [
-        { t: "Em breve, espera pouco", ok: true, why: "Daqui a pouco = espera curta, não é agora." },
+        { t: "Em breve, é esperar pouco", ok: true, why: "Daqui a pouco = espera curta, não é agora." },
         { t: "Semana que vem", ok: false, why: "Semana que vem é muito mais longe." },
         { t: "Nunca", ok: false, why: "Não é nunca. É esperar um pouquinho." }
       ]
@@ -501,7 +613,7 @@ function timeItem() {
       hint: "Está perto ou longe?",
       choices: [
         { t: "Perto", ok: true, why: "Dois minutos andando é perto." },
-        { t: "Muito longe", ok: false, why: "Longe seria horas, não dois minutos." }
+        { t: "Muito longe", ok: false, why: "Longe seria horas de caminhada, não dois minutos." }
       ]
     },
     {
@@ -517,6 +629,7 @@ function timeItem() {
   ];
   const item = pick(bank);
   return {
+    key: item.q,
     q: item.q,
     hint: item.hint,
     speak: item.q + " " + item.hint,
@@ -531,7 +644,8 @@ function enItem() {
   const distract = shuffle(words.filter(x => x.en !== w.en)).slice(0, 2);
   if (kind === "hear") {
     return {
-      q: "Toca na palavra em inglês.",
+      key: "Ouvir: " + w.en,
+      q: "Toque na palavra em inglês.",
       hint: "Significa: " + w.pt,
       speak: w.en,
       lang: "en-GB",
@@ -543,6 +657,7 @@ function enItem() {
     };
   }
   return {
+    key: "Significado: " + w.en,
     q: w.en,
     hint: "O que quer dizer?",
     speak: w.en,
@@ -558,6 +673,7 @@ function enItem() {
 function socItem() {
   const s = pick(social);
   return {
+    key: s.q,
     q: s.q,
     hint: s.hint,
     speak: s.q + " " + s.hint,
@@ -575,6 +691,7 @@ function makeItem() {
 
 function renderItem() {
   state.locked = false;
+  state.tries = 0;
   state.item = makeItem();
   $("q").textContent = state.item.q;
   $("hint").textContent = state.item.hint;
@@ -600,22 +717,37 @@ function renderItem() {
 
 function answer(idx) {
   if (state.locked) return;
-  state.locked = true;
   const buttons = [...$("choices").children];
   const chosen = state.item.choices[idx];
+  const fb = $("feedback");
+  state.tries += 1;
+  // Errou na 1a tentativa (e ha mais de 2 opcoes): deixa tentar de novo sem mostrar a resposta
+  const retry = !chosen.ok && state.tries === 1 && state.item.choices.length > 2;
+  if (retry) {
+    buttons[idx].classList.add("bad");
+    buttons[idx].disabled = true;
+    fb.className = "feedback show no";
+    fb.textContent = "Quase. Olhe com calma e tente de novo.";
+    speak("Quase. Tente de novo.", "pt-BR");
+    return;
+  }
+  state.locked = true;
+  const firstTry = chosen.ok && state.tries === 1;
   buttons.forEach((b, i) => {
     if (state.item.choices[i].ok) b.classList.add("good");
     if (i === idx && !chosen.ok) b.classList.add("bad");
   });
-  const fb = $("feedback");
-  fb.classList.add("show", chosen.ok ? "ok" : "no");
+  fb.className = "feedback show " + (chosen.ok ? "ok" : "no");
   fb.textContent = (chosen.ok ? "Boa. " : "Quase. ") + chosen.why;
-  if (chosen.ok) {
+  if (firstTry) {
     state.stars += 1;
     saveStars();
   }
+  marcaDia();
+  renderStreak();
+  track({ tipo: "resp", mundo: state.world, ok: firstTry, tent: state.tries === 1 ? 1 : 2, perg: state.item.key || state.item.q });
   $("nextBtn").classList.add("show");
-  $("nextBtn").textContent = state.step + 1 >= state.total ? "Ver estrela" : "Seguinte";
+  $("nextBtn").textContent = state.step + 1 >= state.total ? "Ver estrela" : "Próxima";
   speak(fb.textContent, "pt-BR");
 }
 
@@ -630,17 +762,34 @@ $("nextBtn").onclick = () => {
   state.step += 1;
   if (state.step >= state.total) {
     $("rewardTitle").textContent = "Missão de " + worlds[state.world] + " feita";
-    $("rewardText").textContent = "5 passos. Estrelas guardadas: " + state.stars + ". Podes parar ou fazer outra.";
+    $("rewardText").textContent = "5 passos. Estrelas guardadas: " + state.stars + ". Pode parar ou fazer outra.";
+    track({ tipo: "missao", mundo: state.world });
     show("reward");
     speak("Missão feita. Muito bem.", "pt-BR");
   } else renderItem();
 };
 $("againBtn").onclick = () => start(state.world);
-$("homeBtn").onclick = () => show("home");
-$("backBtn").onclick = () => show("home");
-$("speakBtn").onclick = () => speak(state.item ? (state.item.speak || state.item.q) : "Missões curtas", state.item && state.item.lang || "pt-BR");
+function goHome() {
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  renderStreak();
+  show("home");
+}
+$("homeBtn").onclick = goHome;
+$("backBtn").onclick = goHome;
+$("speakBtn").onclick = () => speak(state.item ? (state.item.speak || state.item.q) : "Clara", state.item && state.item.lang || "pt-BR", true);
+$("muteBtn").onclick = () => {
+  state.muted = !state.muted;
+  lsSet("mc-mudo", state.muted ? "1" : "0");
+  if (state.muted && window.speechSynthesis) speechSynthesis.cancel();
+  renderMute();
+};
 document.querySelectorAll(".world").forEach(b => b.onclick = () => start(b.dataset.world));
-$("resetBtn").onclick = () => { state.stars = 0; saveStars(); };
+$("resetBtn").onclick = () => {
+  if (confirm("Zerar as estrelas?")) { state.stars = 0; saveStars(); }
+};
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+}
 $("parentBtn").onclick = () => $("parentNote").classList.toggle("hidden");
 </script>
 </body>
