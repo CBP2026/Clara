@@ -228,6 +228,7 @@ const state = {
   world: null,
   step: 0,
   total: 5,
+  queue: [],
   item: null,
   locked: false,
   tries: 0
@@ -383,7 +384,22 @@ const words = [
   { en: "happy", pt: "feliz", emoji: "😊" },
   { en: "sad", pt: "triste", emoji: "😢" },
   { en: "school", pt: "escola", emoji: "🏫" },
-  { en: "home", pt: "casa", emoji: "🏠" }
+  { en: "home", pt: "casa", emoji: "🏠" },
+  { en: "good morning", pt: "bom dia", emoji: "☀️" },
+  { en: "good night", pt: "boa noite", emoji: "🌙" },
+  { en: "eat", pt: "comer", emoji: "🍽️" },
+  { en: "drink", pt: "beber", emoji: "🥤" },
+  { en: "book", pt: "livro", emoji: "📖" },
+  { en: "dog", pt: "cachorro", emoji: "🐶" },
+  { en: "cat", pt: "gato", emoji: "🐱" },
+  { en: "red", pt: "vermelho", emoji: "🟥" },
+  { en: "blue", pt: "azul", emoji: "🟦" },
+  { en: "big", pt: "grande", emoji: "🐘" },
+  { en: "small", pt: "pequeno", emoji: "🐜" },
+  { en: "mother", pt: "mãe", emoji: "👩" },
+  { en: "bathroom", pt: "banheiro", emoji: "🚻" },
+  { en: "excuse me", pt: "com licença", emoji: "🙋" },
+  { en: "I don't understand", pt: "não entendi", emoji: "🤷" }
 ];
 
 const social = [
@@ -486,17 +502,147 @@ const social = [
       { t: "Continuo falando mesmo assim", ok: false, why: "Continuar falando depois do não cansa e afasta." },
       { t: "Fico brava em silêncio do lado", ok: false, why: "Ficar colada e brava também é pressão." }
     ]
+  },
+  {
+    q: "Um colega chama: quer jogar com a gente?",
+    stage: "🎲",
+    hint: "Você quer jogar.",
+    choices: [
+      { t: "Digo: sim, quero!", ok: true, why: "Dizer sim com clareza mostra que você quer entrar." },
+      { t: "Fico calada e saio andando", ok: false, why: "Sem resposta, ele pensa que você não quer." },
+      { t: "Digo que o jogo é chato", ok: false, why: "Criticar o jogo afasta quem convidou." }
+    ]
+  },
+  {
+    q: "Te convidaram para uma festa. Você não quer ir.",
+    stage: "🎉",
+    hint: "Como você responde?",
+    choices: [
+      { t: "Agradeço e digo que não posso", ok: true, why: "Agradecer e recusar com educação é suficiente." },
+      { t: "Digo que a festa vai ser horrível", ok: false, why: "Falar mal da festa magoa quem convidou." },
+      { t: "Nunca respondo a mensagem", ok: false, why: "Sem resposta a pessoa fica sem saber se você vem." }
+    ]
+  },
+  {
+    q: "Você precisa de ajuda com a tarefa.",
+    stage: "📚",
+    hint: "Ninguém percebeu.",
+    choices: [
+      { t: "Peço: pode me ajudar?", ok: true, why: "Pedir em voz clara é o jeito mais rápido de receber ajuda." },
+      { t: "Fico parada esperando adivinharem", ok: false, why: "As pessoas não adivinham. É preciso pedir." },
+      { t: "Pego o caderno do colega sem avisar", ok: false, why: "Pegar sem pedir parece falta de respeito." }
+    ]
+  },
+  {
+    q: "Alguém elogia o seu desenho.",
+    stage: "🎨",
+    hint: "O que você diz?",
+    choices: [
+      { t: "Digo: obrigada!", ok: true, why: "Obrigada é a resposta simples e boa para um elogio." },
+      { t: "Digo que está feio", ok: false, why: "Discordar do elogio faz a pessoa se sentir sem graça." },
+      { t: "Viro as costas sem falar", ok: false, why: "Sem resposta, parece que você ignorou." }
+    ]
+  },
+  {
+    q: "Você esbarrou sem querer em uma pessoa.",
+    stage: "💥",
+    hint: "Ela fez uma cara de dor.",
+    choices: [
+      { t: "Digo: desculpa, você está bem?", ok: true, why: "Pedir desculpa mostra que foi sem querer." },
+      { t: "Digo que a culpa é dela", ok: false, why: "Acusar sem ter certeza vira briga." },
+      { t: "Saio andando como se nada fosse", ok: false, why: "Ir embora parece que você não se importa." }
+    ]
+  },
+  {
+    q: "A professora explica. Você tem uma dúvida.",
+    stage: "🙋",
+    hint: "A sala está em silêncio.",
+    choices: [
+      { t: "Levanto a mão e pergunto", ok: true, why: "Mão levantada é o sinal de 'quero perguntar'." },
+      { t: "Grito a pergunta de longe", ok: false, why: "Gritar atrapalha a explicação." },
+      { t: "Converso com o colega do lado", ok: false, why: "Conversar baixo também atrapalha quem está ouvindo." }
+    ]
+  },
+  {
+    q: "Uma amiga conta um segredo para você.",
+    stage: "🤫",
+    hint: "Ela pediu para não contar.",
+    choices: [
+      { t: "Guardo o segredo", ok: true, why: "Guardar segredo faz a pessoa confiar em você." },
+      { t: "Conto para a turma toda", ok: false, why: "Contar o segredo quebra a confiança." },
+      { t: "Escrevo no grupo da turma", ok: false, why: "O que vai para o grupo todo mundo vê." }
+    ]
+  },
+  {
+    q: "Você está com muita raiva.",
+    stage: "😠",
+    hint: "O que ajuda?",
+    choices: [
+      { t: "Respiro fundo e me afasto um pouco", ok: true, why: "Respirar e dar espaço ajuda a raiva a baixar." },
+      { t: "Bato na mesa", ok: false, why: "Bater assusta os outros e não resolve." },
+      { t: "Grito com quem está por perto", ok: false, why: "Quem está perto não tem culpa e se afasta." }
+    ]
+  },
+  {
+    q: "Um colega pede o seu lápis emprestado.",
+    stage: "✏️",
+    hint: "Você pode emprestar.",
+    choices: [
+      { t: "Empresto e peço de volta depois", ok: true, why: "Emprestar e combinar a volta mantém a amizade." },
+      { t: "Pego de volta no meio da tarefa dele", ok: false, why: "Tirar na hora atrapalha. Combine antes." },
+      { t: "Digo sim e depois escondo o lápis", ok: false, why: "Dizer sim e não cumprir deixa a pessoa chateada." }
+    ]
+  },
+  {
+    q: "No grupo do celular todo mundo está conversando.",
+    stage: "💬",
+    hint: "Você quer entrar na conversa.",
+    choices: [
+      { t: "Escrevo uma mensagem curta sobre o assunto", ok: true, why: "Uma mensagem curta no assunto entra bem na conversa." },
+      { t: "Mando 20 mensagens seguidas", ok: false, why: "Muitas mensagens seguidas cansam o grupo." },
+      { t: "Mando um áudio de 5 minutos", ok: false, why: "Áudio muito longo é difícil de ouvir no meio da conversa." }
+    ]
+  },
+  {
+    q: "A conversa mudou de assunto.",
+    stage: "🔄",
+    hint: "Você ainda queria falar do seu.",
+    choices: [
+      { t: "Acompanho o assunto novo e falo do meu depois", ok: true, why: "Esperar uma pausa é melhor que forçar a volta." },
+      { t: "Volto ao meu assunto toda hora", ok: false, why: "Voltar toda hora faz os outros se cansarem." },
+      { t: "Fico em silêncio, brava", ok: false, why: "Ficar brava sem falar deixa o clima ruim." }
+    ]
+  },
+  {
+    q: "Você ganhou um presente que não gostou.",
+    stage: "🎁",
+    hint: "A pessoa está olhando para você.",
+    choices: [
+      { t: "Digo: obrigada por lembrar de mim", ok: true, why: "Agradecer o carinho é o que importa na hora." },
+      { t: "Digo que é feio", ok: false, why: "Falar isso magoa quem escolheu com carinho." },
+      { t: "Devolvo na hora", ok: false, why: "Devolver na hora é muito duro com quem deu." }
+    ]
+  },
+  {
+    q: "Um colega está sozinho no recreio.",
+    stage: "🧍",
+    hint: "Ele parece triste.",
+    choices: [
+      { t: "Convido: quer ficar com a gente?", ok: true, why: "Um convite simples faz a pessoa se sentir parte." },
+      { t: "Rio dele de longe", ok: false, why: "Rir de quem está sozinho magoa muito." },
+      { t: "Finjo que não vi", ok: false, why: "Ignorar deixa a pessoa ainda mais sozinha." }
+    ]
   }
 ];
 
-function mathItem() {
-  const kind = pick(["count", "more", "add", "next"]);
+function mathItem(kind) {
   const emoji = pick(["🍎", "⭐", "🍪", "🐶", "🎈"]);
   if (kind === "count") {
     const n = 1 + Math.floor(Math.random() * 6);
     const opts = opcoes(n);
     return {
-      key: "Contar " + n,
+      key: "Contar " + n + " objetos",
+      kind,
       q: "Quantos você vê?",
       hint: "Conte no dedo, um por um.",
       speak: "Quantos você vê? Conte um a um.",
@@ -509,7 +655,8 @@ function mathItem() {
     let b = 1 + Math.floor(Math.random() * 5);
     if (a === b) b = Math.min(6, a + 1);
     return {
-      key: "Onde tem mais: " + a + " x " + b,
+      key: "Onde tem mais: " + a + " contra " + b,
+      kind,
       q: "Onde tem mais?",
       hint: "Olhe os dois grupos. Toque no maior.",
       speak: "Onde tem mais?",
@@ -527,6 +674,7 @@ function mathItem() {
     const opts = opcoes(sum);
     return {
       key: "Juntar " + a + " + " + b,
+      kind,
       q: "Junte os dois grupos. Quantos ficam?",
       hint: "Primeiro um grupo, depois o outro.",
       speak: "Junte os dois grupos. Quantos ficam?",
@@ -539,7 +687,8 @@ function mathItem() {
   const ans = start + 3;
   const opts = shuffle([ans, ans + 1, ans - 1]);
   return {
-    key: "Depois de " + seq[2],
+    key: "Número depois de " + seq[2],
+    kind,
     q: "Qual número vem depois?",
     hint: seq.join("  ·  ") + "  ·  ?",
     speak: "Qual número vem depois?",
@@ -548,8 +697,7 @@ function mathItem() {
   };
 }
 
-function timeItem() {
-  const bank = [
+const timeBank = [
     {
       q: "É de manhã. O sol está subindo.",
       stage: "🌅",
@@ -625,9 +773,159 @@ function timeItem() {
         { t: "Amanhã", ok: false, why: "Amanhã é outro dia." },
         { t: "No ano passado", ok: false, why: "O ano passado já foi." }
       ]
+    },
+    {
+      q: "Hoje é segunda-feira. Que dia vem amanhã?",
+      stage: "📅",
+      hint: "Pense na ordem da semana.",
+      choices: [
+        { t: "Terça-feira", ok: true, why: "Depois da segunda vem a terça." },
+        { t: "Domingo", ok: false, why: "Domingo vem antes da segunda." },
+        { t: "Quarta-feira", ok: false, why: "Quarta vem depois da terça." }
+      ]
+    },
+    {
+      q: "Ontem foi domingo. Que dia é hoje?",
+      stage: "📅",
+      hint: "Hoje vem depois de ontem.",
+      choices: [
+        { t: "Segunda-feira", ok: true, why: "Depois do domingo vem a segunda." },
+        { t: "Sábado", ok: false, why: "Sábado vem antes do domingo." },
+        { t: "Terça-feira", ok: false, why: "Terça vem dois dias depois do domingo." }
+      ]
+    },
+    {
+      q: "A aula acaba às 12. Agora são 11:50.",
+      stage: "🕛",
+      hint: "Falta muito ou pouco?",
+      choices: [
+        { t: "Falta pouco", ok: true, why: "São só 10 minutos." },
+        { t: "Já acabou", ok: false, why: "Ainda são 11:50, antes das 12." },
+        { t: "Falta muito", ok: false, why: "10 minutos é pouco tempo." }
+      ]
+    },
+    {
+      q: "O filme dura 2 horas. Ele começou às 3.",
+      stage: "🎬",
+      hint: "A que horas ele termina?",
+      choices: [
+        { t: "Às 5", ok: true, why: "3 mais 2 horas dá 5." },
+        { t: "Às 4", ok: false, why: "Às 4 só passou 1 hora." },
+        { t: "Às 6", ok: false, why: "Às 6 teriam passado 3 horas." }
+      ]
+    },
+    {
+      q: "Quanto tempo demora para escovar os dentes?",
+      stage: "🪥",
+      hint: "Pense no dia a dia.",
+      choices: [
+        { t: "Uns 2 minutos", ok: true, why: "Escovar leva uns 2 minutos." },
+        { t: "Uma hora", ok: false, why: "Uma hora é tempo demais para escovar." },
+        { t: "Um dia inteiro", ok: false, why: "Um dia tem 24 horas." }
+      ]
+    },
+    {
+      q: "Primeiro você calça o tênis. Depois sai de casa.",
+      stage: "👟🚪",
+      hint: "O que vem depois?",
+      choices: [
+        { t: "Sair de casa", ok: true, why: "Depois é o que vem na segunda parte." },
+        { t: "Calçar o tênis", ok: false, why: "Calçar o tênis vem primeiro." }
+      ]
+    },
+    {
+      q: "Quantos dias tem uma semana?",
+      stage: "🗓️",
+      hint: "Segunda, terça, quarta...",
+      choices: [
+        { t: "7 dias", ok: true, why: "A semana tem 7 dias." },
+        { t: "5 dias", ok: false, why: "5 são só os dias de aula. A semana tem 7." },
+        { t: "10 dias", ok: false, why: "10 dias é mais que uma semana." }
+      ]
+    },
+    {
+      q: "Depois do inverno vem uma estação.",
+      stage: "🌸",
+      hint: "Qual é ela?",
+      choices: [
+        { t: "Primavera", ok: true, why: "Depois do inverno vem a primavera." },
+        { t: "Outono", ok: false, why: "O outono vem antes do inverno." },
+        { t: "Verão", ok: false, why: "O verão vem depois da primavera." }
+      ]
+    },
+    {
+      q: "O ônibus passa às 7:00. Você chega às 7:15.",
+      stage: "🚌",
+      hint: "Você chegou...",
+      choices: [
+        { t: "Tarde", ok: true, why: "Depois da hora do ônibus é tarde." },
+        { t: "Cedo", ok: false, why: "Cedo seria antes das 7:00." },
+        { t: "Na hora certa", ok: false, why: "Na hora certa seria às 7:00." }
+      ]
+    },
+    {
+      q: "Faltam 5 minutos para o recreio.",
+      stage: "🔔",
+      hint: "Quando ele começa?",
+      choices: [
+        { t: "Daqui a pouco", ok: true, why: "5 minutos é pouco tempo." },
+        { t: "Só amanhã", ok: false, why: "Amanhã é outro dia." },
+        { t: "Já começou", ok: false, why: "Ainda faltam 5 minutos." }
+      ]
+    },
+    {
+      q: "É meio-dia e você está com fome.",
+      stage: "🍲",
+      hint: "Que refeição é essa?",
+      choices: [
+        { t: "Almoço", ok: true, why: "Ao meio-dia é hora do almoço." },
+        { t: "Café da manhã", ok: false, why: "O café da manhã é cedo, quando acordamos." },
+        { t: "Jantar", ok: false, why: "O jantar é à noite." }
+      ]
+    },
+    {
+      q: "O aniversário dela é em dezembro. Agora é janeiro.",
+      stage: "🎂",
+      hint: "Falta pouco ou muito?",
+      choices: [
+        { t: "Falta muito", ok: true, why: "De janeiro a dezembro são quase 11 meses." },
+        { t: "Falta pouco", ok: false, why: "Pouco seria uns dias." },
+        { t: "É hoje", ok: false, why: "Hoje é janeiro, não dezembro." }
+      ]
+    },
+    {
+      q: "Ela tomou café, escovou os dentes e foi para a escola.",
+      stage: "🏫",
+      hint: "O que veio por último?",
+      choices: [
+        { t: "Foi para a escola", ok: true, why: "O último da lista é a escola." },
+        { t: "Tomou café", ok: false, why: "Tomar café foi o primeiro." },
+        { t: "Escovou os dentes", ok: false, why: "Escovar foi o do meio." }
+      ]
+    },
+    {
+      q: "A prova é amanhã. Quando é bom estudar?",
+      stage: "📝",
+      hint: "Pense no tempo que falta.",
+      choices: [
+        { t: "Hoje", ok: true, why: "Hoje ainda dá tempo, antes da prova." },
+        { t: "Semana passada", ok: false, why: "A semana passada já foi, não dá para voltar." },
+        { t: "Depois da prova", ok: false, why: "Depois da prova não ajuda mais." }
+      ]
+    },
+    {
+      q: "Você vai dormir às 9 da noite e acorda às 7 da manhã.",
+      stage: "😴",
+      hint: "Você dormiu...",
+      choices: [
+        { t: "A noite toda", ok: true, why: "Das 9 às 7 é a noite inteira." },
+        { t: "Só um minuto", ok: false, why: "Um minuto é bem pouco." },
+        { t: "Uma semana", ok: false, why: "Uma semana tem 7 dias." }
+      ]
     }
-  ];
-  const item = pick(bank);
+];
+
+function timeItem(item) {
   return {
     key: item.q,
     q: item.q,
@@ -638,9 +936,7 @@ function timeItem() {
   };
 }
 
-function enItem() {
-  const kind = pick(["hear", "mean"]);
-  const w = pick(words);
+function enItem(w, kind) {
   const distract = shuffle(words.filter(x => x.en !== w.en)).slice(0, 2);
   if (kind === "hear") {
     return {
@@ -670,8 +966,7 @@ function enItem() {
   };
 }
 
-function socItem() {
-  const s = pick(social);
+function socItem(s) {
   return {
     key: s.q,
     q: s.q,
@@ -682,17 +977,56 @@ function socItem() {
   };
 }
 
-function makeItem() {
-  if (state.world === "math") return mathItem();
-  if (state.world === "time") return timeItem();
-  if (state.world === "en") return enItem();
-  return socItem();
+// Perguntas que ela errou e ainda nao acertou de primeira (so neste aparelho)
+function getErros() {
+  try { return JSON.parse(lsGet("mc-erros") || "{}"); } catch (e) { return {}; }
+}
+function bumpErro(chave, d) {
+  const e = getErros();
+  const n = (e[chave] || 0) + d;
+  if (n > 0) e[chave] = Math.min(n, 5); else delete e[chave];
+  lsSet("mc-erros", JSON.stringify(e));
+}
+
+// Escolhe n sem repetir; ate 2 das que ela errou antes
+function sorteia(cands, n, mundo) {
+  const e = getErros();
+  const erradas = shuffle(cands.filter(c => e[mundo + "|" + c.key]));
+  const resto = shuffle(cands.filter(c => !e[mundo + "|" + c.key]));
+  const out = erradas.slice(0, 2);
+  for (const c of resto) { if (out.length >= n) break; out.push(c); }
+  for (const c of erradas.slice(2)) { if (out.length >= n) break; out.push(c); }
+  return shuffle(out);
+}
+
+function missaoNumeros(n) {
+  const e = getErros();
+  const tipos = ["count", "more", "add", "next"];
+  const pesos = tipos.slice();
+  tipos.forEach(k => { for (let i = 0; i < (e["math|#" + k] || 0); i++) pesos.push(k); });
+  const out = [], vistas = new Set();
+  for (let t = 0; t < 60 && out.length < n; t++) {
+    const it = mathItem(pick(pesos));
+    if (vistas.has(it.key)) continue;
+    vistas.add(it.key);
+    out.push(it);
+  }
+  return out;
+}
+
+function buildMission(world, n) {
+  if (world === "math") return missaoNumeros(n);
+  if (world === "time") return sorteia(timeBank.map(x => ({ key: x.q, x })), n, "time").map(c => timeItem(c.x));
+  if (world === "soc") return sorteia(social.map(x => ({ key: x.q, x })), n, "soc").map(c => socItem(c.x));
+  const combos = [];
+  words.forEach(w => ["hear", "mean"].forEach(kind => combos.push({ key: (kind === "hear" ? "Ouvir: " : "Significado: ") + w.en, w, kind })));
+  return sorteia(combos, n, "en").map(c => enItem(c.w, c.kind));
 }
 
 function renderItem() {
   state.locked = false;
   state.tries = 0;
-  state.item = makeItem();
+  state.item = state.queue[state.step];
   $("q").textContent = state.item.q;
   $("hint").textContent = state.item.hint;
   $("stage").innerHTML = state.item.stage;
@@ -715,12 +1049,26 @@ function renderItem() {
   speak(state.item.speak || state.item.q, state.item.lang || "pt-BR");
 }
 
+function registraErro(chosen) {
+  const it = state.item;
+  const certa = it.choices.find(c => c.ok);
+  if (state.tries === 1) {
+    bumpErro(state.world + "|" + (it.key || it.q), 1);
+    if (it.kind) bumpErro("math|#" + it.kind, 1);
+  }
+  track({
+    tipo: "erro", mundo: state.world, perg: it.key || it.q, q: it.q,
+    esc: chosen.t, certa: certa ? certa.t : "", why: certa ? certa.why : ""
+  });
+}
+
 function answer(idx) {
   if (state.locked) return;
   const buttons = [...$("choices").children];
   const chosen = state.item.choices[idx];
   const fb = $("feedback");
   state.tries += 1;
+  if (!chosen.ok) registraErro(chosen);
   // Errou na 1a tentativa (e ha mais de 2 opcoes): deixa tentar de novo sem mostrar a resposta
   const retry = !chosen.ok && state.tries === 1 && state.item.choices.length > 2;
   if (retry) {
@@ -742,6 +1090,8 @@ function answer(idx) {
   if (firstTry) {
     state.stars += 1;
     saveStars();
+    bumpErro(state.world + "|" + (state.item.key || state.item.q), -1);
+    if (state.item.kind) bumpErro("math|#" + state.item.kind, -1);
   }
   marcaDia();
   renderStreak();
@@ -754,6 +1104,7 @@ function answer(idx) {
 function start(world) {
   state.world = world;
   state.step = 0;
+  state.queue = buildMission(world, state.total);
   show("play");
   renderItem();
 }

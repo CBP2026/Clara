@@ -83,7 +83,7 @@ function limpaEvento(b) {
   if (!b || typeof b !== "object") return null;
   if (typeof b.id !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(b.id)) return null;
   if (!Object.prototype.hasOwnProperty.call(mundos, b.mundo)) return null;
-  const tipo = b.tipo === "missao" ? "missao" : b.tipo === "resp" ? "resp" : null;
+  const tipo = ["missao", "resp", "erro"].includes(b.tipo) ? b.tipo : null;
   if (!tipo) return null;
   const ev = { t: new Date().toISOString(), id: b.id, tipo, mundo: b.mundo };
   if (Number.isFinite(b.td)) ev.td = Math.round(b.td);
@@ -92,6 +92,14 @@ function limpaEvento(b) {
     ev.ok = b.ok;
     ev.tent = b.tent === 1 ? 1 : 2;
     ev.perg = String(b.perg || "").slice(0, 120);
+  }
+  if (tipo === "erro") {
+    ev.perg = String(b.perg || "").slice(0, 120);
+    if (!ev.perg) return null;
+    ev.q = String(b.q || "").slice(0, 160);
+    ev.esc = String(b.esc || "").slice(0, 80);
+    ev.certa = String(b.certa || "").slice(0, 80);
+    ev.why = String(b.why || "").slice(0, 200);
   }
   return ev;
 }
@@ -187,26 +195,43 @@ function painel(res) {
   const porDia = Object.fromEntries(dias.map((d) => [d, { resp: 0, missoes: 0 }]));
   const stats = {};
   for (const k of Object.keys(mundos)) stats[k] = { missoes: 0, resp: 0, certas: 0 };
-  const erros = {};
+  const grupos = new Map(); // erros agrupados por pergunta, em todo o historico
   let ultimo = 0;
 
+  evs.sort((x, y) => x.quando - y.quando);
   for (const ev of evs) {
-    if (ev.quando > ultimo) ultimo = ev.quando;
-    const d = diaKey(ev.quando);
-    if (!porDia[d]) continue; // fora dos ultimos 28 dias
+    if (ev.quando > ultimo && ev.tipo !== "erro") ultimo = ev.quando;
     const s = stats[ev.mundo];
     if (!s) continue;
+
+    if (ev.tipo === "erro") {
+      const k = ev.mundo + "|" + ev.perg;
+      let g = grupos.get(k);
+      if (!g) {
+        g = { mundo: ev.mundo, perg: ev.perg, q: "", n: 0, ultimo: 0, esc: [], certa: "", why: "", resolvido: false };
+        grupos.set(k, g);
+      }
+      g.n += 1;
+      g.ultimo = ev.quando;
+      g.q = ev.q || g.q;
+      g.certa = ev.certa || g.certa;
+      g.why = ev.why || g.why;
+      if (ev.esc && !g.esc.includes(ev.esc)) g.esc.push(ev.esc);
+      g.resolvido = false;
+    } else if (ev.tipo === "resp" && ev.ok) {
+      const g = grupos.get(ev.mundo + "|" + ev.perg);
+      if (g) g.resolvido = true; // acertou de primeira depois de errar
+    }
+
+    const d = diaKey(ev.quando);
+    if (!porDia[d]) continue; // fora dos ultimos 28 dias
     if (ev.tipo === "missao") {
       s.missoes += 1;
       porDia[d].missoes += 1;
-    } else {
+    } else if (ev.tipo === "resp") {
       s.resp += 1;
       porDia[d].resp += 1;
       if (ev.ok) s.certas += 1;
-      else {
-        const k = ev.mundo + "|" + ev.perg;
-        erros[k] = (erros[k] || 0) + 1;
-      }
     }
   }
 
@@ -232,12 +257,21 @@ function painel(res) {
     return `<tr><td>${esc(mundos[k])}</td><td>${s.missoes}</td><td>${s.resp}</td><td>${pct}</td></tr>`;
   }).join("");
 
-  const topErros = Object.entries(erros).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, n]) => {
-    const i = k.indexOf("|");
-    const m = k.slice(0, i);
-    const q = k.slice(i + 1);
-    return `<li><b>${esc(mundos[m] || m)}</b>: ${esc(q)} <span class="mut">(${n}×)</span></li>`;
+  const lista = [...grupos.values()].sort((x, y) =>
+    (x.resolvido - y.resolvido) || (y.n - x.n) || (y.ultimo - x.ultimo));
+  const naoResolvidos = lista.filter((g) => !g.resolvido).length;
+  const LIMITE = 300;
+  const itens = lista.slice(0, LIMITE).map((g) => {
+    const pergunta = g.q && !g.perg.includes(g.q) ? g.perg + " — " + g.q : g.perg;
+    return `<li class="${g.resolvido ? "ok" : "pend"}">
+      <div><b>${esc(mundos[g.mundo] || g.mundo)}</b> · ${esc(pergunta)}</div>
+      ${g.esc.length ? `<div>Respondeu: ${g.esc.map(esc).join("; ")}</div>` : ""}
+      ${g.certa ? `<div>Certa: <b>${esc(g.certa)}</b></div>` : ""}
+      ${g.why ? `<div class="mut">${esc(g.why)}</div>` : ""}
+      <div class="mut">${g.n}× · última: ${esc(fmtHora.format(new Date(g.ultimo)))} · ${g.resolvido ? "✅ já acertou depois" : "⏳ ainda não acertou"}</div>
+    </li>`;
   }).join("");
+  const topErros = itens;
 
   const aviso = persistente ? "" :
     `<p class="warn">Sem volume em /data: o histórico será perdido a cada deploy. Crie um Volume no Railway.</p>`;
@@ -260,6 +294,8 @@ function painel(res) {
   .hoje{outline:2px solid #fff8ef}
   table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.12)}
   ul{padding-left:18px;margin:0;font-size:14px;line-height:1.5}a{color:#7cc4ff}
+  ul.erros{list-style:none;padding:0}ul.erros li{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+  ul.erros li:last-child{border-bottom:0}li.pend{border-left:3px solid #ff7a59;padding-left:10px!important}li.ok{opacity:.7}
 </style></head><body><main>
 <h1>🌙 Clara</h1>
 <div class="mut">Atualizado ${esc(fmtHora.format(new Date()))} (${esc(tz)})</div>
@@ -279,8 +315,9 @@ ${aviso}
 <div class="mut" style="margin-top:8px">Verde claro: poucas respostas · verde: 5+ · amarelo: 10+</div></div>
 <h2>Por tema (28 dias)</h2>
 <div class="card"><table><tr><th>Tema</th><th>Missões</th><th>Respostas</th><th>Acerto 1ª</th></tr>${linhas}</table></div>
-<h2>Onde mais erra</h2>
-<div class="card">${topErros ? `<ul>${topErros}</ul>` : '<span class="mut">Sem erros registrados.</span>'}</div>
+<h2>Tudo que ela errou (${lista.length}${lista.length ? ", " + naoResolvidos + " ainda sem acertar" : ""})</h2>
+<div class="card">${topErros ? `<ul class="erros">${topErros}</ul>` : '<span class="mut">Sem erros registrados.</span>'}
+${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}. O CSV tem tudo.</p>` : ""}</div>
 <p class="mut"><a href="/pais/log.csv">Baixar CSV completo</a></p>
 </main></body></html>`;
   res.writeHead(200, {
@@ -298,14 +335,14 @@ function csvCel(v) {
 }
 
 function csv(res) {
-  const rows = ["hora_servidor,hora_aparelho,id,tipo,mundo,acertou_de_primeira,tentativas,pergunta"];
+  const rows = ["hora_servidor,hora_aparelho,id,tipo,mundo,acertou_de_primeira,tentativas,pergunta,enunciado,respondeu,certa,explicacao"];
   for (const ev of lerLog()) {
     rows.push([
       ev.t,
       Number.isFinite(ev.td) ? new Date(ev.td).toISOString() : "",
       ev.id, ev.tipo, ev.mundo,
       ev.ok === undefined ? "" : ev.ok ? "sim" : "nao",
-      ev.tent, ev.perg
+      ev.tent, ev.perg, ev.q, ev.esc, ev.certa, ev.why
     ].map(csvCel).join(","));
   }
   res.writeHead(200, {

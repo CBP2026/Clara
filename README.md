@@ -5,11 +5,15 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 ## O que é guardado
 
 - **No celular:** estrelas, dias de uso, preferência de som e um ID anônimo do aparelho (`localStorage`).
-- **No servidor:** um registro mínimo de uso: ID anônimo, hora, tema, se acertou de primeira e o texto da pergunta. Nenhum nome ou dado pessoal. Fica em `log.jsonl` na pasta de dados.
+- **No servidor:** um registro mínimo de uso: ID anônimo, hora, tema, se acertou de primeira e o texto da pergunta. Cada erro também guarda o enunciado, o que ela respondeu, a resposta certa e a explicação. Nenhum nome ou dado pessoal. Fica em `log.jsonl` na pasta de dados.
 
 ## Painel dos pais
 
-`/pais` mostra último uso, calendário dos últimos 28 dias, acerto por tema e onde mais erra. `/pais/log.csv` baixa o histórico completo. O acesso é por senha (qualquer usuário, senha = `PAIS_SENHA`). Sem `PAIS_SENHA` definida, o painel fica desligado.
+`/pais` mostra último uso, calendário dos últimos 28 dias, acerto por tema e a lista de **tudo que ela errou** (com o que respondeu, a resposta certa e se já acertou depois). `/pais/log.csv` baixa o histórico completo. O acesso é por senha (qualquer usuário, senha = `PAIS_SENHA`). Sem `PAIS_SENHA` definida, o painel fica desligado.
+
+## Perguntas
+
+Tempo e Amigos têm 23 perguntas cada; English tem 30 palavras em 2 formatos; Números gera combinações. Cada missão tem 5 perguntas **sem repetição**, e até 2 delas são perguntas que ela errou antes e ainda não acertou de primeira (guardado no próprio aparelho).
 
 ## Rodar local
 
