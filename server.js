@@ -333,6 +333,24 @@ function usavel(s, p) {
   return !/\{(dias|estrelas)\}/.test(s);
 }
 
+// ---------- conceitos (calculados no servidor a partir do log) ----------
+function nomeConc(c) {
+  const x = C.conceitos && C.conceitos[c];
+  return x ? x.nome : String(c).replace(/^[a-z]+\./, "").replace(/_/g, " ");
+}
+// evs: eventos sem teste, ordenados por hora. Dominado = acertou de primeira em 2 dias diferentes depois do ultimo erro / "nao sei".
+function analisaConceitos(evs, chaveDia) {
+  const m = new Map();
+  for (const ev of evs) {
+    if (!ev.conc) continue;
+    let c = m.get(ev.conc);
+    if (!c) { c = { dias: new Set(), ultimoErro: 0, erros: [], ultimoOk: 0 }; m.set(ev.conc, c); }
+    if (ev.tipo === "erro" || ev.tipo === "naosei") { c.dias.clear(); c.ultimoErro = ev.quando; c.erros.push(ev.quando); }
+    else if (ev.tipo === "resp" && ev.ok) { c.dias.add(chaveDia(ev.quando)); c.ultimoOk = ev.quando; }
+  }
+  return m;
+}
+
 // ---------- notificacoes ----------
 const SLOTS = [["07:00", "manha"], ["19:00", "dia"], ["21:00", "noite"]];
 const fmtClara = new Intl.DateTimeFormat("en-GB", { timeZone: tzClara, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -342,10 +360,10 @@ function agoraClara() {
   return { dia: parts.year + "-" + parts.month + "-" + parts.day, min: Number(hora) * 60 + Number(parts.minute) };
 }
 
-async function enviarPush(slot, teste) {
+async function enviarPush(slot, teste, textoFixo) {
   if (!webpush || !estado.subs.length) return { ok: 0, falhas: 0 };
   const p = perfilAtual();
-  const texto = preenche(pick(C.push[slot].filter((s) => usavel(s, p))), p);
+  const texto = textoFixo || preenche(pick(C.push[slot].filter((s) => usavel(s, p))), p);
   const payload = JSON.stringify({
     title: (p.lua || "Lua") + (teste ? " (teste)" : ""),
     body: texto,
@@ -370,9 +388,60 @@ async function enviarPush(slot, teste) {
   return { ok, falhas };
 }
 
+// Lembrete por pendencia: 1 por dia, na hora em que ela costuma usar a app (8h-20h), so se ainda nao usou hoje e ha um assunto para rever.
+const fmtHoraClara = new Intl.DateTimeFormat("en-GB", { timeZone: tzClara, hour: "2-digit", hour12: false });
+const fmtDiaClara = new Intl.DateTimeFormat("en-CA", { timeZone: tzClara, year: "numeric", month: "2-digit", day: "2-digit" });
+const horaClaraDe = (ms) => Number(fmtHoraClara.format(new Date(ms))) % 24;
+let planoPend = { dia: "" };
+function planoPendencia(dia) {
+  const agora = Date.now();
+  const evs = lerLog().filter((e) => !e.teste);
+  // hora habitual: a mais frequente nos ultimos 14 dias
+  const horas = {};
+  for (const e of evs) if (e.tipo === "resp" && agora - e.quando < 14 * 864e5) { const h = horaClaraDe(e.quando); horas[h] = (horas[h] || 0) + 1; }
+  const top = Object.entries(horas).sort((a, b) => b[1] - a[1])[0];
+  let alvo = top ? Number(top[0]) * 60 : -1;
+  if (alvo >= 0) {
+    alvo = Math.min(20 * 60, Math.max(8 * 60, alvo));
+    for (const [hhmm] of SLOTS) {
+      const s = Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3));
+      if (Math.abs(alvo - s) < 60) alvo = s - 60 >= 8 * 60 ? s - 60 : s + 60;
+    }
+    alvo = Math.min(20 * 60, alvo);
+  }
+  const usouHoje = evs.some((e) => fmtDiaClara.format(new Date(e.quando)) === dia);
+  // assunto para rever: errado ha pelo menos 20 h e ainda nao dominado
+  const conc = analisaConceitos(evs.sort((a, b) => a.quando - b.quando), (ms) => fmtDiaClara.format(new Date(ms)));
+  let pend = null;
+  for (const [k, c] of conc) {
+    if (c.ultimoErro && c.dias.size < 2 && agora - c.ultimoErro > 20 * 3600e3 && agora - c.ultimoErro < 10 * 864e5) {
+      if (!pend || c.erros.length > pend.n) pend = { conc: k, n: c.erros.length };
+    }
+  }
+  return { dia, alvo, usouHoje, pend };
+}
+function lembretePendencia(dia, min) {
+  if (estado.lembretes === false || !estado.subs.length) return;
+  if (min < 8 * 60 || min >= 20 * 60) return;
+  const chave = dia + "|pendencia";
+  if (estado.enviados[chave]) return;
+  if (planoPend.dia !== dia) planoPend = planoPendencia(dia);
+  const pl = planoPend;
+  if (pl.alvo < 0 || min < pl.alvo || min >= pl.alvo + 15) return;
+  estado.enviados[chave] = true;
+  salvaEstado();
+  const fresco = planoPendencia(dia); // reavalia agora: ela pode ja ter usado a app
+  if (fresco.usouHoje || !fresco.pend) return;
+  const p = perfilAtual();
+  const texto = preenche("Oi, {nome}! 3 minutinhos para rever " + nomeConc(fresco.pend.conc) + "? 💛", p);
+  enviarPush("pendencia", false, texto).catch((e) => console.error("Lembrete: " + e.message));
+}
+
 function agendador() {
   const { dia, min } = agoraClara();
+  lembretePendencia(dia, min);
   for (const [hhmm, slot] of SLOTS) {
+    if (slot === "noite" && estado.boaNoite === false) continue;
     const alvo = Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3));
     const chave = dia + "|" + slot;
     // Janela de 15 min para sobreviver a reinicios
@@ -883,6 +952,34 @@ function painel(res) {
   }
   if (tristes >= 3) alertas.push({ q: agora, txt: "Ela disse que estava triste ou com raiva 3 dias seguidos." });
   alertas.sort((a, b) => b.q - a.q);
+  // ---- resumo da semana ----
+  const sem7 = agora - 7 * 864e5;
+  const resps = evs.filter((e) => e.tipo === "resp" && e.quando >= sem7 && !e.extra);
+  const comMs = resps.filter((e) => Number.isFinite(e.ms)).map((e) => e.ms).sort((a, b) => a - b);
+  const medianaMs = comMs.length ? comMs[Math.floor(comMs.length / 2)] : null;
+  const rapidasPct = comMs.length ? Math.round(100 * comMs.filter((x) => x < 2000).length / comMs.length) : null;
+  const avisosRapido = evs.filter((e) => e.tipo === "rapido" && e.quando >= sem7).length;
+  const naoSei = evs.filter((e) => e.tipo === "naosei" && e.quando >= sem7).length;
+  const conceitos = analisaConceitos(evs.slice().sort((a, b) => a.quando - b.quando), diaKey);
+  const dominados = [], emDificuldade = [];
+  for (const [k, c] of conceitos) {
+    if (c.dias.size >= 2 && c.ultimoOk >= sem7) dominados.push(k);
+    else if (c.ultimoErro >= sem7 && c.dias.size < 2) emDificuldade.push({ k, n: c.erros.filter((q) => q >= sem7).length });
+  }
+  emDificuldade.sort((a, b) => b.n - a.n);
+  const fortes = conversas.filter((c) => c.origem === "filtro-entrada" && c.quando >= agora - 2 * 864e5).length;
+  const humorDificil = new Set(humores.filter((h) => h.quando >= sem7 && (h.rosto >= 3 || (h.chips || []).some((c) => ["Fiquei sozinha", "Tive um problema", "Riram de mim"].includes(c)))).map((h) => diaKey(h.quando))).size;
+  const nPedidos = conversas.filter((c) => c.origem === "pedido-app" && c.quando >= sem7).length;
+  const casa = emDificuldade.length && C.conceitos[emDificuldade[0].k] ? C.conceitos[emDificuldade[0].k].casa
+    : "Conversem 5 minutos sobre o dia dela: pergunte qual foi a melhor parte e se alguém foi simpático.";
+  const resumoHtml = `<h2>Resumo da semana</h2><div class="card">
+  ${fortes ? `<p class="warn">🚨 ${fortes} mensagem(ns) de risco nas últimas 48 h. Veja “Atenção” e converse com ela.</p>` : ""}
+  <div><b>Como usou</b> · ${resps.length} respostas${medianaMs !== null ? " · demora " + (medianaMs / 1000).toFixed(1).replace(".", ",") + " s até tocar" : ""}${rapidasPct !== null ? " · " + rapidasPct + "% muito rápidas (menos de 2 s)" : ""}</div>
+  <div class="mut">${avisosRapido} aviso(s) para ler com calma · “Não sei” ${naoSei}×${rapidasPct !== null && rapidasPct >= 50 ? " · muitas respostas rápidas podem ser fuga de uma tarefa difícil, não preguiça" : ""}</div>
+  <p><b>Aprendeu de verdade:</b> ${dominados.length ? dominados.map((k) => "✅ " + esc(nomeConc(k))).join(" · ") : '<span class="mut">ainda nada dominado esta semana</span>'}</p>
+  <p><b>Em dificuldade:</b> ${emDificuldade.length ? emDificuldade.slice(0, 5).map((x) => "⏳ " + esc(nomeConc(x.k)) + " (" + x.n + "×)").join(" · ") : '<span class="mut">nenhum assunto</span>'}</p>
+  <p><b>Sinais:</b> humor difícil em ${humorDificil} dia(s) · ${nPedidos} pedido(s) sobre a app · ${alertas.length} aviso(s) em “Atenção”${testes.length ? " · " + testes.length + " registro(s) de teste ignorados" : ""}</p>
+  <p><b>Para fazer em casa (3 min):</b> ${esc(casa)}</p></div>`;
   const alertasHtml = alertas.length ? `<div class="card alerta"><b>⚠️ Atenção (${alertas.length})</b><ul class="erros">${alertas.slice(0, 30).map((a) =>
     `<li><div>${esc(a.txt)}</div><div class="mut">${esc(fmtHora.format(new Date(a.q)))}</div></li>`).join("")}</ul></div>` : "";
 
@@ -1003,6 +1100,7 @@ function painel(res) {
 <div class="mut">Atualizado ${esc(fmtHora.format(new Date()))} (${esc(tz)}) · <a href="/">abrir a app</a></div>
 ${aviso}
 ${alertasHtml}
+${resumoHtml}
 ${ultimoTeste ? `<div class="mut">🧪 Último teste: ${esc(fmtHora.format(new Date(ultimoTeste)))} (${testes.length} registros, ignorados)</div>` : ""}
 <div class="card">
   <div class="mut">Último uso</div>
@@ -1038,6 +1136,15 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
   <form method="post" action="/pais/chat"><input type="hidden" name="ligar" value="${estado.chat ? "0" : "1"}"><button>${estado.chat ? "Desligar conversa" : "Ligar conversa"}</button></form>
   <p class="mut">Ela pode mandar até ${LIMITE_DIA} mensagens por dia. Frases de risco não vão para a IA e aparecem em “Atenção”. Cada resposta passa por filtro de palavras e por um segundo modelo que verifica a segurança.</p>
   ${convHtml ? `<details><summary>Ver conversas (${conv.length})</summary><ul class="erros">${convHtml}</ul></details>` : '<span class="mut">Sem conversas.</span>'}
+</div>
+
+<h2>Lembretes</h2>
+<div class="card">
+  <form method="post" action="/pais/lembretes">
+    <label><input type="checkbox" name="lembretes" value="1" ${estado.lembretes === false ? "" : "checked"}> Lembrete por pendência (1 por dia, entre 8h e 20h, na hora em que ela costuma usar a app, só se ainda não usou e há um assunto para rever)</label><br>
+    <label><input type="checkbox" name="noite" value="1" ${estado.boaNoite === false ? "" : "checked"}> Mensagem de boa noite às 21:00</label><br>
+    <button class="sec">Guardar</button>
+  </form>
 </div>
 
 <h2>Pedidos dela sobre a app (14 dias)</h2>
@@ -1235,6 +1342,13 @@ function acaoPais(req, res, rota) {
     if (err) { res.writeHead(413); res.end(); return; }
     const f = new URLSearchParams(body);
     if (rota === "/pais/limpar") { limparRegistros(res, f); return; }
+    if (rota === "/pais/lembretes") {
+      estado.lembretes = f.get("lembretes") === "1";
+      estado.boaNoite = f.get("noite") === "1";
+      salvaEstado();
+      voltaPainel(res);
+      return;
+    }
     if (rota === "/pais/chat") {
       estado.chat = f.get("ligar") === "1";
       salvaEstado();
@@ -1261,7 +1375,7 @@ function areaPais(req, res, rota) {
     return;
   }
   if (req.method === "POST") {
-    if (rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar") acaoPais(req, res, rota);
+    if (rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes") acaoPais(req, res, rota);
     else { res.writeHead(405); res.end(); }
     return;
   }
@@ -1359,7 +1473,7 @@ const server = http.createServer((req, res) => {
     json(res, 200, { chat: !!(estado.chat && llmPronto()), vapid: vapid ? vapid.publicKey : null });
     return;
   }
-  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/conversas.csv" || rota === "/pais/perfis.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar") {
+  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/conversas.csv" || rota === "/pais/perfis.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes") {
     areaPais(req, res, rota === "/pais/" ? "/pais" : rota);
     return;
   }
@@ -1390,4 +1504,4 @@ server.listen(port, "0.0.0.0", () => {
 });
 
 // usado por scripts/avalia-modelos.js
-module.exports = { server, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };
+module.exports = { server, planoPendencia, analisaConceitos, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };

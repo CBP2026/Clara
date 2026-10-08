@@ -38,6 +38,13 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 - **Turma do Girassol:** 7 capítulos (novos: “Ninguém me chamou”, “Outras amigas”, “O grupo”), liberados por estrelas (0/10/25/45/70/100/130). Cada pergunta tem um conceito e entra na revisão do tutor; as opções erradas são reações reais (ficar calada, mensagens com raiva), nem sempre a certa é a mais “educada” (por exemplo contar a um adulto). A cena da mochila saiu para não repetir a de Amigos.
 - **Minha novela:** a estrela do capítulo só vale com pelo menos 12 palavras escritas. Depois do capítulo, a Lua faz **um comentário específico e uma pergunta** sobre o que ela escreveu (modo `novela` da conversa, com os mesmos filtros; frases de risco geram alerta no painel).
 
+### Resumo da semana e proatividade
+
+- **Painel:** o topo tem “Resumo da semana” (tudo calculado em código a partir do log, sem modelo): tempo até tocar e % de respostas muito rápidas, assuntos que dominou (2 dias de acerto de primeira depois do último erro) e assuntos em dificuldade, sinais (mensagens de risco nas últimas 48 h, humor difícil, pedidos sobre a app, registros de teste ignorados) e uma atividade de 3 minutos para fazer em casa (`C.conceitos[...].casa` em `conteudo.js`).
+- **Lembrete por pendência:** no máximo 1 por dia, entre 8h e 20h (`CLARA_TZ`), na hora em que ela mais usa a app (últimos 14 dias), a pelo menos 1 h de qualquer mensagem fixa, só se ainda não usou hoje e há um assunto errado há mais de 20 h por rever. Os pais ligam ou desligam isto, e a mensagem de boa noite das 21:00, na secção “Lembretes” do painel.
+- **Na app:** a home mostra “Hoje: 🔁 rever … · ✨ missão … · 🎵 quiz”; se ontem ela disse que foi um dia difícil, a Lua pergunta como está hoje; depois de 3 toques rápidos seguidos, a Lua sugere ir mais devagar ou tocar em “Não sei”.
+- Alertas aos pais: ficam no painel (“Atenção” e a faixa vermelha do resumo); não há push para os pais, porque o push da app está ligado ao aparelho da Clara.
+
 ## Perguntas
 
 Tempo e Amigos têm 23 perguntas cada; English tem 30 palavras em 2 formatos; Números gera combinações. Cada missão tem 5 perguntas **sem repetição**, e até 2 delas são perguntas que ela errou antes e ainda não acertou de primeira (guardado no próprio aparelho).
