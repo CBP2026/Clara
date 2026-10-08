@@ -33,6 +33,11 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 - **Estrelas por esforço:** 1 por acerto de primeira lido com calma, 1 por acertar a variante depois da aula, 2 por dominar um conceito. Acerto em menos de 2 s não dá estrela.
 - O log guarda `ms_ate_toque`, `posicao` da opção, `conceito` e `extra` (variante); eventos `rapido` e `naosei` não entram nas estatísticas nem nos erros do painel.
 
+### Novelas
+
+- **Turma do Girassol:** 7 capítulos (novos: “Ninguém me chamou”, “Outras amigas”, “O grupo”), liberados por estrelas (0/10/25/45/70/100/130). Cada pergunta tem um conceito e entra na revisão do tutor; as opções erradas são reações reais (ficar calada, mensagens com raiva), nem sempre a certa é a mais “educada” (por exemplo contar a um adulto). A cena da mochila saiu para não repetir a de Amigos.
+- **Minha novela:** a estrela do capítulo só vale com pelo menos 12 palavras escritas. Depois do capítulo, a Lua faz **um comentário específico e uma pergunta** sobre o que ela escreveu (modo `novela` da conversa, com os mesmos filtros; frases de risco geram alerta no painel).
+
 ## Perguntas
 
 Tempo e Amigos têm 23 perguntas cada; English tem 30 palavras em 2 formatos; Números gera combinações. Cada missão tem 5 perguntas **sem repetição**, e até 2 delas são perguntas que ela errou antes e ainda não acertou de primeira (guardado no próprio aparelho).
