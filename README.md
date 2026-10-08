@@ -24,6 +24,15 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 - **Modelo por papel:** `LUA_MODELO` (conversa) e `LUA_MODERADOR` (segurança). Se o nome começar por `claude-` usa a API da Anthropic (precisa de `ANTHROPIC_API_KEY`); caso contrário, Venice. Se a chamada falhar, cai nos modelos Venice (`VENICE_MODELO`, `VENICE_MODERADOR`).
 - **Avaliar modelos:** `node scripts/avalia-modelos.js venice:venice-uncensored-1-2 claude-haiku-5-5 claude-sonnet-5-5` corre os 30 casos de `test/casos-lua.json` e imprime um relatório para leitura humana. Só depois de ler o relatório vale trocar `LUA_MODELO`.
 
+### Tutor (Números, Tempo, English, Amigos)
+
+- Um toque fecha a pergunta: já não dá para acertar por eliminação. **“Não sei”** está sempre disponível e não penaliza.
+- **Toque muito rápido e errado** (menos de 2 s) não conta como erro: a Lua pede para ler com calma e as opções voltam. Se a maioria dos toques de uma missão for rápida, o nível não sobe nem desce.
+- **Errou ou “Não sei”:** mini-aula em 3 passos (o que escolheu e porquê, apoio visual — tocar para contar objetos ou pedaços de 5 minutos, relógio —, resposta resolvida) e depois **uma pergunta parecida do mesmo conceito**.
+- **Conceitos:** cada pergunta tem um conceito (`tempo.diferenca_minutos`, `num.contar`, `social.sinais_corpo`…). Dominado = acertou de primeira em 2 dias diferentes depois do último erro. Conceito errado volta para revisão no dia seguinte e 3 dias depois (guardado no aparelho em `mc-conceitos`).
+- **Estrelas por esforço:** 1 por acerto de primeira lido com calma, 1 por acertar a variante depois da aula, 2 por dominar um conceito. Acerto em menos de 2 s não dá estrela.
+- O log guarda `ms_ate_toque`, `posicao` da opção, `conceito` e `extra` (variante); eventos `rapido` e `naosei` não entram nas estatísticas nem nos erros do painel.
+
 ## Perguntas
 
 Tempo e Amigos têm 23 perguntas cada; English tem 30 palavras em 2 formatos; Números gera combinações. Cada missão tem 5 perguntas **sem repetição**, e até 2 delas são perguntas que ela errou antes e ainda não acertou de primeira (guardado no próprio aparelho).

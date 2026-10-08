@@ -34,12 +34,37 @@ test("eventos de teste ficam marcados no log e fora do painel", async () => {
   const html = await (await fetch(base + "/pais", { headers: { Authorization: auth } })).text();
   assert.match(html, /Último teste/);
   const csv = await (await fetch(base + "/pais/log.csv", { headers: { Authorization: auth } })).text();
-  assert.match(csv.split("\n")[0], /,teste$/);
-  assert.match(csv, /"sim"\n/);
+  assert.match(csv.split("\n")[0], /,teste,ms_ate_toque,posicao,conceito,extra$/);
+  assert.match(csv, /"sim","","","",""\n/);
 });
 
 test("teste-auth: senha certa ok, errada 401, bloqueio após 5 falhas", async () => {
   assert.equal((await post("/api/teste-auth", { senha: "segredo" })).status, 200);
   for (let i = 0; i < 5; i++) assert.equal((await post("/api/teste-auth", { senha: "x" })).status, 401);
   assert.equal((await post("/api/teste-auth", { senha: "segredo" })).status, 429);
+});
+
+test("eventos do tutor guardam tempo, posição, conceito e extra; rapido/naosei são aceites", async () => {
+  const base2 = { id: ID, td: Date.now(), mundo: "time", perg: "Falta live 15" };
+  const evs = [
+    { ...base2, tipo: "resp", ok: false, tent: 1, ms: 5200, pos: 2, conc: "tempo.diferenca_minutos" },
+    { ...base2, tipo: "resp", ok: true, tent: 1, ms: 4100, pos: 0, conc: "tempo.diferenca_minutos", extra: true },
+    { ...base2, tipo: "rapido", ms: 900, pos: 1, conc: "tempo.diferenca_minutos" },
+    { ...base2, tipo: "naosei", ms: 3000, conc: "tempo.duracao" }
+  ];
+  for (const e of evs) assert.ok((await post("/api/evento", e)).ok, e.tipo);
+  assert.equal((await post("/api/evento", { ...base2, tipo: "rapido", perg: "" })).status, 400);
+  assert.equal((await post("/api/evento", { ...base2, tipo: "resp", ok: true, conc: "<script>" })).ok, true);
+  await new Promise((r) => setTimeout(r, 200));
+  const linhas = fs.readFileSync(path.join(dir, "log.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
+  const r1 = linhas.find((l) => l.tipo === "resp" && l.ms === 5200);
+  assert.equal(r1.pos, 2);
+  assert.equal(r1.conc, "tempo.diferenca_minutos");
+  assert.ok(linhas.find((l) => l.tipo === "resp" && l.extra));
+  assert.ok(linhas.find((l) => l.tipo === "naosei" && l.conc === "tempo.duracao"));
+  assert.equal(linhas.filter((l) => l.conc === "<script>").length, 0, "conceito inválido é descartado");
+  const csv = await (await fetch(base + "/pais/log.csv", { headers: { Authorization: auth } })).text();
+  assert.match(csv, /"5200","2","tempo.diferenca_minutos",""/);
+  const html = await (await fetch(base + "/pais", { headers: { Authorization: auth } })).text();
+  assert.equal(html.includes("Falta live 15"), false, "extra/rapido/naosei não entram nos erros do painel");
 });
