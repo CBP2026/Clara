@@ -184,17 +184,27 @@ function limpaPerfil(p) {
   };
 }
 
-const COM_MUNDO = ["missao", "resp", "erro", "nivel"];
+const COM_MUNDO = ["missao", "resp", "erro", "nivel", "rapido", "naosei"];
 function limpaEvento(b) {
   if (!b || typeof b !== "object") return null;
   if (typeof b.id !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(b.id)) return null;
-  const tipo = ["missao", "resp", "erro", "nivel", "perfil", "humor", "novela", "musica"].includes(b.tipo) ? b.tipo : null;
+  const tipo = ["missao", "resp", "erro", "nivel", "rapido", "naosei", "perfil", "humor", "novela", "musica"].includes(b.tipo) ? b.tipo : null;
   if (!tipo) return null;
   if (COM_MUNDO.includes(tipo) && !Object.prototype.hasOwnProperty.call(mundos, b.mundo)) return null;
   const ev = { t: new Date().toISOString(), id: b.id, tipo };
   if (COM_MUNDO.includes(tipo)) ev.mundo = b.mundo;
   if (Number.isFinite(b.td)) ev.td = Math.round(b.td);
   if (b.teste === true) ev.teste = true;
+  // medidas do tutor: tempo ate ao 1.o toque (ms), posicao da opcao tocada, conceito, pergunta extra (variante)
+  if (Number.isFinite(b.ms) && b.ms >= 0 && b.ms < 600000) ev.ms = Math.round(b.ms);
+  if (Number.isInteger(b.pos) && b.pos >= 0 && b.pos <= 5) ev.pos = b.pos;
+  if (typeof b.conc === "string" && /^[a-z0-9_.]{1,40}$/.test(b.conc)) ev.conc = b.conc;
+  if (b.extra === true) ev.extra = true;
+  if (b.rapido === true) ev.rapido = true;
+  if (tipo === "rapido" || tipo === "naosei") {
+    ev.perg = txt(b.perg, 120);
+    if (!ev.perg) return null;
+  }
   if (tipo === "resp") {
     if (typeof b.ok !== "boolean") return null;
     ev.ok = b.ok;
@@ -776,6 +786,7 @@ function painel(res) {
   for (const ev of evs) {
     if (ev.tipo === "humor") { humores.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "perfil") continue;
+    if (ev.tipo === "rapido" || ev.tipo === "naosei" || (ev.tipo === "resp" && ev.extra)) { if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "musica") { musica.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "novela") { novela.push(ev); if (ev.quando > ultimo) ultimo = ev.quando; continue; }
     if (ev.tipo === "nivel") { (niveis[ev.mundo] = niveis[ev.mundo] || []).push(ev); continue; }
@@ -1082,7 +1093,7 @@ function csvCel(v) {
 }
 
 function csv(res) {
-  const rows = ["hora_servidor,hora_aparelho,id,tipo,mundo,acertou_de_primeira,tentativas,nivel,pergunta,enunciado,respondeu,certa,explicacao,humor,texto,teste"];
+  const rows = ["hora_servidor,hora_aparelho,id,tipo,mundo,acertou_de_primeira,tentativas,nivel,pergunta,enunciado,respondeu,certa,explicacao,humor,texto,teste,ms_ate_toque,posicao,conceito,extra"];
   for (const ev of lerLog()) {
     rows.push([
       ev.t,
@@ -1093,7 +1104,8 @@ function csv(res) {
       ev.perg, ev.q, ev.esc, ev.certa, ev.why,
       ev.tipo === "humor" ? [ev.rosto >= 0 ? C.humor.rostos[ev.rosto].t : "", ...(ev.chips || [])].filter(Boolean).join("; ") : "",
       ev.texto,
-      ev.teste ? "sim" : ""
+      ev.teste ? "sim" : "",
+      ev.ms, ev.pos, ev.conc, ev.extra ? "sim" : ""
     ].map(csvCel).join(","));
   }
   enviaCsv(res, "clara-log.csv", rows);

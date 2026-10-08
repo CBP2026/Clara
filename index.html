@@ -141,6 +141,13 @@
   .choice.small { font-size: 18px; font-weight: 700; text-align: left; }
   .choice.good { background: #b8f3d6; border-color: #1d9a62; }
   .choice.bad { background: #ffd0c6; border-color: #d4543c; }
+  .naosei { display: block; width: 100%; margin-top: 10px; border: 2px dashed rgba(255,255,255,.35); border-radius: 16px; padding: 12px; font-size: 17px; font-weight: 700; background: transparent; color: inherit; cursor: pointer; }
+  .aula { margin-top: 12px; }
+  .aulaVis { background: rgba(255,255,255,.1); border-radius: 16px; padding: 12px; margin: 10px 0; text-align: center; font-size: 20px; line-height: 1.6; }
+  .cnt { font-size: 28px; background: transparent; border: 2px solid transparent; border-radius: 12px; padding: 2px 4px; cursor: pointer; }
+  .cnt.on { border-color: #3ddc97; background: rgba(61,220,151,.2); }
+  .seg { font-size: 16px; font-weight: 800; background: rgba(255,255,255,.14); border: 2px solid transparent; border-radius: 12px; padding: 8px 10px; margin: 3px; cursor: pointer; color: inherit; }
+  .seg.on { border-color: #3ddc97; background: rgba(61,220,151,.25); }
   .feedback {
     margin-top: 12px; border-radius: 16px; padding: 12px 14px; font-size: 16px; line-height: 1.35;
     display: none;
@@ -267,6 +274,8 @@
     <div class="hint" id="hint"></div>
     <div class="stage" id="stage"></div>
     <div class="choices" id="choices"></div>
+    <button class="naosei hidden" id="naoSeiBtn">🤔 Não sei</button>
+    <div class="aula hidden" id="aula"></div>
     <div class="feedback" id="feedback"></div>
     <button class="next" id="nextBtn">Próxima</button>
   </section>
@@ -352,7 +361,8 @@ const state = {
   stars: Number(lsGet("mc-stars") || 0),
   muted: lsGet("mc-mudo") === "1",
   world: null, mode: "missao", step: 0, total: 5, queue: [], item: null,
-  locked: false, tries: 0, firsts: 0, place: null, cap: null
+  locked: false, tries: 0, firsts: 0, place: null, cap: null,
+  t0: 0, firstMs: null, rapidoItem: 0, rapidFlag: false, rapidosN: 0, extras: 0
 };
 const SECOES = ["abertura", "onboard", "home", "play", "reward", "humor", "nov", "girassol", "musica", "album", "chat"];
 function show(id) {
@@ -542,6 +552,78 @@ function bumpStats(w, ok) {
   lsSet("mc-stats", JSON.stringify(s));
 }
 
+// ---------- conceitos e revisão espaçada ----------
+// O estado de aprendizagem é por conceito (não por pergunta). Dominado = acertou de primeira em 2 dias diferentes depois do último erro.
+function conceitoDe(w, key, n) {
+  const k = String(key);
+  const q = k.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (w === "math") {
+    if (/^Contar/.test(k)) return "num.contar";
+    if (/^Mais:/.test(k)) return "num.comparar";
+    if (/^Depois de/.test(k)) return "num.sequencia";
+    if (/^(Placar|Somar)/.test(k)) return "num.somar";
+    if (/^(Vídeos|Tirar)/.test(k)) return "num.subtrair";
+    if (/^Loja/.test(k)) return "num.dinheiro_somar";
+    if (/^Troco/.test(k)) return "num.troco";
+    if (/^Grupos/.test(k)) return "num.multiplicar";
+    if (/^(metade|dobro)/.test(k)) return "num.metade_dobro";
+    if (/^(Desconto|Pct)/.test(k)) return "num.percentagem";
+    if (/\?/.test(k)) return "num.numero_que_falta";
+    if (/^(Receita|Preço|Unit)/.test(k)) return "num.proporcao";
+    return "num.n" + n;
+  }
+  if (w === "time") {
+    if (/^Relógio/.test(k)) return "tempo.relogio";
+    if (/^Falta/.test(k)) return "tempo.diferenca_minutos";
+    if (/minuto|segundo|quanto tempo|duracao|demora|faltam?\b|dura\b|durou|horas?\b|meia hora/.test(q)) return "tempo.duracao";
+    if (/manha|tarde|noite|meio-dia|almoco|jantar|cafe da manha|madrugada/.test(q)) return "tempo.partes_do_dia";
+    if (/segunda|terca|quarta|quinta|sexta|sabado|domingo|ontem|amanha|semana/.test(q)) return "tempo.dias_semana";
+    if (/janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|\bmes\b|meses|ano\b|estacao|verao|inverno|primavera|outono/.test(q)) return "tempo.meses_estacoes";
+    if (/primeiro|depois|ultimo|antes|por ultimo|em seguida/.test(q)) return "tempo.ordem";
+    return "tempo.n" + n;
+  }
+  if (w === "en") {
+    if (/^Ouvir:/.test(k)) return n === 2 ? "en.frase_ouvir" : "en.palavra_ouvir";
+    if (/^Significado:/.test(k)) return n === 2 ? "en.frase_significado" : "en.palavra_significado";
+    if (/^Diálogo/.test(k)) return "en.dialogo";
+    if (/^Conversa/.test(k)) return "en.conversa";
+    return "en.n" + n;
+  }
+  if (w === "soc") {
+    if (/braco|rosto|cara\b|expressao|sorri|olhar|postura|cruzad|sinais?\b|corpo/.test(q)) return "social.sinais_corpo";
+    if (/mensagem|grupo|whatsapp|online|foto|rede|internet|perfil|jogo/.test(q)) return "social.digital";
+    if (/bullying|gozar|rir de|insult|bateu|empurr|ameac|machuc|seguranca|estranh/.test(q)) return "social.seguranca";
+    if (/convid|sozinha|amiga|amigo|brincar|recreio|sentar|conversa|colega|chamou|sair com/.test(q)) return "social.amizade";
+    return "social.n" + n;
+  }
+  return "";
+}
+function getConc() { return lsJSON("mc-conceitos", {}); }
+function addDias(n) { const d = new Date(); d.setDate(d.getDate() + n); return hojeKey(d); }
+// tipo: "ok" (acertou de primeira, ou a variante) | "erro" | "naosei". Devolve { novo: true } quando passa a dominado.
+function concReg(conc, tipo) {
+  if (!conc) return {};
+  const all = getConc();
+  const c = all[conc] || { dias: [], pend: false, rev: [], erros: 0, oks: 0 };
+  let novo = false;
+  if (tipo === "ok") {
+    c.oks += 1;
+    const h = hojeKey();
+    if (!c.dias.includes(h)) c.dias.push(h);
+    if (c.dias.length >= 2 && c.pend) { c.pend = false; c.rev = []; novo = true; }
+    else if (c.dias.length >= 2 && !c.erros) novo = c.dias.length === 2;
+  } else {
+    if (tipo === "erro") c.erros += 1;
+    c.dias = [];
+    c.pend = true;
+    c.rev = [addDias(1), addDias(3)]; // revisão no dia seguinte e 3 dias depois
+  }
+  all[conc] = c;
+  lsSet("mc-conceitos", JSON.stringify(all));
+  return { novo };
+}
+function concDevida(c) { return !!(c && c.pend && (c.rev || []).some(d => d <= hojeKey())); }
+
 // ---------- itens ----------
 function objs(emoji, n) { return Array.from({ length: n }, () => emoji).join(""); }
 function objRows(emoji, n) {
@@ -582,9 +664,21 @@ function mathItem(n) {
     const k = pick(["count", "count", "more", "next"]);
     if (k === "count") {
       const v = rnd(3, 20);
-      return numItem({ key: "Contar " + v, q: "Quantos você vê?", hint: "Cada linha tem 5. Conte um por um.",
+      const it = numItem({ key: "Contar " + v, q: "Quantos você vê?", hint: "Cada linha tem 5. Conte um por um.",
         stage: `<div class="objs ${v > 10 ? "sm" : ""}">${objRows(emoji, v)}</div>`, certo: v,
         okWhy: `São ${v}.`, noWhy: `Conte de novo, devagar. São ${v}.` });
+      it.aula = {
+        texto: "Vamos contar juntas. Toque em cada um, um de cada vez.",
+        visual: () => `<div>${Array.from({ length: v }, (_, i) => `<button class="cnt" data-i="${i}">${emoji}</button>`).join("")}</div><div>Contei: <b id="cntN">0</b></div>`,
+        init: (root) => root.querySelectorAll(".cnt").forEach(b => b.onclick = () => {
+          if (b.classList.contains("on")) return;
+          b.classList.add("on");
+          const n = root.querySelectorAll(".cnt.on").length;
+          root.querySelector("#cntN").textContent = n;
+          speak(String(n), "pt-BR", true);
+        })
+      };
+      return it;
     }
     if (k === "more") {
       const a = rnd(2, 12);
@@ -727,7 +821,11 @@ function timeGen(n) {
     return {
       key: "Relógio " + certo, q: "Que horas são?", hint: "Ponteiro pequeno = hora. Grande = minutos.", speak: "Que horas são?",
       stage: clockSVG(h, m),
-      choices: shuffle(set).map(t => ({ t, ok: t === certo, why: t === certo ? `São ${certo}.` : `O pequeno está no ${h}${m ? " e meio" : ""}, o grande no ${m ? "6" : "12"}. São ${certo}.` }))
+      choices: shuffle(set).map(t => ({ t, ok: t === certo, why: t === certo ? `São ${certo}.` : `O pequeno está no ${h}${m ? " e meio" : ""}, o grande no ${m ? "6" : "12"}. São ${certo}.` })),
+      aula: {
+        texto: "O ponteiro pequeno mostra a hora. O grande mostra os minutos.",
+        visual: () => clockSVG(h, m) + `<div>Pequeno: <b>${h}</b> · Grande no <b>${m ? "6" : "12"}</b> = <b>${m ? "30 minutos" : "em ponto"}</b></div>`
+      }
     };
   }
   const ctx = pick(usavelCtx());
@@ -740,7 +838,21 @@ function timeGen(n) {
   return {
     key: "Falta " + ctx.k + " " + diff, q: fill(ctx.t.replace("#FIM", f(fim))) + ` Agora são ${f(ini)}.`, hint: "Quanto tempo falta?", speak: "",
     stage: `<div class="word md">🕒 ${f(ini)} → ${f(fim)}</div>`,
-    choices: shuffle([...opts]).map(d => ({ t: d + " minutos", ok: d === diff, why: d === diff ? `De ${f(ini)} a ${f(fim)} são ${diff} minutos.` : `Conte de ${f(ini)} até ${f(fim)}: ${diff} minutos.` }))
+    choices: shuffle([...opts]).map(d => ({ t: d + " minutos", ok: d === diff,
+      why: d === diff ? `De ${f(ini)} a ${f(fim)} são ${diff} minutos.`
+        : d === 60 ? `60 minutos é uma hora inteira. Aqui passa menos de uma hora: de ${f(ini)} a ${f(fim)} são ${diff} minutos.`
+        : `Conte de ${f(ini)} até ${f(fim)}: são ${diff} minutos.` })),
+    aula: {
+      texto: `Vamos contar o tempo de ${f(ini)} até ${f(fim)}. Cada pedacinho vale 5 minutos. Toque em um de cada vez.`,
+      visual: () => `<div>🕒 ${f(ini)}</div><div>${Array.from({ length: diff / 5 }, (_, i) => `<button class="seg" data-i="${i}">+5</button>`).join("")}</div><div>🏁 ${f(fim)}</div><div>Passaram: <b id="cntN">0</b> minutos</div>`,
+      init: (root) => root.querySelectorAll(".seg").forEach(b => b.onclick = () => {
+        if (b.classList.contains("on")) return;
+        b.classList.add("on");
+        const n = root.querySelectorAll(".seg.on").length * 5;
+        root.querySelector("#cntN").textContent = n;
+        speak(n + " minutos", "pt-BR", true);
+      })
+    }
   };
 }
 function usavelCtx() {
@@ -792,6 +904,9 @@ function conversaItem(c) {
 
 // Candidatos de um mundo num nível: [{key, make()}]
 function candidatos(w, n) {
+  return candidatosBase(w, n).map(c => { c.conc = conceitoDe(w, c.key, n); return c; });
+}
+function candidatosBase(w, n) {
   if (w === "time") {
     const out = C.tempo.filter(x => x.n === n && usavel(x.q + x.hint)).map(x => ({ key: x.q, make: () => bankItem(x) }));
     if (n === 3 || n === 4) for (let i = 0; i < 8; i++) { const it = timeGen(n); out.push({ key: it.key, make: () => it }); }
@@ -827,9 +942,14 @@ function sorteia(cands, n, mundo, usadas) {
   const vistos = new Set(usadas || []);
   const uniq = [];
   for (const c of cands) { if (!vistos.has(c.key)) { vistos.add(c.key); uniq.push(c); } }
+  const cc = getConc();
   const erradas = shuffle(uniq.filter(c => e[mundo + "|" + c.key]));
-  const resto = shuffle(uniq.filter(c => !e[mundo + "|" + c.key]));
+  // conceitos que ela errou e já estão na hora de rever (dia seguinte / 3 dias depois)
+  const revisao = shuffle(uniq.filter(c => !e[mundo + "|" + c.key] && c.conc && concDevida(cc[c.conc])));
+  const resto = shuffle(uniq.filter(c => !e[mundo + "|" + c.key] && !revisao.includes(c)));
   const out = erradas.slice(0, 2);
+  for (const c of revisao) { if (out.length >= 2) break; out.push(c); }
+  for (const c of revisao.slice(0, 2)) if (!out.includes(c) && out.length < n && resto.length >= 0) resto.unshift(c);
   for (const c of resto) { if (out.length >= n) break; out.push(c); }
   for (const c of erradas.slice(2)) { if (out.length >= n) break; out.push(c); }
   return shuffle(out);
@@ -841,6 +961,7 @@ function geraItens(w, n, qtd, usadas) {
     const it = c.make();
     it.key = c.key;
     it.nivel = n;
+    it.conc = c.conc || conceitoDe(w, c.key, n);
     return it;
   });
 }
@@ -849,6 +970,9 @@ function geraItens(w, n, qtd, usadas) {
 function renderItem() {
   state.locked = false;
   state.tries = 0;
+  state.t0 = Date.now(); state.firstMs = null; state.rapidoItem = 0; state.rapidFlag = false;
+  $("aula").classList.add("hidden");
+  $("choices").classList.remove("hidden");
   if (state.mode === "colocacao" && !state.queue[state.step]) {
     const usadas = state.queue.map(x => x.key);
     const it = geraItens(state.world, state.place.cur, 1, usadas)[0] || geraItens(state.world, 1, 1, usadas)[0];
@@ -868,6 +992,7 @@ function renderItem() {
   $("bar").style.width = (state.step / state.total * 100) + "%";
   $("dots").innerHTML = Array.from({ length: state.total }, (_, i) =>
     `<div class="dot ${i < state.step ? "on" : ""}"></div>`).join("");
+  $("naoSeiBtn").classList.toggle("hidden", !(state.mode === "missao" && it.conc && it.choices.length));
   const box = $("choices");
   box.className = "choices" + (it.choices.length === 2 ? " two" : "");
   box.innerHTML = "";
@@ -892,7 +1017,8 @@ function registraErro(chosen) {
   if (state.tries === 1) bumpErro(state.world + "|" + it.key, 1);
   track({
     tipo: "erro", mundo: state.world, perg: it.key, q: it.q,
-    esc: chosen.t, certa: certa ? certa.t : "", why: certa ? certa.why : ""
+    esc: chosen.t, certa: certa ? certa.t : "", why: certa ? certa.why : "",
+    ms: state.firstMs, pos: it.choices.indexOf(chosen), conc: it.conc
   });
 }
 
@@ -902,51 +1028,142 @@ function answer(idx) {
   const it = state.item;
   const chosen = it.choices[idx];
   const fb = $("feedback");
-  state.tries += 1;
-  if (!chosen.ok) registraErro(chosen);
-  // Errou na 1a tentativa (e há mais de 2 opções): tenta de novo sem mostrar a resposta
-  const retry = !chosen.ok && state.tries === 1 && it.choices.length > 2;
-  if (retry) {
-    buttons[idx].classList.add("bad");
-    buttons[idx].disabled = true;
+  const tutor = state.mode === "missao" && !!it.conc;
+  const extra = !!it.extra;
+  const ms = Date.now() - state.t0;
+  const rapido = ms < 2000;
+  if (state.firstMs == null) state.firstMs = ms;
+
+  // Toque muito rápido e errado: não conta como erro. A Lua convida a ler com calma e as opções voltam.
+  if (tutor && !chosen.ok && rapido && state.rapidoItem < 2) {
+    state.rapidoItem += 1;
+    state.rapidFlag = true;
+    track({ tipo: "rapido", mundo: state.world, perg: it.key, conc: it.conc, ms, pos: idx, extra });
+    buttons.forEach(b => b.disabled = true);
     fb.className = "feedback show no";
-    fb.textContent = "Quase. Olhe com calma e tente de novo.";
-    speak("Quase. Tente de novo.", "pt-BR");
+    fb.textContent = "Calma, sem pressa 💛 Leia com calma e toque quando tiver certeza.";
+    speak("Calma, sem pressa. Leia com calma.", "pt-BR");
+    setTimeout(() => {
+      if (state.item !== it || state.locked) return;
+      buttons.forEach(b => b.disabled = false);
+      fb.className = "feedback";
+      state.t0 = Date.now();
+    }, 2500);
     return;
   }
+
+  // Sem eliminação: um toque fecha a pergunta.
+  state.tries += 1;
   state.locked = true;
+  buttons.forEach(b => b.disabled = true);
   const firstTry = chosen.ok && state.tries === 1;
-  buttons.forEach((b, i) => {
-    if (it.choices[i].ok) b.classList.add("good");
-    if (i === idx && !chosen.ok) b.classList.add("bad");
-  });
-  fb.className = "feedback show " + (chosen.ok ? "ok" : "no");
-  fb.textContent = (chosen.ok ? "Boa! " : "Quase. ") + chosen.why;
-  if (firstTry) {
-    state.stars += 1;
-    state.firsts += 1;
-    saveStars();
-    bumpErro(state.world + "|" + it.key, -1);
+  if (!chosen.ok && !extra) registraErro(chosen);
+
+  let estrelasNovas = 0, dominou = false;
+  if (chosen.ok) {
+    if (extra) estrelasNovas += 1; // aprendeu com a explicação
+    else if (firstTry && !rapido) estrelasNovas += 1;
+    if (it.conc) {
+      const r = concReg(it.conc, "ok");
+      if (r.novo) { estrelasNovas += 2; dominou = true; }
+    }
+  } else if (it.conc && !extra) {
+    concReg(it.conc, "erro");
   }
+  if (firstTry && !extra) { state.firsts += 1; bumpErro(state.world + "|" + it.key, -1); }
+  if (!extra && (rapido || state.rapidFlag)) state.rapidosN += 1;
+  if (estrelasNovas) { state.stars += estrelasNovas; saveStars(); }
+
   if (state.mode === "colocacao") {
     const p = state.place;
     if (firstTry) { p.maxOk = Math.max(p.maxOk, p.cur); p.cur = Math.min(maxNivel(state.world), p.cur + 1); }
     else p.cur = Math.max(1, p.cur - 1);
   }
-  if (state.world !== "nov") bumpStats(state.world, firstTry);
+  if (state.world !== "nov" && !extra) bumpStats(state.world, firstTry);
   marcaDia();
-  const ev = { tipo: "resp", mundo: state.world, ok: firstTry, tent: state.tries === 1 ? 1 : 2, perg: it.key };
+  const ev = { tipo: "resp", mundo: state.world, ok: chosen.ok && (extra || firstTry), tent: 1, perg: it.key, ms: state.firstMs, pos: idx };
   if (it.nivel) ev.nivel = it.nivel;
+  if (it.conc) ev.conc = it.conc;
+  if (extra) ev.extra = true;
+  if (rapido) ev.rapido = true;
   track(ev);
+
+  const ultimo = state.step + 1 >= state.total;
+  if (!chosen.ok && tutor && !extra) {
+    // errou: mini-aula em vez de mostrar só a resposta
+    buttons[idx].classList.add("bad");
+    mostraAula(it, chosen);
+    return;
+  }
+  buttons.forEach((b, i) => {
+    if (it.choices[i].ok) b.classList.add("good");
+    if (i === idx && !chosen.ok) b.classList.add("bad");
+  });
+  fb.className = "feedback show " + (chosen.ok ? "ok" : "no");
+  fb.textContent = (chosen.ok ? "Boa! " : "Quase. ") + chosen.why
+    + (extra && chosen.ok ? " ⭐ Você aprendeu!" : "") + (dominou ? " 🏆 Esse assunto você já domina!" : "");
   $("nextBtn").classList.add("show");
-  $("nextBtn").textContent = state.step + 1 >= state.total ? "Ver estrela ⭐" : "Próxima";
+  $("nextBtn").textContent = ultimo ? "Ver estrela ⭐" : "Próxima";
   speak(fb.textContent, "pt-BR");
 }
+
+// ---------- mini-aula ao errar (ou ao tocar em "Não sei") ----------
+function variante(it) {
+  const n = it.nivel || getLvl(state.world).n;
+  const usadas = state.queue.map(q => q.key);
+  const cands = candidatos(state.world, n).filter(c => c.conc === it.conc && c.key !== it.key && !usadas.includes(c.key));
+  if (!cands.length) return null;
+  const c = pick(cands);
+  const v = c.make();
+  v.key = c.key; v.nivel = n; v.conc = it.conc; v.extra = true;
+  v.hint = "Outra parecida, agora você consegue. " + (v.hint || "");
+  return v;
+}
+function mostraAula(it, chosen) {
+  const correta = it.choices.find(c => c.ok);
+  const passos = [{ t: chosen ? "Você escolheu “" + chosen.t + "”. " + chosen.why : "Tudo bem não saber! Vamos ver juntas, com calma.", html: "" }];
+  if (it.aula) passos.push({ t: it.aula.texto, html: it.aula.visual(), init: it.aula.init });
+  else passos.push({ t: "Olhe de novo com calma:", html: it.stage });
+  passos.push({ t: "A resposta certa é “" + correta.t + "”. " + correta.why, html: "" });
+  const podeVariante = !it.extra && state.mode === "missao";
+  let i = 0;
+  const box = $("aula");
+  $("choices").classList.add("hidden");
+  $("naoSeiBtn").classList.add("hidden");
+  $("feedback").className = "feedback";
+  box.classList.remove("hidden");
+  const desenha = () => {
+    const p = passos[i];
+    const ultimo = i === passos.length - 1;
+    box.innerHTML = `<div class="bubble">${esc(perfil.luaEmoji || "🌙")} ${esc(p.t)}</div>${p.html ? `<div class="aulaVis">${p.html}</div>` : ""}
+      <button class="next show" id="aulaNext">${ultimo ? "Entendi! Tentar uma parecida ›" : "Entendi ›"}</button>`;
+    if (p.init) p.init(box);
+    speak(p.t, "pt-BR");
+    $("aulaNext").onclick = () => {
+      if (!ultimo) { i += 1; desenha(); return; }
+      const v = podeVariante ? variante(it) : null;
+      if (v) { state.queue.splice(state.step + 1, 0, v); state.total += 1; state.extras += 1; }
+      $("nextBtn").onclick();
+    };
+  };
+  desenha();
+}
+$("naoSeiBtn").onclick = () => {
+  if (state.locked || state.mode !== "missao") return;
+  const it = state.item;
+  state.locked = true;
+  [...$("choices").children].forEach(b => b.disabled = true);
+  track({ tipo: "naosei", mundo: state.world, perg: it.key, conc: it.conc, ms: Date.now() - state.t0, extra: !!it.extra });
+  concReg(it.conc, "naosei");
+  mostraAula(it, null);
+};
 
 function start(world) {
   state.world = world;
   state.step = 0;
   state.firsts = 0;
+  state.rapidosN = 0;
+  state.extras = 0;
   const L = getLvl(world);
   if (!L.placed) {
     state.mode = "colocacao";
@@ -1004,7 +1221,8 @@ function figInfo(id) {
 function terminaMissao() {
   const w = state.world;
   let titulo = "Missão de " + C.mundos[w].nome + " feita!";
-  let texto = state.firsts + " de " + state.total + " de primeira. Estrelas: " + state.stars + ".";
+  const base = state.total - (state.extras || 0);
+  let texto = state.firsts + " de " + base + " de primeira. Estrelas: " + state.stars + ".";
   let fig = null;
   let big = "🌟";
   if (state.mode === "nov") {
@@ -1031,6 +1249,9 @@ function terminaMissao() {
       L.hist = [];
       titulo = "Pronto! Já sei o seu nível em " + C.mundos[w].nome;
       texto = "Nível " + L.n + ": " + C.mundos[w].niveis[L.n - 1] + ". Vamos crescer juntas!";
+    } else if (base && state.rapidosN / base >= 0.6) {
+      // muitos toques rápidos: parece chute. Não sobe nem desce o nível.
+      texto += " Da próxima vez, leia com calma 💛";
     } else {
       L.hist = (L.hist || []).concat(state.firsts).slice(-2);
       if (L.hist.length >= 2 && L.hist.every(s => s >= 4) && L.n < maxNivel(w)) {
