@@ -516,14 +516,49 @@ async function carregaConfig() {
 }
 carregaConfig();
 
+// Escolhe a melhor voz instalada para o idioma (no iPhone: Premium > Enhanced > resto).
+// Para ficar bem natural: Ajustes > Acessibilidade > Conteúdo Falado > Vozes > descarregar versão "Melhorada"/"Premium".
+const vozCache = {};
+function melhorVoz(lang) {
+  if (vozCache[lang]) return vozCache[lang];
+  const vs = speechSynthesis.getVoices();
+  if (!vs.length) return null;
+  const base = lang.slice(0, 2).toLowerCase();
+  const NOVELTY = /Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Albert|Fred|Junior|Kathy|Ralph/i;
+  const score = v => {
+    const vl = v.lang.replace("_", "-").toLowerCase();
+    let s = 0;
+    if (vl === lang.toLowerCase()) s += 100;
+    else if (vl.slice(0, 2) === base) s += 50;
+    else return -1;
+    if (/premium/i.test(v.name)) s += 30;
+    else if (/enhanced|melhorad/i.test(v.name)) s += 20;
+    if (/siri/i.test(v.name)) s += 25;
+    if (v.localService) s += 2;
+    if (NOVELTY.test(v.name)) s -= 200;
+    return s;
+  };
+  let best = null, bs = 0;
+  vs.forEach(v => { const s = score(v); if (s > bs) { bs = s; best = v; } });
+  if (best) vozCache[lang] = best;
+  return best;
+}
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { for (const k in vozCache) delete vozCache[k]; };
+
 function speak(text, lang, force) {
   if (!window.speechSynthesis) return;
   if (state.muted && !force) return;
   window.speechSynthesis.cancel();
-  const clean = String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, "");
+  lang = lang || "pt-BR";
+  const clean = String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/\s*[—–]\s*/g, ", ").replace(/\s+/g, " ").trim();
+  if (!clean) return;
   const u = new SpeechSynthesisUtterance(clean);
-  u.lang = lang || "pt-BR";
-  u.rate = 0.92;
+  u.lang = lang;
+  const v = melhorVoz(lang);
+  if (v) u.voice = v;
+  u.rate = 0.95;
+  u.pitch = 1.05;
   speechSynthesis.speak(u);
 }
 
