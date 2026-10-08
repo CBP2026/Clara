@@ -606,6 +606,21 @@ function esc(s) {
 const fmtDia = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
 const fmtHora = new Intl.DateTimeFormat("pt-BR", { timeZone: tz, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 function diaKey(ms) { return fmtDia.format(new Date(ms)); }
+// "AAAA-MM-DDTHH:MM" na hora de PAIS_TZ -> ms UTC (respeita horario de verao)
+const fmtPartes = new Intl.DateTimeFormat("en-CA", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+function offsetTz(ms) {
+  const p = Object.fromEntries(fmtPartes.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+  const comoUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return comoUtc - Math.floor(ms / 1000) * 1000;
+}
+function msDeLocal(str) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(String(str || ""));
+  if (!m) return NaN;
+  const ingenuo = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  let ms = ingenuo - offsetTz(ingenuo);
+  ms = ingenuo - offsetTz(ms); // 2.a passagem: o offset pode mudar perto da troca de horario
+  return ms;
+}
 
 function haQuanto(ms) {
   const min = Math.round((Date.now() - ms) / 60000);
@@ -920,6 +935,19 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
   ${convHtml ? `<details><summary>Ver conversas (${conv.length})</summary><ul class="erros">${convHtml}</ul></details>` : '<span class="mut">Sem conversas.</span>'}
 </div>
 
+<h2>Limpar registros de teste</h2>
+<div class="card">
+  <form method="post" action="/pais/limpar">
+    <p class="mut" style="margin-top:0">Escolha o intervalo (hora de ${esc(tz)}). Vai mostrar o que será apagado e pedir confirmação.</p>
+    <label>De <input type="datetime-local" name="de" required></label>
+    <label>Até <input type="datetime-local" name="ate" required></label><br>
+    <label><input type="checkbox" name="uso" value="1" checked> Registros de uso</label>
+    <label><input type="checkbox" name="conversas" value="1"> Conversas</label><br>
+    <label><input type="checkbox" name="teste" value="1"> Apagar também tudo o que está marcado como teste (mesmo fora do intervalo)</label><br>
+    <button class="sec">Ver o que será apagado</button>
+  </form>
+</div>
+
 <h2>Notificações</h2>
 <div class="card">
   <div>${webpush ? `${estado.subs.length} aparelho(s) inscrito(s). Bom dia às 07:00, “como foi o dia” às 19:00, boa noite às 21:00 (${esc(tzClara)}).` : "Desligadas: falta o pacote web-push no servidor."}</div>
@@ -982,6 +1010,79 @@ function csv(res) {
   res.end(rows.join("\n") + "\n");
 }
 
+// ---------- limpeza por intervalo ----------
+// Le as linhas cruas; linhas quebradas ou sem hora valida ficam sempre.
+function classificaLinhas(file, de, ate, tambemTeste) {
+  let conteudo = "";
+  try { conteudo = fs.readFileSync(file, "utf8"); } catch (e) { return { manter: [], apagar: [], porTipo: {}, porId: {} }; }
+  const manter = [], apagar = [], porTipo = {}, porId = {};
+  for (const line of conteudo.split("\n")) {
+    if (!line) continue;
+    let ev = null;
+    try { ev = JSON.parse(line); } catch (e) { ev = null; }
+    const tms = ev ? Date.parse(ev.t) : NaN;
+    if (!ev || !Number.isFinite(tms)) { manter.push(line); continue; }
+    const quando = Number.isFinite(ev.td) && ev.td <= tms && tms - ev.td < 7 * 864e5 ? ev.td : tms;
+    if ((quando >= de && quando < ate) || (tambemTeste && ev.teste === true)) {
+      apagar.push(line);
+      const tipo = ev.tipo || (ev.origem ? "conversa" : "?");
+      porTipo[tipo] = (porTipo[tipo] || 0) + 1;
+      const id = String(ev.id || "?").slice(0, 8);
+      porId[id] = (porId[id] || 0) + 1;
+    } else manter.push(line);
+  }
+  return { manter, apagar, porTipo, porId };
+}
+function aplicaLimpeza(file, manter) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  fs.copyFileSync(file, file + ".bak-" + stamp);
+  const tmp = file + ".tmp";
+  fs.writeFileSync(tmp, manter.length ? manter.join("\n") + "\n" : "");
+  fs.renameSync(tmp, file);
+}
+function paginaPais(titulo, corpo) {
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(titulo)}</title>
+<style>body{font-family:system-ui,sans-serif;background:#1b1b2f;color:#fff8ef;margin:0;padding:18px;line-height:1.5}main{max-width:560px;margin:auto}
+a{color:#7cc4ff}button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:10px 14px;background:#ffc857;color:#2a1c08;cursor:pointer;margin:4px 4px 0 0}
+button.sec{background:rgba(255,255,255,.14);color:#fff8ef}.card{background:rgba(255,255,255,.08);border-radius:14px;padding:14px;margin:12px 0}.mut{color:#d9cce8;font-size:14px}</style></head>
+<body><main><h1>${esc(titulo)}</h1>${corpo}<p><a href="/pais">← Voltar ao painel</a></p></main></body></html>`;
+}
+function limparRegistros(res, f) {
+  const enviaPagina = (code, titulo, corpo) => {
+    res.writeHead(code, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    res.end(paginaPais(titulo, corpo));
+  };
+  const deStr = f.get("de") || "", ateStr = f.get("ate") || "";
+  const de = msDeLocal(deStr), ate = msDeLocal(ateStr);
+  const usoOn = f.get("uso") === "1", conversasOn = f.get("conversas") === "1", testeOn = f.get("teste") === "1";
+  if (!Number.isFinite(de) || !Number.isFinite(ate)) { enviaPagina(400, "Limpar registros", `<div class="card">Preencha “De” e “Até”.</div>`); return; }
+  if (de >= ate) { enviaPagina(400, "Limpar registros", `<div class="card">“De” tem de ser antes de “Até”.</div>`); return; }
+  if (!usoOn && !conversasOn) { enviaPagina(400, "Limpar registros", `<div class="card">Marque o que apagar: registros de uso e/ou conversas.</div>`); return; }
+
+  const alvos = [];
+  if (usoOn) alvos.push({ nome: "Registros de uso", file: logFile });
+  if (conversasOn) alvos.push({ nome: "Conversas", file: conversasFile });
+  for (const a of alvos) Object.assign(a, classificaLinhas(a.file, de, ate, testeOn));
+  const total = alvos.reduce((n, a) => n + a.apagar.length, 0);
+  const intervalo = `${esc(deStr.replace("T", " "))} até ${esc(ateStr.replace("T", " "))} (${esc(tz)})`;
+  const resumo = alvos.map((a) => `<div class="card"><b>${esc(a.nome)}</b>: ${a.apagar.length} linhas${a.apagar.length ? `<div class="mut">Por tipo: ${Object.entries(a.porTipo).map(([k, v]) => esc(k) + " " + v).join(", ")}<br>Por aparelho: ${Object.entries(a.porId).map(([k, v]) => esc(k) + "… " + v).join(", ")}</div>` : ""}</div>`).join("");
+
+  if (f.get("confirmar") !== "1") {
+    if (!total) { enviaPagina(200, "Limpar registros", `<div class="card">Nada para apagar em ${intervalo}.</div>`); return; }
+    const hid = ["de", "ate"].map((k) => `<input type="hidden" name="${k}" value="${esc(f.get(k))}">`).join("")
+      + (usoOn ? '<input type="hidden" name="uso" value="1">' : "") + (conversasOn ? '<input type="hidden" name="conversas" value="1">' : "") + (testeOn ? '<input type="hidden" name="teste" value="1">' : "");
+    enviaPagina(200, "Confirmar limpeza", `<p>Intervalo: <b>${intervalo}</b>${testeOn ? "<br>Mais todos os registros marcados como teste." : ""}</p>${resumo}
+<p class="mut">Antes de apagar é feita uma cópia (<code>.bak-data</code>) ao lado de cada arquivo. Isto não pode ser desfeito pelo painel.</p>
+<form method="post" action="/pais/limpar">${hid}<input type="hidden" name="confirmar" value="1"><button>Apagar ${total} linhas</button></form>
+<form method="get" action="/pais"><button class="sec">Cancelar</button></form>`);
+    return;
+  }
+  try { for (const a of alvos) if (a.apagar.length) aplicaLimpeza(a.file, a.manter); }
+  catch (e) { console.error("Falha na limpeza: " + e.message); enviaPagina(500, "Limpar registros", `<div class="card">Falhou: ${esc(e.message)}. Nada foi trocado se o erro foi antes da gravação.</div>`); return; }
+  console.log("Limpeza " + deStr + " a " + ateStr + ": " + total + " linhas");
+  enviaPagina(200, "Limpeza feita", `<p>Apagadas ${total} linhas em ${intervalo}.</p>${resumo}<p class="mut">Cópias de segurança ficaram na pasta de dados.</p>`);
+}
+
 function voltaPainel(res) {
   res.writeHead(303, { Location: "/pais" });
   res.end();
@@ -998,6 +1099,7 @@ function acaoPais(req, res, rota) {
   readBody(req, 2048, (err, body) => {
     if (err) { res.writeHead(413); res.end(); return; }
     const f = new URLSearchParams(body);
+    if (rota === "/pais/limpar") { limparRegistros(res, f); return; }
     if (rota === "/pais/chat") {
       estado.chat = f.get("ligar") === "1";
       salvaEstado();
@@ -1024,7 +1126,7 @@ function areaPais(req, res, rota) {
     return;
   }
   if (req.method === "POST") {
-    if (rota === "/pais/chat" || rota === "/pais/push-teste") acaoPais(req, res, rota);
+    if (rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar") acaoPais(req, res, rota);
     else { res.writeHead(405); res.end(); }
     return;
   }
@@ -1120,7 +1222,7 @@ const server = http.createServer((req, res) => {
     json(res, 200, { chat: !!(estado.chat && veniceKey), vapid: vapid ? vapid.publicKey : null });
     return;
   }
-  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/chat" || rota === "/pais/push-teste") {
+  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar") {
     areaPais(req, res, rota === "/pais/" ? "/pais" : rota);
     return;
   }
