@@ -579,6 +579,40 @@
     texto: "Obrigada por escrever, {nome}. Eu li tudo. Mostra isso para a sua mãe ou o seu pai também? Eles adoram saber de você 💛"
   };
 
+  // Conceitos: nome para os pais, nome curto para a Lua ("rever ...") e uma atividade de 3 minutos para fazer em casa
+  C.conceitos = {
+    "num.contar": { nome: "contar objetos", casa: "Espalhe 10 a 20 objetos na mesa e peça para tocar em cada um ao contar, devagar, em voz alta." },
+    "num.comparar": { nome: "saber onde tem mais", casa: "Faça dois montinhos de bolachas ou lápis e pergunte em qual tem mais. Depois conte juntos para confirmar." },
+    "num.sequencia": { nome: "o número que vem depois", casa: "Diga um número e peça o seguinte. Depois escondam um número numa fila de cartões e ela adivinha qual falta." },
+    "num.somar": { nome: "somar", casa: "Com moedas ou bolachas: junte dois montinhos e conte tudo. Ela toca em cada um ao contar." },
+    "num.subtrair": { nome: "tirar (subtrair)", casa: "Comece com 10 objetos, tire alguns e conte o que sobrou. Uma conta de cada vez, com os objetos à vista." },
+    "num.dinheiro_somar": { nome: "somar preços", casa: "Num folheto de supermercado, escolham 2 produtos baratos e somem os preços com moedas de brinquedo." },
+    "num.troco": { nome: "troco", casa: "Brinquem de loja com moedas reais: ela paga com 5 € um produto de 3 € e conta o troco, moeda a moeda." },
+    "num.multiplicar": { nome: "grupos iguais (vezes)", casa: "Faça 3 pratos com 4 bolachas cada. Contem tudo de 4 em 4 e depois somem 4 + 4 + 4." },
+    "num.metade_dobro": { nome: "metade e dobro", casa: "Divida uma barra de chocolate ou uma laranja ao meio e mostre que dois pedaços iguais são o todo." },
+    "num.percentagem": { nome: "percentagens", casa: "Use um preço redondo (10 €): mostre que 50% é a metade e 10% é dividir por 10, com moedas." },
+    "num.numero_que_falta": { nome: "o número que falta", casa: "Esconda parte dos objetos com um copo: '5 e mais quantos fazem 8?'. Ela levanta o copo para confirmar." },
+    "num.proporcao": { nome: "receitas e preços proporcionais", casa: "Numa receita simples (panquecas), duplique os ingredientes juntos e conte cada medida." },
+    "tempo.relogio": { nome: "ler o relógio", casa: "Com um relógio de ponteiros na mesa, mostre 3:00 e 3:30. Peça para dizer qual ponteiro é a hora e qual são os minutos." },
+    "tempo.diferenca_minutos": { nome: "quanto tempo falta (minutos)", casa: "Com um relógio de ponteiros na mesa, mostre 10:00 e 10:15 e peça para contar de 5 em 5 até chegar lá. 3 minutos chegam." },
+    "tempo.duracao": { nome: "quanto tempo dura", casa: "Use um temporizador de cozinha: 'quanto falta para tocar?'. Compare 1 minuto, 5 minutos e meia hora com coisas do dia a dia." },
+    "tempo.partes_do_dia": { nome: "partes do dia", casa: "Ao longo do dia, pergunte 'agora é manhã, tarde ou noite?' e o que costumam fazer em cada parte." },
+    "tempo.dias_semana": { nome: "dias da semana", casa: "Cole um calendário na parede e marque o dia de hoje. Pergunte 'e amanhã? e ontem?' ao jantar." },
+    "tempo.meses_estacoes": { nome: "meses e estações", casa: "Folheie o calendário e diga o mês de cada aniversário da família." },
+    "tempo.ordem": { nome: "o que vem antes e depois", casa: "Conte uma rotina em 3 passos (acordar, vestir, tomar o pequeno-almoço) e peça para ordenar com cartões desenhados." },
+    "en.palavra_ouvir": { nome: "ouvir palavras em inglês", casa: "Escolha 3 palavras em inglês da app e diga uma por vez: ela aponta o objeto em casa." },
+    "en.palavra_significado": { nome: "significado das palavras em inglês", casa: "Cole 3 post-its em inglês nos objetos de casa (door, table, cup) e leiam juntos ao passar." },
+    "en.frase_ouvir": { nome: "ouvir frases em inglês", casa: "Diga 'Good morning' e 'Thank you' no dia a dia e peça para responder igual." },
+    "en.frase_significado": { nome: "significado de frases em inglês", casa: "Escolham uma frase por dia ('How are you?') e usem-na em casa com o sentido certo." },
+    "en.dialogo": { nome: "responder em inglês", casa: "Brinque de perguntar 'What's your name?' e 'How are you?'; ela responde em inglês, só 2 frases." },
+    "en.conversa": { nome: "conversas em inglês", casa: "Encenem em 1 minuto uma cena de loja em inglês: 'Hello! / Can I have...? / Thank you!'." },
+    "social.sinais_corpo": { nome: "ler sinais do corpo e do rosto", casa: "Vejam 1 minuto de série sem som e adivinhem como cada pessoa se sente. Perguntem 'como sabes?'." },
+    "social.digital": { nome: "mensagens e redes", casa: "Leiam juntos uma conversa de grupo (de um exemplo) e conversem: o que eu responderia? Quando conto a um adulto?" },
+    "social.seguranca": { nome: "segurança e dizer 'não'", casa: "Ensaie 3 frases: 'Não, obrigada', 'Vou perguntar à minha mãe', 'Vou contar a um adulto'. Treinem em voz alta." },
+    "social.amizade": { nome: "fazer e manter amizades", casa: "Encenem em 2 minutos: chegar a um grupo e perguntar 'posso brincar?'. Depois trocam os papéis." },
+    "social.novela": { nome: "situações da novela", casa: "Perguntem 'o que a Bia podia fazer diferente?' sobre o último capítulo." }
+  };
+
   C.push = {
     manha: [
       "Bom dia, {nome}! Hoje vai ser um dia incrível ☀️",

@@ -257,6 +257,7 @@
     <div class="panel" id="mdia">
       <b class="t">⭐ Missão do dia</b>
       <div class="row" id="mdiaRow" style="margin-top:0"></div>
+      <div class="mut" id="planoDia" style="margin-top:8px"></div>
     </div>
     <div class="grid" id="worlds"></div>
     <a class="pais" href="/pais" id="paisBtn">👨‍👩‍👧 Área dos pais</a>
@@ -362,7 +363,7 @@ const state = {
   muted: lsGet("mc-mudo") === "1",
   world: null, mode: "missao", step: 0, total: 5, queue: [], item: null,
   locked: false, tries: 0, firsts: 0, place: null, cap: null,
-  t0: 0, firstMs: null, rapidoItem: 0, rapidFlag: false, rapidosN: 0, extras: 0
+  t0: 0, firstMs: null, rapidoItem: 0, rapidFlag: false, rapidosN: 0, extras: 0, rapidSeg: 0, avisouRapido: false
 };
 const SECOES = ["abertura", "onboard", "home", "play", "reward", "humor", "nov", "girassol", "musica", "album", "chat"];
 function show(id) {
@@ -1038,6 +1039,7 @@ function answer(idx) {
   if (tutor && !chosen.ok && rapido && state.rapidoItem < 2) {
     state.rapidoItem += 1;
     state.rapidFlag = true;
+    state.rapidSeg += 1;
     track({ tipo: "rapido", mundo: state.world, perg: it.key, conc: it.conc, ms, pos: idx, extra });
     buttons.forEach(b => b.disabled = true);
     fb.className = "feedback show no";
@@ -1053,6 +1055,7 @@ function answer(idx) {
   }
 
   // Sem eliminação: um toque fecha a pergunta.
+  if (!extra) { if (rapido) { if (state.rapidoItem === 0) state.rapidSeg += 1; } else state.rapidSeg = 0; }
   state.tries += 1;
   state.locked = true;
   buttons.forEach(b => b.disabled = true);
@@ -1102,6 +1105,11 @@ function answer(idx) {
   fb.className = "feedback show " + (chosen.ok ? "ok" : "no");
   fb.textContent = (chosen.ok ? "Boa! " : "Quase. ") + chosen.why
     + (extra && chosen.ok ? " ⭐ Você aprendeu!" : "") + (dominou ? " 🏆 Esse assunto você já domina!" : "");
+  // vários toques rápidos seguidos: a Lua interrompe com carinho (uma vez por missão)
+  if (tutor && state.rapidSeg >= 3 && !state.avisouRapido) {
+    state.avisouRapido = true;
+    fb.textContent += " " + (perfil.luaEmoji || "🌙") + " Ei, vamos mais devagar? Se não souber, toque em “Não sei”, tá? 💛";
+  }
   $("nextBtn").classList.add("show");
   $("nextBtn").textContent = ultimo ? "Ver estrela ⭐" : "Próxima";
   speak(fb.textContent, "pt-BR");
@@ -1164,6 +1172,8 @@ function start(world) {
   state.firsts = 0;
   state.rapidosN = 0;
   state.extras = 0;
+  state.rapidSeg = 0;
+  state.avisouRapido = false;
   const L = getLvl(world);
   if (!L.placed) {
     state.mode = "colocacao";
@@ -1314,8 +1324,26 @@ function marcaMdia(w) {
     lsSet("mc-mdia", JSON.stringify(m));
   }
 }
+function planoDoDia(m) {
+  const cc = getConc();
+  const dev = Object.keys(cc).filter(k => concDevida(cc[k]))[0];
+  const partes = [];
+  if (dev && C.conceitos[dev]) partes.push("🔁 rever " + C.conceitos[dev].nome);
+  const novo = m.lista.find(w => !m.feitas.includes(w) && w !== "nov");
+  if (novo) partes.push("✨ missão de " + C.mundos[novo].nome);
+  if (perfil.cantores.length) partes.push("🎵 um quiz de música");
+  return partes.length ? "Hoje: " + partes.join(" · ") : "";
+}
+function ontemFoiDificil() {
+  const u = lsJSON("mc-humor-ult", null);
+  if (!u || lsGet("mc-humor-dia") === hojeKey()) return false;
+  const ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
+  if (u.dia !== hojeKey(ontem)) return false;
+  return u.rosto >= 3 || (u.chips || []).some(c => ["Fiquei sozinha", "Tive um problema", "Riram de mim"].includes(c));
+}
 function renderMdia() {
   const m = getMdia();
+  $("planoDia").textContent = planoDoDia(m);
   const row = $("mdiaRow");
   row.innerHTML = "";
   m.lista.forEach(w => {
@@ -1373,10 +1401,11 @@ function goHome() {
   $("homeAv").textContent = perfil.luaEmoji || "🌙";
   $("homeName").textContent = perfil.nome || "Clara";
   $("homeSub").textContent = "com a " + (perfil.lua || "Lua") + (perfil.jj ? " · faixa " + (perfil.faixa || "").toLowerCase() : "");
-  $("bubble").textContent = (perfil.luaEmoji || "🌙") + " " + horaFala();
+  const seguimento = ontemFoiDificil();
+  $("bubble").textContent = (perfil.luaEmoji || "🌙") + " " + (seguimento ? fill("Ontem você me contou que foi um dia difícil, {nome}. Como está hoje? 💛") : horaFala());
   const fezHumor = lsGet("mc-humor-dia") === hojeKey();
   const h = new Date().getHours();
-  $("humorBtn").classList.toggle("hl", !fezHumor && h >= 17);
+  $("humorBtn").classList.toggle("hl", !fezHumor && (h >= 17 || seguimento));
   $("humorBtn").textContent = fezHumor ? "💬 Contar mais sobre o meu dia" : "💬 Como foi o seu dia?";
   $("luaBtn").textContent = (perfil.luaEmoji || "🌙") + " Conversar com a " + (perfil.lua || "Lua");
   $("luaBtn").classList.toggle("hidden", !config.chat);
