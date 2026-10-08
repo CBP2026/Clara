@@ -748,13 +748,16 @@ function aulaTirar(a, b, emoji) {
   ] };
 }
 
-// Contar para cima na reta: "quanto falta de de até ate?". Bom quando os números são perto.
-function aulaSubir(de, ate, finais) {
-  const r = ate - de;
-  const cells = Array.from({ length: r + 1 }, (_, i) => `<div class="nlc${i === 0 ? " cur" : ""}">${de + i}</div>`).join("");
+// Contar para cima na reta: "quanto falta de de até ate?". opt.vals/fmt/msg/fim/intro permitem usar para dinheiro.
+function aulaSubir(de, ate, finais, opt) {
+  opt = opt || {};
+  const fmt = opt.fmt || String;
+  const vals = opt.vals || Array.from({ length: ate - de + 1 }, (_, i) => de + i);
+  const r = vals.length - 1;
+  const cells = vals.map((v, i) => `<div class="nlc${i === 0 ? " cur" : ""}">${fmt(v)}</div>`).join("");
   return { passos: [
-    { t: `Em vez de tirar tudo, é mais fácil contar para cima. Quanto falta de ${de} até ${ate}? Toque em Pular e conte os pulos.`, gate: true,
-      html: `<div class="nl">${cells}</div>${msgHtml("Pulos: <b>0</b>")}<button class="pular" id="pular">👣 Pular</button>`,
+    { t: opt.intro || `Em vez de tirar tudo, é mais fácil contar para cima. Quanto falta de ${de} até ${ate}? Toque em Pular e conte os pulos.`, gate: true,
+      html: `<div class="nl">${cells}</div>${msgHtml(opt.msg ? opt.msg(vals[0], 0) : "Pulos: <b>0</b>")}<button class="pular" id="pular">👣 Pular</button>`,
       init: (root, libera) => {
         const cs = [...root.querySelectorAll(".nlc")];
         const msg = root.querySelector("#msg"), btn = root.querySelector("#pular");
@@ -763,9 +766,9 @@ function aulaSubir(de, ate, finais) {
           if (pos >= r) return;
           cs[pos].classList.remove("cur"); cs[pos].classList.add("vis");
           pos += 1; cs[pos].classList.add("cur");
-          msg.innerHTML = `Pulos: <b>${pos}</b>`;
-          speak(String(pos), "pt-BR", true);
-          if (pos === r) { msg.innerHTML = `Chegamos no ${ate}! Foram ${r} pulos. 🎉`; btn.classList.add("hidden"); libera(); }
+          msg.innerHTML = opt.msg ? opt.msg(vals[pos], pos) : `Pulos: <b>${pos}</b>`;
+          speak(opt.fala ? opt.fala(vals[pos], pos) : String(pos), "pt-BR", true);
+          if (pos === r) { msg.innerHTML = opt.fim || `Chegamos no ${ate}! Foram ${r} pulos. 🎉`; btn.classList.add("hidden"); libera(); }
         };
       } },
     { t: finais[0].t, html: eqBig(finais[0].eq) },
@@ -805,6 +808,24 @@ function aulaSubtracao(a, b, emoji) {
     { t: `Então ${a} menos ${b} é ${r}. De ${b} até ${a} faltam ${r}.`, eq: `${a} − ${b} = <span class="r">${r}</span>` },
     { t: `Para conferir: ${b} mais ${r} é ${a}. Somar e subtrair são o contrário uma da outra.`, eq: eqBig(`${b} + ${r} = ${a}`) }
   ]);
+}
+// Troco: conta-se para cima a partir do preço, como no balcão (primeiro até o euro inteiro, depois de 1 em 1).
+function aulaTroco(preco, pago) {
+  const troco = pago - preco;
+  const vals = [preco];
+  if (preco % 1) vals.push(Math.ceil(preco));
+  while (vals[vals.length - 1] < pago) vals.push(vals[vals.length - 1] + 1);
+  const n = (v) => (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(".", ","));
+  return aulaSubir(preco, pago, [
+    { t: `O troco é ${euro(troco)}. Contamos de ${euro(preco)} até ${euro(pago)}.`, eq: `${euro(pago)} − ${euro(preco)} = <span class="r">${euro(troco)}</span>` },
+    { t: `Para conferir: ${euro(preco)} mais o troco ${euro(troco)} dá ${euro(pago)}. O troco completa até o que você pagou.`, eq: eqBig(`${euro(preco)} + ${euro(troco)} = ${euro(pago)}`) }
+  ], {
+    vals, fmt: n,
+    intro: `Troco é o que falta para completar o que você pagou. Vamos contar a partir do preço, ${euro(preco)}, até ${euro(pago)}. Toque em Pular.`,
+    msg: (v, i) => `Troco até agora: <b>${euro(v - preco)}</b>`,
+    fala: (v) => euro(v - preco),
+    fim: `Chegamos em ${euro(pago)}! O troco é ${euro(troco)}. 🎉`
+  });
 }
 // "a + ? = c": quanto falta de a até c
 function aulaFalta(a, c) {
@@ -896,9 +917,11 @@ function mathItem(n) {
         okWhy: `${euro(x[1])} + ${euro(y[1])} = ${euro(tot)}.`, noWhy: `Some: ${euro(x[1])} + ${euro(y[1])} = ${euro(tot)}.` });
     }
     const pago = x[1] <= 4 ? 5 : 10, troco = pago - x[1];
-    return numItem({ key: "Troco " + x[0] + " " + pago, q: `O ${x[0]} custa ${euro(x[1])}. Você paga com ${euro(pago)}. Qual é o troco?`,
+    const it = numItem({ key: "Troco " + x[0] + " " + pago, q: `O ${x[0]} custa ${euro(x[1])}. Você paga com ${euro(pago)}. Qual é o troco?`,
       hint: `${euro(pago)} − ${euro(x[1])} = ?`, stage: `<div class="word md">💶 ${euro(pago)} − ${euro(x[1])}</div>`, certo: troco, step: troco % 1 ? 0.5 : 1, fmt: euro,
       okWhy: `${euro(pago)} − ${euro(x[1])} = ${euro(troco)} de troco.`, noWhy: `Tire o preço do que pagou: ${euro(troco)}.` });
+    it.aula = aulaTroco(x[1], pago);
+    return it;
   }
   if (n === 4) {
     const a = pick([2, 3, 4, 5, 10]), b = rnd(2, 5), p = a * b;
@@ -968,7 +991,7 @@ function mathItem(n) {
     okWhy: `${u * qn} ÷ ${qn} = ${euro(u)}.`, noWhy: `${qn} × ${u} = ${u * qn}. Então 1 custa ${euro(u)}.` });
 }
 
-function clockSVG(h, m) {
+function clockSVG(h, m, hl) {
   const ha = ((h % 12) + m / 60) * 30, ma = m * 6;
   let marks = "";
   for (let i = 1; i <= 12; i++) {
@@ -976,8 +999,8 @@ function clockSVG(h, m) {
     marks += `<text x="${50 + 38 * Math.sin(a)}" y="${54 - 38 * Math.cos(a)}" font-size="10" text-anchor="middle" fill="#24183a" font-weight="700">${i}</text>`;
   }
   return `<svg class="clock" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff8ef"/>${marks}
-    <line x1="50" y1="50" x2="${50 + 22 * Math.sin(ha * Math.PI / 180)}" y2="${50 - 22 * Math.cos(ha * Math.PI / 180)}" stroke="#24183a" stroke-width="5" stroke-linecap="round"/>
-    <line x1="50" y1="50" x2="${50 + 34 * Math.sin(ma * Math.PI / 180)}" y2="${50 - 34 * Math.cos(ma * Math.PI / 180)}" stroke="#ff7a59" stroke-width="3" stroke-linecap="round"/>
+    <line x1="50" y1="50" x2="${50 + 22 * Math.sin(ha * Math.PI / 180)}" y2="${50 - 22 * Math.cos(ha * Math.PI / 180)}" stroke="#24183a" stroke-width="5" stroke-linecap="round" opacity="${hl === "m" ? .2 : 1}"/>
+    <line x1="50" y1="50" x2="${50 + 34 * Math.sin(ma * Math.PI / 180)}" y2="${50 - 34 * Math.cos(ma * Math.PI / 180)}" stroke="#ff7a59" stroke-width="3" stroke-linecap="round" opacity="${hl === "h" ? .2 : 1}"/>
     <circle cx="50" cy="50" r="3" fill="#24183a"/></svg>`;
 }
 function hm(h, m) { return h + ":" + String(m).padStart(2, "0"); }
@@ -992,10 +1015,13 @@ function timeGen(n) {
       key: "Relógio " + certo, q: "Que horas são?", hint: "Ponteiro pequeno = hora. Grande = minutos.", speak: "Que horas são?",
       stage: clockSVG(h, m),
       choices: shuffle(set).map(t => ({ t, ok: t === certo, why: t === certo ? `São ${certo}.` : `O pequeno está no ${h}${m ? " e meio" : ""}, o grande no ${m ? "6" : "12"}. São ${certo}.` })),
-      aula: {
-        texto: "O ponteiro pequeno mostra a hora. O grande mostra os minutos.",
-        visual: () => clockSVG(h, m) + `<div>Pequeno: <b>${h}</b> · Grande no <b>${m ? "6" : "12"}</b> = <b>${m ? "30 minutos" : "em ponto"}</b></div>`
-      }
+      aula: { passos: [
+        { t: "O relógio tem dois ponteiros. O pequeno e grosso mostra a hora.",
+          html: clockSVG(h, m, "h") + `<div>${m ? `O pequeno está entre o <b>${h}</b> e o <b>${h % 12 + 1}</b>. Ainda não chegou no ${h % 12 + 1}, então a hora é <b>${h}</b>.` : `O pequeno aponta para o <b>${h}</b>. A hora é <b>${h}</b>.`}</div>` },
+        { t: m ? "O ponteiro grande, o laranja, mostra os minutos. Ele está no 6: metade do relógio, 30 minutos." : "O ponteiro grande, o laranja, mostra os minutos. Ele está no 12: ainda não andou nada, é em ponto.",
+          html: clockSVG(h, m, "m") + `<div>Grande no <b>${m ? "6" : "12"}</b> = <b>${m ? "30 minutos (meia hora)" : "em ponto"}</b></div>` },
+        { t: `Junte os dois: hora ${h}, ${m ? "e 30 minutos" : "em ponto"}. São ${certo}.`, html: clockSVG(h, m) + eqBig(certo) }
+      ] }
     };
   }
   const ctx = pick(usavelCtx());
@@ -1012,17 +1038,24 @@ function timeGen(n) {
       why: d === diff ? `De ${f(ini)} a ${f(fim)} são ${diff} minutos.`
         : d === 60 ? `60 minutos é uma hora inteira. Aqui passa menos de uma hora: de ${f(ini)} a ${f(fim)} são ${diff} minutos.`
         : `Conte de ${f(ini)} até ${f(fim)}: são ${diff} minutos.` })),
-    aula: {
-      texto: `Vamos contar o tempo de ${f(ini)} até ${f(fim)}. Cada pedacinho vale 5 minutos. Toque em um de cada vez.`,
-      visual: () => `<div>🕒 ${f(ini)}</div><div>${Array.from({ length: diff / 5 }, (_, i) => `<button class="seg" data-i="${i}">+5</button>`).join("")}</div><div>🏁 ${f(fim)}</div><div>Passaram: <b id="cntN">0</b> minutos</div>`,
-      init: (root) => root.querySelectorAll(".seg").forEach(b => b.onclick = () => {
-        if (b.classList.contains("on")) return;
-        b.classList.add("on");
-        const n = root.querySelectorAll(".seg.on").length * 5;
-        root.querySelector("#cntN").textContent = n;
-        speak(n + " minutos", "pt-BR", true);
-      })
-    }
+    aula: { passos: [
+      { t: `Agora são ${f(ini)}. Cada número do relógio vale 5 minutos. Toque em mais 5 e veja o ponteiro grande andar até ${f(fim)}.`, gate: true,
+        html: `<div id="rel">${clockSVG(Math.floor(ini / 60), ini % 60)}</div>${msgHtml(`${f(ini)} · Passaram: <b>0</b> minutos`)}<button class="pular" id="pular">+5 minutos</button>`,
+        init: (root, libera) => {
+          let t = ini;
+          const msg = root.querySelector("#msg"), btn = root.querySelector("#pular");
+          btn.onclick = () => {
+            if (t >= fim) return;
+            t += 5;
+            root.querySelector("#rel").innerHTML = clockSVG(Math.floor(t / 60), t % 60);
+            msg.innerHTML = `${f(t)} · Passaram: <b>${t - ini}</b> minutos`;
+            speak((t - ini) + " minutos", "pt-BR", true);
+            if (t >= fim) { msg.innerHTML = `Chegamos às ${f(fim)}! Passaram ${diff} minutos. 🎉`; btn.classList.add("hidden"); libera(); }
+          };
+        } },
+      { t: `Então de ${f(ini)} até ${f(fim)} passaram ${diff} minutos.${diff < 60 ? " É menos de 60, porque ainda não deu uma hora inteira." : ""}`,
+        html: eqBig(`${f(ini)} → ${f(fim)}`) + eqBig(`<span class="r">${diff} minutos</span>`) }
+    ] }
   };
 }
 function usavelCtx() {
