@@ -11,6 +11,12 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 
 `/pais` mostra último uso, calendário dos últimos 28 dias, acerto por tema e a lista de **tudo que ela errou** (com o que respondeu, a resposta certa e se já acertou depois). `/pais/log.csv` baixa o histórico completo. O acesso é por senha (qualquer usuário, senha = `PAIS_SENHA`). Sem `PAIS_SENHA` definida, o painel fica desligado.
 
+### Modo teste e limpeza
+
+- **Modo teste:** na home, “🧪 Modo teste (pais)” pede a senha do painel. Enquanto ligado, estrelas, níveis e erros ficam em chaves `mt-` do aparelho e tudo o que é enviado vai marcado como `teste`: o painel, os alertas e o humor da Lua ignoram esses registros (o CSV os mostra, coluna `teste`).
+- **Limpar registros:** no painel, “Limpar registros de teste” recebe um intervalo “De/Até” (hora de `PAIS_TZ`, com horário de verão), mostra quantas linhas serão apagadas (por tipo e por aparelho) e só apaga depois de confirmar. Pode apagar também tudo o que está marcado como teste, fora do intervalo. Antes de apagar cria `log.jsonl.bak-<data>` e/ou `conversas.jsonl.bak-<data>` na pasta de dados; as cópias não são apagadas sozinhas. Linhas quebradas são mantidas. Evite limpar enquanto ela usa a app: uma gravação no mesmo instante da limpeza pode perder-se.
+- Testes automáticos: `npm test`.
+
 ## Perguntas
 
 Tempo e Amigos têm 23 perguntas cada; English tem 30 palavras em 2 formatos; Números gera combinações. Cada missão tem 5 perguntas **sem repetição**, e até 2 delas são perguntas que ela errou antes e ainda não acertou de primeira (guardado no próprio aparelho).
