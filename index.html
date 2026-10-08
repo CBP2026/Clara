@@ -202,6 +202,7 @@
   .chatform { display: flex; gap: 8px; }
   .chatform .inp { flex: 1; }
   .chatform button { border: 0; border-radius: 14px; padding: 0 16px; font-weight: 800; background: var(--accent); color: #24183a; font-size: 16px; cursor: pointer; }
+  .testeBanner { background: #ffc857; color: #1b1b2f; text-align: center; font-weight: 700; font-size: 14px; padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; }
   .pais { display: block; text-align: center; margin: 18px auto 0; color: var(--muted); font-size: 13px; text-decoration: none; opacity: .7; }
   .clock { width: 170px; height: 170px; }
 </style>
@@ -227,6 +228,7 @@
   </section>
 
   <section id="home" class="hidden">
+    <div class="testeBanner hidden" id="testeBanner">🧪 Modo teste · nada disto conta para a Clara</div>
     <header class="top">
       <div class="brand">
         <div class="moon" id="homeAv">🌙</div>
@@ -251,6 +253,7 @@
     </div>
     <div class="grid" id="worlds"></div>
     <a class="pais" href="/pais" id="paisBtn">👨‍👩‍👧 Área dos pais</a>
+    <a class="pais" href="#" id="testeBtn">🧪 Modo teste (pais)</a>
   </section>
 
   <section id="play" class="hidden">
@@ -326,8 +329,12 @@
 <script>
 const C = window.CONTEUDO;
 const $ = (id) => document.getElementById(id);
-function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+// modo teste: estado (estrelas, niveis, erros...) vai para chaves mt-, o estado real fica intacto
+const TESTE = (() => { try { return localStorage.getItem("mc-teste") === "1"; } catch (e) { return false; } })();
+const COMUNS = ["mc-id", "mc-perfil", "mc-config", "mc-push", "mc-mudo", "mc-artistas", "mc-teste", "mc-fila"];
+function chave(k) { return TESTE && !COMUNS.includes(k) && k.startsWith("mc-") ? "mt-" + k.slice(3) : k; }
+function lsGet(k) { try { return localStorage.getItem(chave(k)); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(chave(k), v); } catch (e) {} }
 function lsJSON(k, def) { try { const v = JSON.parse(lsGet(k)); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : ""; }
@@ -475,6 +482,7 @@ async function flush() {
 function track(ev) {
   ev.id = deviceId();
   ev.td = Date.now();
+  if (TESTE) ev.teste = true;
   const fila = getFila();
   fila.push(ev);
   lsSet(FILA, JSON.stringify(fila.slice(-200)));
@@ -1150,12 +1158,25 @@ function goHome() {
   $("humorBtn").textContent = fezHumor ? "💬 Contar mais sobre o meu dia" : "💬 Como foi o seu dia?";
   $("luaBtn").textContent = (perfil.luaEmoji || "🌙") + " Conversar com a " + (perfil.lua || "Lua");
   $("luaBtn").classList.toggle("hidden", !config.chat);
+  $("testeBanner").classList.toggle("hidden", !TESTE);
+  $("testeBtn").textContent = TESTE ? "🧪 Sair do modo teste" : "🧪 Modo teste (pais)";
   renderStreak();
   renderMdia();
   renderWorlds();
   saveStars();
   show("home");
 }
+$("testeBtn").onclick = async (e) => {
+  e.preventDefault();
+  if (TESTE) { lsSet("mc-teste", "0"); location.reload(); return; }
+  const senha = window.prompt("Senha dos pais para ligar o modo teste:");
+  if (!senha) return;
+  try {
+    const r = await fetch("/api/teste-auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha }) });
+    if (r.ok) { lsSet("mc-teste", "1"); location.reload(); return; }
+    window.alert(r.status === 429 ? "Muitas tentativas. Tenta daqui a 1 minuto." : "Senha errada.");
+  } catch (err) { window.alert("Sem internet."); }
+};
 $("homeBtn").onclick = goHome;
 $("backBtn").onclick = goHome;
 document.querySelectorAll("[data-home]").forEach(b => b.onclick = goHome);
@@ -1597,7 +1618,7 @@ $("chatForm").onsubmit = async (e) => {
     const r = await fetch("/api/conversa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: deviceId(), modo: chat.modo, cenario: chat.cenario, msgs: chat.msgs.slice(-10) })
+      body: JSON.stringify({ id: deviceId(), modo: chat.modo, cenario: chat.cenario, msgs: chat.msgs.slice(-10), teste: TESTE })
     });
     if (r.ok) resp = (await r.json()).resposta || resp;
     else if (r.status === 429) resp = fill("Por hoje já conversamos bastante, {nome}! Amanhã tem mais 💛 Que tal uma missão?");

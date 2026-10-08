@@ -186,6 +186,7 @@ function limpaEvento(b) {
   const ev = { t: new Date().toISOString(), id: b.id, tipo };
   if (COM_MUNDO.includes(tipo)) ev.mundo = b.mundo;
   if (Number.isFinite(b.td)) ev.td = Math.round(b.td);
+  if (b.teste === true) ev.teste = true;
   if (tipo === "resp") {
     if (typeof b.ok !== "boolean") return null;
     ev.ok = b.ok;
@@ -257,7 +258,7 @@ function postEvento(req, res) {
       res.end();
       return;
     }
-    if (ev.tipo === "perfil") {
+    if (ev.tipo === "perfil" && !ev.teste) {
       estado.perfis[ev.id] = Object.assign({}, ev.perfil, { t: ev.t });
       salvaEstado();
     }
@@ -492,7 +493,7 @@ function logConversa(reg) {
 }
 
 function ultimoHumor(id) {
-  const evs = lerLog().filter((e) => e.tipo === "humor" && e.id === id && Date.now() - e.quando < 36 * 3600e3);
+  const evs = lerLog().filter((e) => e.tipo === "humor" && !e.teste && e.id === id && Date.now() - e.quando < 36 * 3600e3);
   const h = evs[evs.length - 1];
   if (!h) return "";
   const rosto = h.rosto >= 0 ? C.humor.rostos[h.rosto].t.toLowerCase() : "";
@@ -519,15 +520,19 @@ function postConversa(req, res) {
     const ultima = msgs[msgs.length - 1];
     if (!ultima || ultima.role !== "user") { res.writeHead(400); res.end(); return; }
 
-    const uso = contaUso(b.id);
-    if (uso.n >= LIMITE_DIA || uso.total >= LIMITE_GLOBAL_DIA) { json(res, 429, { erro: "limite" }); return; }
-    usoDia.set(uso.kid, uso.n + 1);
-    usoDia.set(uso.kg, uso.total + 1);
+    const teste = b.teste === true;
+    if (!teste) {
+      const uso = contaUso(b.id);
+      if (uso.n >= LIMITE_DIA || uso.total >= LIMITE_GLOBAL_DIA) { json(res, 429, { erro: "limite" }); return; }
+      usoDia.set(uso.kid, uso.n + 1);
+      usoDia.set(uso.kg, uso.total + 1);
+    }
 
     const modo = b.modo === "treino" ? "treino" : "papo";
     const cenario = modo === "treino" ? C.cenarios.find((c) => c.id === b.cenario) : null;
     const p = perfilAtual(b.id);
     const reg = { id: b.id, modo, cenario: cenario ? cenario.id : "", user: ultima.content };
+    if (teste) reg.teste = true;
 
     // 1. filtro de entrada: frase de risco nao vai para a IA
     const risco = temRisco(ultima.content);
@@ -574,6 +579,26 @@ function autorizado(req) {
   return crypto.timingSafeEqual(a, b);
 }
 
+// verifica a senha dos pais para ligar o modo teste no aparelho (5 falhas por minuto e IP)
+const falhasTeste = new Map();
+function postTesteAuth(req, res) {
+  const ip = clientIp(req);
+  const agora = Date.now();
+  let f = falhasTeste.get(ip);
+  if (!f || f.reset < agora) { f = { n: 0, reset: agora + 60000 }; falhasTeste.set(ip, f); }
+  if (!senha || f.n >= 5) { json(res, 429, { ok: false }); return; }
+  readBody(req, 512, (err, body) => {
+    let b = null;
+    try { b = JSON.parse(body); } catch (e) { b = null; }
+    if (err || !b || typeof b.senha !== "string") { res.writeHead(400); res.end(); return; }
+    const x = crypto.createHash("sha256").update(b.senha).digest();
+    const y = crypto.createHash("sha256").update(senha).digest();
+    const ok = crypto.timingSafeEqual(x, y);
+    if (!ok) f.n += 1;
+    json(res, ok ? 200 : 401, { ok });
+  });
+}
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -617,8 +642,12 @@ function graficoEvolucao(semanas, maxNivel) {
 }
 
 function painel(res) {
-  const evs = lerLog();
-  const conversas = lerJsonl(conversasFile);
+  const todosEvs = lerLog();
+  const todasConversas = lerJsonl(conversasFile);
+  const evs = todosEvs.filter((e) => !e.teste);
+  const conversas = todasConversas.filter((c) => !c.teste);
+  const testes = todosEvs.filter((e) => e.teste).concat(todasConversas.filter((c) => c.teste));
+  const ultimoTeste = testes.reduce((m, e) => Math.max(m, e.quando), 0);
   const agora = Date.now();
   const hoje = diaKey(agora);
 
@@ -854,6 +883,7 @@ function painel(res) {
 <div class="mut">Atualizado ${esc(fmtHora.format(new Date()))} (${esc(tz)}) · <a href="/">abrir a app</a></div>
 ${aviso}
 ${alertasHtml}
+${ultimoTeste ? `<div class="mut">🧪 Último teste: ${esc(fmtHora.format(new Date(ultimoTeste)))} (${testes.length} registros, ignorados)</div>` : ""}
 <div class="card">
   <div class="mut">Último uso</div>
   <div class="big">${ultimo ? esc(haQuanto(ultimo)) : "ainda sem registros"}</div>
@@ -930,7 +960,7 @@ function csvCel(v) {
 }
 
 function csv(res) {
-  const rows = ["hora_servidor,hora_aparelho,id,tipo,mundo,acertou_de_primeira,tentativas,nivel,pergunta,enunciado,respondeu,certa,explicacao,humor,texto"];
+  const rows = ["hora_servidor,hora_aparelho,id,tipo,mundo,acertou_de_primeira,tentativas,nivel,pergunta,enunciado,respondeu,certa,explicacao,humor,texto,teste"];
   for (const ev of lerLog()) {
     rows.push([
       ev.t,
@@ -940,7 +970,8 @@ function csv(res) {
       ev.tent, ev.tipo === "nivel" ? ev.de + "→" + ev.para : ev.nivel,
       ev.perg, ev.q, ev.esc, ev.certa, ev.why,
       ev.tipo === "humor" ? [ev.rosto >= 0 ? C.humor.rostos[ev.rosto].t : "", ...(ev.chips || [])].filter(Boolean).join("; ") : "",
-      ev.texto
+      ev.texto,
+      ev.teste ? "sim" : ""
     ].map(csvCel).join(","));
   }
   res.writeHead(200, {
@@ -1072,10 +1103,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (rota === "/api/evento" || rota === "/api/push" || rota === "/api/conversa") {
+  if (rota === "/api/evento" || rota === "/api/push" || rota === "/api/conversa" || rota === "/api/teste-auth") {
     if (req.method !== "POST") { res.writeHead(405, { Allow: "POST" }); res.end(); return; }
     if (rota === "/api/evento") postEvento(req, res);
     else if (rota === "/api/push") postPush(req, res);
+    else if (rota === "/api/teste-auth") postTesteAuth(req, res);
     else postConversa(req, res);
     return;
   }
