@@ -144,6 +144,20 @@
   .naosei { display: block; width: 100%; margin-top: 10px; border: 2px dashed rgba(255,255,255,.35); border-radius: 16px; padding: 12px; font-size: 17px; font-weight: 700; background: transparent; color: inherit; cursor: pointer; }
   .aula { margin-top: 12px; }
   .aulaVis { background: rgba(255,255,255,.1); border-radius: 16px; padding: 12px; margin: 10px 0; text-align: center; font-size: 20px; line-height: 1.6; }
+  .ob { font-size: 26px; background: transparent; border: 2px solid transparent; border-radius: 12px; padding: 2px 3px; cursor: pointer; transition: opacity .2s, transform .2s; }
+  .ob.out { opacity: .25; text-decoration: line-through; filter: grayscale(1); transform: scale(.85); }
+  .ob.on { border-color: #3ddc97; background: rgba(61,220,151,.2); }
+  .ob.ph { border: 2px dashed rgba(255,255,255,.45); }
+  .plus { font-size: 30px; font-weight: 800; margin: 2px 0; }
+  .aulaMsg { font-size: 20px; font-weight: 700; margin-top: 8px; min-height: 30px; }
+  .eqBig { font-size: 34px; font-weight: 800; margin: 8px 0; }
+  .eqBig .r { color: #3ddc97; }
+  .nl { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 8px; }
+  .nlc { min-width: 40px; padding: 10px 6px; border-radius: 12px; background: rgba(255,255,255,.12); font-size: 22px; font-weight: 800; }
+  .nlc.vis { background: rgba(61,220,151,.3); }
+  .nlc.cur { background: #ff7ab8; color: #24183a; transform: scale(1.12); }
+  .pular { margin-top: 8px; font-size: 22px; font-weight: 800; padding: 12px 28px; border-radius: 16px; border: 0; background: #ffd24a; color: #24183a; }
+  .next:disabled { opacity: .35; }
   .cnt { font-size: 28px; background: transparent; border: 2px solid transparent; border-radius: 12px; padding: 2px 4px; cursor: pointer; }
   .cnt.on { border-color: #3ddc97; background: rgba(61,220,151,.2); }
   .seg { font-size: 16px; font-weight: 800; background: rgba(255,255,255,.14); border: 2px solid transparent; border-radius: 12px; padding: 8px 10px; margin: 3px; cursor: pointer; color: inherit; }
@@ -690,6 +704,118 @@ function numItem(o) {
     }))
   };
 }
+// ---------- aulas passo a passo: concreto (objetos) -> reta numérica -> conta ----------
+// Cada passo: { t: texto falado, html, init(root, libera), gate: só avança depois de agir }.
+function gradeObjs(emoji, n, outFrom) {
+  let h = "";
+  for (let i = 0; i < n; i++) {
+    h += `<button class="ob${outFrom != null && i >= outFrom ? " out" : ""}">${emoji}</button>`;
+    if ((i + 1) % 5 === 0 && i + 1 < n) h += "<br>";
+  }
+  return h;
+}
+function eqBig(s) { return `<div class="eqBig">${s}</div>`; }
+const msgHtml = (s) => `<div class="aulaMsg" id="msg">${s}</div>`;
+
+// Subtrair = tirar. Ela tira um a um e conta o que sobra.
+function aulaTirar(a, b, emoji) {
+  const r = a - b;
+  return { passos: [
+    { t: `Subtrair é tirar. Aqui temos ${a}. Vamos tirar ${b}: toque em ${b}, um de cada vez.`, gate: true,
+      html: `<div>${gradeObjs(emoji, a)}</div>${msgHtml(`Tirei: <b>0</b> de ${b}`)}`,
+      init: (root, libera) => {
+        let tirei = 0, contei = 0;
+        const msg = root.querySelector("#msg");
+        root.querySelectorAll(".ob").forEach(o => o.onclick = () => {
+          if (o.classList.contains("out") || o.classList.contains("on")) return;
+          if (tirei < b) {
+            o.classList.add("out"); tirei += 1;
+            msg.innerHTML = `Tirei: <b>${tirei}</b> de ${b}`;
+            speak(String(tirei), "pt-BR", true);
+            if (tirei === b) msg.innerHTML = `Tirei ${b}! Agora conte os que ficaram: toque em cada um.`;
+          } else {
+            o.classList.add("on"); contei += 1;
+            msg.innerHTML = `Ficaram: <b>${contei}</b>`;
+            speak(String(contei), "pt-BR", true);
+            if (contei === r) { msg.innerHTML = `Ficaram ${r}! 🎉`; libera(); }
+          }
+        });
+      } },
+    { t: `Então ${a} menos ${b} é ${r}. Tiramos ${b} de ${a}, e ficaram ${r}.`,
+      html: `<div>${gradeObjs(emoji, a, r)}</div>${eqBig(`${a} − ${b} = <span class="r">${r}</span>`)}` },
+    { t: `Para conferir, junte de volta: ${r} mais ${b} é ${a}. Somar e subtrair são o contrário uma da outra.`,
+      html: eqBig(`${r} + ${b} = ${a}`) + eqBig(`${a} − ${b} = ${r}`) }
+  ] };
+}
+
+// Contar para cima na reta: "quanto falta de de até ate?". Bom quando os números são perto.
+function aulaSubir(de, ate, finais) {
+  const r = ate - de;
+  const cells = Array.from({ length: r + 1 }, (_, i) => `<div class="nlc${i === 0 ? " cur" : ""}">${de + i}</div>`).join("");
+  return { passos: [
+    { t: `Em vez de tirar tudo, é mais fácil contar para cima. Quanto falta de ${de} até ${ate}? Toque em Pular e conte os pulos.`, gate: true,
+      html: `<div class="nl">${cells}</div>${msgHtml("Pulos: <b>0</b>")}<button class="pular" id="pular">👣 Pular</button>`,
+      init: (root, libera) => {
+        const cs = [...root.querySelectorAll(".nlc")];
+        const msg = root.querySelector("#msg"), btn = root.querySelector("#pular");
+        let pos = 0;
+        btn.onclick = () => {
+          if (pos >= r) return;
+          cs[pos].classList.remove("cur"); cs[pos].classList.add("vis");
+          pos += 1; cs[pos].classList.add("cur");
+          msg.innerHTML = `Pulos: <b>${pos}</b>`;
+          speak(String(pos), "pt-BR", true);
+          if (pos === r) { msg.innerHTML = `Chegamos no ${ate}! Foram ${r} pulos. 🎉`; btn.classList.add("hidden"); libera(); }
+        };
+      } },
+    { t: finais[0].t, html: eqBig(finais[0].eq) },
+    { t: finais[1].t, html: finais[1].eq }
+  ] };
+}
+
+// Somar = juntar. Ela junta um a um contando a partir do primeiro número.
+function aulaSomar(a, b, emoji, intro) {
+  const s = a + b;
+  return { passos: [
+    { t: intro || `Somar é juntar. Aqui temos ${a}. Vamos juntar mais ${b}: toque em cada espaço e conte a partir de ${a}.`, gate: true,
+      html: `<div>${gradeObjs(emoji, a)}</div><div class="plus">+</div><div>${Array.from({ length: b }, () => `<button class="ob ph">➕</button>`).join("")}</div>${msgHtml(`Temos: <b>${a}</b>`)}`,
+      init: (root, libera) => {
+        let k = 0;
+        const msg = root.querySelector("#msg");
+        root.querySelectorAll(".ob.ph").forEach(o => o.onclick = () => {
+          if (o.classList.contains("on")) return;
+          o.classList.add("on"); o.textContent = emoji; k += 1;
+          msg.innerHTML = `Temos: <b>${a + k}</b>`;
+          speak(String(a + k), "pt-BR", true);
+          if (k === b) { msg.innerHTML = `${s} no total! 🎉`; libera(); }
+        });
+      } },
+    { t: `Então ${a} mais ${b} é ${s}.`, html: eqBig(`${a} + ${b} = <span class="r">${s}</span>`) },
+    { t: `Para conferir, tire de volta: ${s} menos ${b} dá ${a}. Somar e subtrair são o contrário uma da outra.`,
+      html: eqBig(`${s} − ${b} = ${a}`) + eqBig(`${a} + ${b} = ${s}`) }
+  ] };
+}
+
+// "a − b": até 10 para tirar usa objetos; acima disso é melhor contar para cima.
+function aulaSubtracao(a, b, emoji) {
+  const r = a - b;
+  if (a > 20) return null;
+  if (b <= 10) return aulaTirar(a, b, emoji);
+  return aulaSubir(b, a, [
+    { t: `Então ${a} menos ${b} é ${r}. De ${b} até ${a} faltam ${r}.`, eq: `${a} − ${b} = <span class="r">${r}</span>` },
+    { t: `Para conferir: ${b} mais ${r} é ${a}. Somar e subtrair são o contrário uma da outra.`, eq: eqBig(`${b} + ${r} = ${a}`) }
+  ]);
+}
+// "a + ? = c": quanto falta de a até c
+function aulaFalta(a, c) {
+  const x = c - a;
+  if (x > 10) return null;
+  return aulaSubir(a, c, [
+    { t: `Faltam ${x}. Então ${a} mais ${x} é ${c}.`, eq: `${a} + <span class="r">${x}</span> = ${c}` },
+    { t: `Para conferir: ${c} menos ${a} é ${x}. Somar e subtrair são o contrário uma da outra.`, eq: eqBig(`${c} − ${a} = ${x}`) }
+  ]);
+}
+
 const EMOJIS = ["🍎", "⭐", "🍪", "🐶", "🎈", "🧁", "🦋"];
 const GOLPES = [["raspagem", 2], ["passagem", 3], ["montada", 4], ["joelho na barriga", 2], ["pegada nas costas", 4]];
 const LOJA = [["sumo", 1], ["sandes", 2.5], ["gelado", 1.5], ["caderno", 3], ["revista", 4], ["pulseira", 5], ["caneta", 1], ["bolo", 2]];
@@ -746,16 +872,20 @@ function mathItem(n) {
       const a = rnd(6, 20), b = rnd(1, a - 2), r = a - b;
       const q = k === "influ" ? fill(`A {influ} postou ${a} vídeos. Você já viu ${b}. Quantos faltam?`)
         : fill(`{nome} tinha ${a} figurinhas. Deu ${b} para a amiga. Quantas sobraram?`);
-      return numItem({ key: (k === "influ" ? "Vídeos " : "Tirar ") + a + "-" + b, q, hint: `${a} − ${b} = ?`,
+      const it = numItem({ key: (k === "influ" ? "Vídeos " : "Tirar ") + a + "-" + b, q, hint: `${a} − ${b} = ?`,
         stage: a <= 12 ? `<div class="objs sm">${objRows(emoji, r)}</div><div class="objs sm" style="opacity:.3">${objRows(emoji, b)}</div>` : `<div class="word">${a} − ${b}</div>`,
         certo: r, okWhy: `${a} − ${b} = ${r}.`, noWhy: `Tire ${b} de ${a}. Ficam ${r}.` });
+      it.aula = aulaSubtracao(a, b, emoji);
+      return it;
     }
     const a = rnd(2, 12), b = rnd(2, 8), s = a + b;
     const q = k === "eps" ? fill(`Você viu ${a} episódios de {novela} ontem e ${b} hoje. Quantos ao todo?`)
       : fill(`{nome} tem ${a} figurinhas. Ganhou mais ${b}. Quantas tem agora?`);
-    return numItem({ key: "Somar " + a + "+" + b, q, hint: `${a} + ${b} = ?`,
+    const it = numItem({ key: "Somar " + a + "+" + b, q, hint: `${a} + ${b} = ?`,
       stage: s <= 14 ? `<div class="pile"><div class="objs sm">${objRows(emoji, a)}</div></div><div style="font-size:28px">+</div><div class="pile"><div class="objs sm">${objRows(emoji, b)}</div></div>` : `<div class="word">${a} + ${b}</div>`,
       certo: s, okWhy: `${a} + ${b} = ${s}.`, noWhy: `Junte tudo: ${a} + ${b} = ${s}.` });
+    it.aula = aulaSomar(a, b, emoji);
+    return it;
   }
   if (n === 3) {
     const [x, y] = shuffle(LOJA).slice(0, 2);
@@ -806,13 +936,17 @@ function mathItem(n) {
     }
     if (k === "-") {
       const b = rnd(2, 9), c = rnd(3, 15), x = b + c;
-      return numItem({ key: "? - " + b + " = " + c, q: "Qual número falta?", stage: `<div class="word">? − ${b} = ${c}</div>`,
+      const it = numItem({ key: "? - " + b + " = " + c, q: "Qual número falta?", stage: `<div class="word">? − ${b} = ${c}</div>`,
         hint: `Dica: ${c} + ${b}`, certo: x, okWhy: `${x} − ${b} = ${c}.`, noWhy: `Faça ao contrário: ${c} + ${b} = ${x}.` });
+      it.aula = aulaSomar(c, b, emoji, `Procuramos o número que, tirando ${b}, deixa ${c}. Faça ao contrário: junte ${c} com ${b}. Toque em cada espaço e conte a partir de ${c}.`);
+      return it;
     }
     const a = rnd(2, 12), x = rnd(2, 15), c = a + x;
     const txt = k === "a+" ? `${a} + ? = ${c}` : `? + ${a} = ${c}`;
-    return numItem({ key: txt, q: "Qual número falta?", stage: `<div class="word">${txt}</div>`,
+    const it = numItem({ key: txt, q: "Qual número falta?", stage: `<div class="word">${txt}</div>`,
       hint: `Dica: ${c} − ${a}`, certo: x, okWhy: `${a} + ${x} = ${c}.`, noWhy: `Faça ao contrário: ${c} − ${a} = ${x}.` });
+    it.aula = aulaFalta(a, c);
+    return it;
   }
   // nível 7: proporção
   const k = pick(["receita", "preco", "unit"]);
@@ -1127,8 +1261,8 @@ function answer(idx) {
   track(ev);
 
   const ultimo = state.step + 1 >= state.total;
-  if (!chosen.ok && tutor && !extra) {
-    // errou: mini-aula em vez de mostrar só a resposta
+  if (!chosen.ok && tutor && (!extra || (it.aula && it.aula.passos))) {
+    // errou: mini-aula em vez de mostrar só a resposta (também na "parecida", se houver aula guiada)
     buttons[idx].classList.add("bad");
     mostraAula(it, chosen);
     return;
@@ -1164,10 +1298,17 @@ function variante(it) {
 }
 function mostraAula(it, chosen) {
   const correta = it.choices.find(c => c.ok);
-  const passos = [{ t: chosen ? "Você escolheu “" + chosen.t + "”. " + chosen.why : "Tudo bem não saber! Vamos ver juntas, com calma.", html: "" }];
-  if (it.aula) passos.push({ t: it.aula.texto, html: it.aula.visual(), init: it.aula.init });
-  else passos.push({ t: "Olhe de novo com calma:", html: it.stage });
-  passos.push({ t: "A resposta certa é “" + correta.t + "”. " + correta.why, html: "" });
+  const guiada = !!(it.aula && it.aula.passos);
+  // Aula guiada: não entrega a resposta, ela descobre fazendo.
+  const passos = [{ t: chosen
+    ? (guiada ? "Tudo bem errar, é assim que a gente aprende. Vamos descobrir juntas, passo a passo." : "Você escolheu “" + chosen.t + "”. " + chosen.why)
+    : "Tudo bem não saber! Vamos ver juntas, com calma.", html: "" }];
+  if (guiada) passos.push(...it.aula.passos);
+  else {
+    if (it.aula) passos.push({ t: it.aula.texto, html: it.aula.visual(), init: it.aula.init });
+    else passos.push({ t: "Olhe de novo com calma:", html: it.stage });
+    passos.push({ t: "A resposta certa é “" + correta.t + "”. " + correta.why, html: "" });
+  }
   const podeVariante = !it.extra && state.mode === "missao";
   let i = 0;
   const box = $("aula");
@@ -1179,8 +1320,8 @@ function mostraAula(it, chosen) {
     const p = passos[i];
     const ultimo = i === passos.length - 1;
     box.innerHTML = `<div class="bubble">${esc(perfil.luaEmoji || "🌙")} ${esc(p.t)}</div>${p.html ? `<div class="aulaVis">${p.html}</div>` : ""}
-      <button class="next show" id="aulaNext">${ultimo ? "Entendi! Tentar uma parecida ›" : "Entendi ›"}</button>`;
-    if (p.init) p.init(box);
+      <button class="next show" id="aulaNext"${p.gate ? " disabled" : ""}>${ultimo ? (podeVariante ? "Entendi! Tentar uma parecida ›" : "Entendi ›") : "Entendi ›"}</button>`;
+    if (p.init) p.init(box, () => { $("aulaNext").disabled = false; });
     speak(p.t, "pt-BR");
     $("aulaNext").onclick = () => {
       if (!ultimo) { i += 1; desenha(); return; }
