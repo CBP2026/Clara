@@ -202,6 +202,7 @@
   .chatform { display: flex; gap: 8px; }
   .chatform .inp { flex: 1; }
   .chatform button { border: 0; border-radius: 14px; padding: 0 16px; font-weight: 800; background: var(--accent); color: #24183a; font-size: 16px; cursor: pointer; }
+  .testeBanner { background: #ffc857; color: #1b1b2f; text-align: center; font-weight: 700; font-size: 14px; padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; }
   .pais { display: block; text-align: center; margin: 18px auto 0; color: var(--muted); font-size: 13px; text-decoration: none; opacity: .7; }
   .clock { width: 170px; height: 170px; }
 </style>
@@ -227,6 +228,7 @@
   </section>
 
   <section id="home" class="hidden">
+    <div class="testeBanner hidden" id="testeBanner">🧪 Modo teste · nada disto conta para a Clara</div>
     <header class="top">
       <div class="brand">
         <div class="moon" id="homeAv">🌙</div>
@@ -251,6 +253,7 @@
     </div>
     <div class="grid" id="worlds"></div>
     <a class="pais" href="/pais" id="paisBtn">👨‍👩‍👧 Área dos pais</a>
+    <a class="pais" href="#" id="testeBtn">🧪 Modo teste (pais)</a>
   </section>
 
   <section id="play" class="hidden">
@@ -326,8 +329,12 @@
 <script>
 const C = window.CONTEUDO;
 const $ = (id) => document.getElementById(id);
-function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+// modo teste: estado (estrelas, niveis, erros...) vai para chaves mt-, o estado real fica intacto
+const TESTE = (() => { try { return localStorage.getItem("mc-teste") === "1"; } catch (e) { return false; } })();
+const COMUNS = ["mc-id", "mc-perfil", "mc-config", "mc-push", "mc-mudo", "mc-artistas", "mc-teste", "mc-fila"];
+function chave(k) { return TESTE && !COMUNS.includes(k) && k.startsWith("mc-") ? "mt-" + k.slice(3) : k; }
+function lsGet(k) { try { return localStorage.getItem(chave(k)); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(chave(k), v); } catch (e) {} }
 function lsJSON(k, def) { try { const v = JSON.parse(lsGet(k)); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : ""; }
@@ -475,6 +482,7 @@ async function flush() {
 function track(ev) {
   ev.id = deviceId();
   ev.td = Date.now();
+  if (TESTE) ev.teste = true;
   const fila = getFila();
   fila.push(ev);
   lsSet(FILA, JSON.stringify(fila.slice(-200)));
@@ -1150,12 +1158,25 @@ function goHome() {
   $("humorBtn").textContent = fezHumor ? "💬 Contar mais sobre o meu dia" : "💬 Como foi o seu dia?";
   $("luaBtn").textContent = (perfil.luaEmoji || "🌙") + " Conversar com a " + (perfil.lua || "Lua");
   $("luaBtn").classList.toggle("hidden", !config.chat);
+  $("testeBanner").classList.toggle("hidden", !TESTE);
+  $("testeBtn").textContent = TESTE ? "🧪 Sair do modo teste" : "🧪 Modo teste (pais)";
   renderStreak();
   renderMdia();
   renderWorlds();
   saveStars();
   show("home");
 }
+$("testeBtn").onclick = async (e) => {
+  e.preventDefault();
+  if (TESTE) { lsSet("mc-teste", "0"); location.reload(); return; }
+  const senha = window.prompt("Senha dos pais para ligar o modo teste:");
+  if (!senha) return;
+  try {
+    const r = await fetch("/api/teste-auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha }) });
+    if (r.ok) { lsSet("mc-teste", "1"); location.reload(); return; }
+    window.alert(r.status === 429 ? "Muitas tentativas. Tenta daqui a 1 minuto." : "Senha errada.");
+  } catch (err) { window.alert("Sem internet."); }
+};
 $("homeBtn").onclick = goHome;
 $("backBtn").onclick = goHome;
 document.querySelectorAll("[data-home]").forEach(b => b.onclick = goHome);
@@ -1329,19 +1350,20 @@ function achaArtista(nome) {
   return null;
 }
 // Editor de lista: chips com ✕, campo e botão Adicionar
-function montaCantores(box, lista, onChange) {
+function montaCantores(box, lista, onChange, o) {
+  o = Object.assign({ max: 10, maxLen: 40, id: "cant", ph: "Nome do cantor ou grupo" }, o);
   const draw = () => {
     box.innerHTML = `<div class="row" style="margin:0 0 12px">${lista.map((c, i) => `<span class="chip on cantchip">${esc(c)} <b data-i="${i}" aria-label="Tirar ${esc(c)}">✕</b></span>`).join("") || '<span class="mut">Ainda não tem nenhum.</span>'}</div>
-      ${lista.length < 10 ? `<div class="chatform"><input class="inp" id="cantIn" maxlength="40" placeholder="Nome do cantor ou grupo" autocomplete="off"><button type="button" id="cantAdd">Adicionar</button></div>` : '<div class="mut">Máximo de 10. Tire um para colocar outro.</div>'}`;
+      ${lista.length < o.max ? `<div class="chatform"><input class="inp" id="${o.id}In" maxlength="${o.maxLen}" placeholder="${esc(o.ph)}" autocomplete="off"><button type="button" id="${o.id}Add">Adicionar</button></div>` : `<div class="mut">Máximo de ${o.max}. Tire um para colocar outro.</div>`}`;
     box.querySelectorAll("b[data-i]").forEach(b => b.onclick = () => { lista.splice(Number(b.dataset.i), 1); draw(); if (onChange) onChange(); });
     const add = () => {
-      const v = $("cantIn").value.trim().slice(0, 40);
-      if (!v || lista.some(x => normNome(x) === normNome(v))) { $("cantIn").value = ""; return; }
-      lista.push(v); draw(); if (onChange) onChange(); $("cantIn").focus();
+      const v = $(o.id + "In").value.trim().slice(0, o.maxLen);
+      if (!v || lista.some(x => normNome(x) === normNome(v))) { $(o.id + "In").value = ""; return; }
+      lista.push(v); draw(); if (onChange) onChange(); $(o.id + "In").focus();
     };
-    if ($("cantAdd")) {
-      $("cantAdd").onclick = add;
-      $("cantIn").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
+    if ($(o.id + "Add")) {
+      $(o.id + "Add").onclick = add;
+      $(o.id + "In").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
     }
   };
   draw();
@@ -1597,7 +1619,7 @@ $("chatForm").onsubmit = async (e) => {
     const r = await fetch("/api/conversa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: deviceId(), modo: chat.modo, cenario: chat.cenario, msgs: chat.msgs.slice(-10) })
+      body: JSON.stringify({ id: deviceId(), modo: chat.modo, cenario: chat.cenario, msgs: chat.msgs.slice(-10), teste: TESTE })
     });
     if (r.ok) resp = (await r.json()).resposta || resp;
     else if (r.status === 429) resp = fill("Por hoje já conversamos bastante, {nome}! Amanhã tem mais 💛 Que tal uma missão?");
@@ -1613,7 +1635,6 @@ $("chatForm").onsubmit = async (e) => {
 };
 
 // ---------- onboarding / meus gostos ----------
-const NOVELAS = ["Carrossel", "Caverna Encantada", "Go! Viva do Seu Jeito", "A Infância de Romeu e Julieta", "Chiquititas", "Cúmplices de um Resgate"];
 const AVATARES = ["🌙", "🦄", "🐱", "🌸", "⭐", "🐼", "🦋", "🐰"];
 let ob = { passo: 0, editando: false, p: null };
 const PASSOS = ["eu", "novelas", "cantores", "influs", "jj", "cor", "push"];
@@ -1636,16 +1657,11 @@ function renderOb() {
       <label class="field"><span>Que nome você quer me dar?</span><input class="inp" id="obLua" maxlength="20" value="${esc(p.lua)}"></label>
       <div class="field"><span>Escolha o meu rostinho</span><div class="avs" id="obAvs">${AVATARES.map(a => `<button data-a="${a}" class="${a === p.luaEmoji ? "on" : ""}">${a}</button>`).join("")}</div></div>`;
   } else if (passo === "novelas") {
-    const outras = p.novelas.filter(n => !NOVELAS.includes(n));
-    h = `<div class="bubble">${esc(p.luaEmoji)} Quais novelas você ama? Pode escolher várias!</div>
-      <div class="row" id="obNov">${NOVELAS.map(n => `<button class="chip ${p.novelas.includes(n) ? "on" : ""}" data-n="${esc(n)}">${esc(n)}</button>`).join("")}</div>
-      <label class="field" style="margin-top:14px"><span>Outra novela ou série que você gosta</span><input class="inp" id="obNovOutra" maxlength="40" value="${esc(outras.join(", "))}"></label>`;
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quais novelas ou séries você ama? Escreva uma de cada vez. Depois você pode tirar ou colocar outras quando quiser.</div><div id="novEd"></div>`;
   } else if (passo === "cantores") {
     h = `<div class="bubble">${esc(p.luaEmoji)} Quais cantores ou grupos você mais gosta? Escreva um de cada vez. Depois você pode tirar ou colocar outros quando quiser.</div><div id="cantEd"></div>`;
   } else if (passo === "influs") {
-    const vals = p.influs.concat(["", "", "", "", ""]).slice(0, 5);
-    h = `<div class="bubble">${esc(p.luaEmoji)} Quem você mais gosta de assistir? Escreva até 5 nomes.</div>
-      ${vals.map((v, i) => `<label class="field"><span>Influencer ${i + 1}</span><input class="inp obInf" maxlength="30" value="${esc(v)}"></label>`).join("")}`;
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quem você mais gosta de assistir? Escreva um nome de cada vez. Depois você pode tirar ou colocar outros quando quiser.</div><div id="infEd"></div>`;
   } else if (passo === "jj") {
     const opts = (sel) => C.faixas.map(f => `<option ${f === sel ? "selected" : ""}>${esc(f)}</option>`).join("");
     h = `<div class="bubble">${esc(p.luaEmoji)} Me conta do seu esporte!</div>
@@ -1673,12 +1689,9 @@ function renderOb() {
     p.luaEmoji = b.dataset.a;
     $("obAvs").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
   });
-  if (passo === "novelas") $("obNov").querySelectorAll(".chip").forEach(b => b.onclick = () => {
-    const n = b.dataset.n, i = p.novelas.indexOf(n);
-    if (i >= 0) p.novelas.splice(i, 1); else p.novelas.push(n);
-    b.classList.toggle("on", i < 0);
-  });
+  if (passo === "novelas") montaCantores($("novEd"), p.novelas, null, { max: 9, maxLen: 40, id: "nov", ph: "Nome da novela ou série" });
   if (passo === "cantores") montaCantores($("cantEd"), p.cantores, null);
+  if (passo === "influs") montaCantores($("infEd"), p.influs, null, { max: 5, maxLen: 30, id: "inf", ph: "Nome do influencer" });
   if (passo === "jj") {
     $("obJjS").onclick = () => { p.jj = true; lePasso(); renderOb(); };
     $("obJjN").onclick = () => { p.jj = false; lePasso(); renderOb(); };
@@ -1700,13 +1713,14 @@ function lePasso() {
     p.nome = $("obNome").value.trim().slice(0, 30) || "Clara";
     p.lua = $("obLua").value.trim().slice(0, 20) || "Lua";
   } else if (passo === "novelas") {
-    const outras = $("obNovOutra").value.split(",").map(s => s.trim()).filter(Boolean).slice(0, 3);
-    p.novelas = p.novelas.filter(n => NOVELAS.includes(n)).concat(outras);
+    const inp = $("novIn");
+    if (inp && inp.value.trim() && p.novelas.length < 9) p.novelas.push(inp.value.trim().slice(0, 40));
   } else if (passo === "cantores") {
     const inp = $("cantIn");
     if (inp && inp.value.trim() && p.cantores.length < 10) p.cantores.push(inp.value.trim().slice(0, 40));
   } else if (passo === "influs") {
-    p.influs = [...document.querySelectorAll(".obInf")].map(i => i.value.trim().slice(0, 30)).filter(Boolean).slice(0, 5);
+    const inp = $("infIn");
+    if (inp && inp.value.trim() && p.influs.length < 5) p.influs.push(inp.value.trim().slice(0, 30));
   } else if (passo === "jj" && $("obAcad")) {
     p.academia = $("obAcad").value.trim().slice(0, 30) || "academia";
     p.faixa = $("obFaixa").value;
