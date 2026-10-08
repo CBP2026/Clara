@@ -1,5 +1,5 @@
 // Guarda o app para abrir sem internet. Rede primeiro; cache so se a rede falhar.
-const CACHE = "clara-v4";
+const CACHE = "clara-v5";
 const SHELL = ["/", "/index.html", "/conteudo.js", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {

@@ -1635,7 +1635,6 @@ $("chatForm").onsubmit = async (e) => {
 };
 
 // ---------- onboarding / meus gostos ----------
-const NOVELAS = ["Carrossel", "Caverna Encantada", "Go! Viva do Seu Jeito", "A Infância de Romeu e Julieta", "Chiquititas", "Cúmplices de um Resgate"];
 const AVATARES = ["🌙", "🦄", "🐱", "🌸", "⭐", "🐼", "🦋", "🐰"];
 let ob = { passo: 0, editando: false, p: null };
 const PASSOS = ["eu", "novelas", "cantores", "influs", "jj", "cor", "push"];
@@ -1658,10 +1657,7 @@ function renderOb() {
       <label class="field"><span>Que nome você quer me dar?</span><input class="inp" id="obLua" maxlength="20" value="${esc(p.lua)}"></label>
       <div class="field"><span>Escolha o meu rostinho</span><div class="avs" id="obAvs">${AVATARES.map(a => `<button data-a="${a}" class="${a === p.luaEmoji ? "on" : ""}">${a}</button>`).join("")}</div></div>`;
   } else if (passo === "novelas") {
-    const outras = p.novelas.filter(n => !NOVELAS.includes(n));
-    h = `<div class="bubble">${esc(p.luaEmoji)} Quais novelas você ama? Pode escolher várias!</div>
-      <div class="row" id="obNov">${NOVELAS.map(n => `<button class="chip ${p.novelas.includes(n) ? "on" : ""}" data-n="${esc(n)}">${esc(n)}</button>`).join("")}</div>
-      <label class="field" style="margin-top:14px"><span>Outra novela ou série que você gosta</span><input class="inp" id="obNovOutra" maxlength="40" value="${esc(outras.join(", "))}"></label>`;
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quais novelas ou séries você ama? Escreva uma de cada vez. Depois você pode tirar ou colocar outras quando quiser.</div><div id="novEd"></div>`;
   } else if (passo === "cantores") {
     h = `<div class="bubble">${esc(p.luaEmoji)} Quais cantores ou grupos você mais gosta? Escreva um de cada vez. Depois você pode tirar ou colocar outros quando quiser.</div><div id="cantEd"></div>`;
   } else if (passo === "influs") {
@@ -1693,11 +1689,7 @@ function renderOb() {
     p.luaEmoji = b.dataset.a;
     $("obAvs").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
   });
-  if (passo === "novelas") $("obNov").querySelectorAll(".chip").forEach(b => b.onclick = () => {
-    const n = b.dataset.n, i = p.novelas.indexOf(n);
-    if (i >= 0) p.novelas.splice(i, 1); else p.novelas.push(n);
-    b.classList.toggle("on", i < 0);
-  });
+  if (passo === "novelas") montaCantores($("novEd"), p.novelas, null, { max: 9, maxLen: 40, id: "nov", ph: "Nome da novela ou série" });
   if (passo === "cantores") montaCantores($("cantEd"), p.cantores, null);
   if (passo === "influs") montaCantores($("infEd"), p.influs, null, { max: 5, maxLen: 30, id: "inf", ph: "Nome do influencer" });
   if (passo === "jj") {
@@ -1721,8 +1713,8 @@ function lePasso() {
     p.nome = $("obNome").value.trim().slice(0, 30) || "Clara";
     p.lua = $("obLua").value.trim().slice(0, 20) || "Lua";
   } else if (passo === "novelas") {
-    const outras = $("obNovOutra").value.split(",").map(s => s.trim()).filter(Boolean).slice(0, 3);
-    p.novelas = p.novelas.filter(n => NOVELAS.includes(n)).concat(outras);
+    const inp = $("novIn");
+    if (inp && inp.value.trim() && p.novelas.length < 9) p.novelas.push(inp.value.trim().slice(0, 40));
   } else if (passo === "cantores") {
     const inp = $("cantIn");
     if (inp && inp.value.trim() && p.cantores.length < 10) p.cantores.push(inp.value.trim().slice(0, 40));
