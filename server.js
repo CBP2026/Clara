@@ -971,7 +971,7 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
 <h2>Nota para os pais</h2>
 <div class="card mut">Feita para dificuldade com o abstrato: primeiro objetos, depois o número. Sem cronômetro, sem ranking. Cada tema ajusta o nível sozinho: sobe depois de 2 missões com 4+ acertos de 5 e desce, sem avisar, com 2 ou menos. Em “Amigos” há situações de escola nova, bullying e segurança online. A companheira sempre incentiva a contar tudo aos pais. Fiquem ao lado nas primeiras vezes.</div>
 
-<p class="mut"><a href="/pais/log.csv">Baixar CSV completo</a></p>
+<p class="mut"><a href="/pais/log.csv">Baixar CSV completo</a> · <a href="/pais/conversas.csv">Conversas (CSV)</a> · <a href="/pais/perfis.csv">Perfis (CSV)</a></p>
 </main></body></html>`;
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",
@@ -1002,12 +1002,38 @@ function csv(res) {
       ev.teste ? "sim" : ""
     ].map(csvCel).join(","));
   }
+  enviaCsv(res, "clara-log.csv", rows);
+}
+
+function enviaCsv(res, nome, rows) {
   res.writeHead(200, {
     "Content-Type": "text/csv; charset=utf-8",
-    "Content-Disposition": 'attachment; filename="clara-log.csv"',
+    "Content-Disposition": 'attachment; filename="' + nome + '"',
     "Cache-Control": "no-store"
   });
   res.end(rows.join("\n") + "\n");
+}
+
+function csvConversas(res) {
+  const rows = ["hora_servidor,id,modo,cenario,ela_escreveu,lua_respondeu,origem,alerta,motivo,resposta_bloqueada,teste"];
+  for (const c of lerJsonl(conversasFile)) {
+    rows.push([
+      c.t, c.id, c.modo, c.cenario, c.user, c.resposta, c.origem,
+      c.alerta ? "sim" : "", c.motivo, c.bloqueada, c.teste ? "sim" : ""
+    ].map(csvCel).join(","));
+  }
+  enviaCsv(res, "clara-conversas.csv", rows);
+}
+
+function csvPerfis(res) {
+  const rows = ["atualizado,id,nome,lua,novelas,cantores,influencers,jiu_jitsu,academia,faixa,proxima_faixa,cor"];
+  for (const [id, p] of Object.entries(estado.perfis)) {
+    rows.push([
+      p.t, id, p.nome, p.lua, (p.novelas || []).join("; "), (p.cantores || []).join("; "), (p.influs || []).join("; "),
+      p.jj ? "sim" : "nao", p.academia, p.faixa, p.proxima, p.cor
+    ].map(csvCel).join(","));
+  }
+  enviaCsv(res, "clara-perfis.csv", rows);
 }
 
 // ---------- limpeza por intervalo ----------
@@ -1132,6 +1158,8 @@ function areaPais(req, res, rota) {
   }
   if (req.method !== "GET") { res.writeHead(405); res.end(); return; }
   if (rota === "/pais/log.csv") csv(res);
+  else if (rota === "/pais/conversas.csv") csvConversas(res);
+  else if (rota === "/pais/perfis.csv") csvPerfis(res);
   else painel(res);
 }
 
@@ -1222,7 +1250,7 @@ const server = http.createServer((req, res) => {
     json(res, 200, { chat: !!(estado.chat && veniceKey), vapid: vapid ? vapid.publicKey : null });
     return;
   }
-  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar") {
+  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/conversas.csv" || rota === "/pais/perfis.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar") {
     areaPais(req, res, rota === "/pais/" ? "/pais" : rota);
     return;
   }
