@@ -36,11 +36,11 @@ test("conversas.csv tem todas as colunas, escapa fórmulas e marca teste", async
   assert.match(r.headers.get("content-disposition"), /clara-conversas\.csv/);
   const linhas = (await r.text()).trim().split("\n");
   assert.equal(linhas.length, 3);
-  assert.match(linhas[0], /^hora_servidor,id,modo,cenario,ela_escreveu,lua_respondeu,origem,alerta,motivo,resposta_bloqueada,teste$/);
+  assert.match(linhas[0], /^hora_servidor,id,modo,cenario,ela_escreveu,lua_respondeu,origem,alerta,motivo,resposta_bloqueada,teste,tentativas,pedido,bloqueios_anteriores$/);
   assert.match(linhas[1], /"oi, tudo bem\?"/);
   assert.match(linhas[2], /"'=SOMA\(1\)"/);
   assert.match(linhas[2], /"texto ""bloqueado"""/);
-  assert.match(linhas[2], /"sim"$/);
+  assert.match(linhas[2], /"sim","",""/);
 });
 
 test("perfis.csv lista o perfil enviado pelo app", async () => {

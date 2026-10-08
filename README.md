@@ -17,6 +17,13 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 - **Limpar registros:** no painel, “Limpar registros de teste” recebe um intervalo “De/Até” (hora de `PAIS_TZ`, com horário de verão), mostra quantas linhas serão apagadas (por tipo e por aparelho) e só apaga depois de confirmar. Pode apagar também tudo o que está marcado como teste, fora do intervalo. Antes de apagar cria `log.jsonl.bak-<data>` e/ou `conversas.jsonl.bak-<data>` na pasta de dados; as cópias não são apagadas sozinhas. Linhas quebradas são mantidas. Evite limpar enquanto ela usa a app: uma gravação no mesmo instante da limpeza pode perder-se.
 - Testes automáticos: `npm test`.
 
+### Conversa com a Lua
+
+- Pedidos sobre a app (mudar novela, tirar missão, suporte, e-mail) têm **resposta fixa**, sem modelo, e aparecem no painel em “Pedidos dela sobre a app”. Para mudar gostos, a resposta traz um botão que abre o ⚙️.
+- Se o filtro de palavras ou o moderador bloquear uma resposta, a Lua tenta **mais uma vez** com instrução mais rígida antes de usar a frase genérica. O painel e o CSV de conversas guardam o motivo exato, o que o moderador respondeu e as tentativas anteriores.
+- **Modelo por papel:** `LUA_MODELO` (conversa) e `LUA_MODERADOR` (segurança). Se o nome começar por `claude-` usa a API da Anthropic (precisa de `ANTHROPIC_API_KEY`); caso contrário, Venice. Se a chamada falhar, cai nos modelos Venice (`VENICE_MODELO`, `VENICE_MODERADOR`).
+- **Avaliar modelos:** `node scripts/avalia-modelos.js venice:venice-uncensored-1-2 claude-haiku-5-5 claude-sonnet-5-5` corre os 30 casos de `test/casos-lua.json` e imprime um relatório para leitura humana. Só depois de ler o relatório vale trocar `LUA_MODELO`.
+
 ## Perguntas
 
 Tempo e Amigos têm 23 perguntas cada; English tem 30 palavras em 2 formatos; Números gera combinações. Cada missão tem 5 perguntas **sem repetição**, e até 2 delas são perguntas que ela errou antes e ainda não acertou de primeira (guardado no próprio aparelho).

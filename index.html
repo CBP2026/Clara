@@ -1615,13 +1615,14 @@ $("chatForm").onsubmit = async (e) => {
   chat.esperando = true;
   const w = addMsg("lua", "digitando...", "wait");
   let resp = fill("Não consegui responder agora. Tenta daqui a pouco 💛");
+  let acao = "";
   try {
     const r = await fetch("/api/conversa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: deviceId(), modo: chat.modo, cenario: chat.cenario, msgs: chat.msgs.slice(-10), teste: TESTE })
     });
-    if (r.ok) resp = (await r.json()).resposta || resp;
+    if (r.ok) { const j = await r.json(); resp = j.resposta || resp; acao = j.acao || ""; }
     else if (r.status === 429) resp = fill("Por hoje já conversamos bastante, {nome}! Amanhã tem mais 💛 Que tal uma missão?");
     else if (r.status === 403) resp = "A conversa está desligada agora. Fala com os seus pais 💛";
   } catch (err) {
@@ -1629,6 +1630,14 @@ $("chatForm").onsubmit = async (e) => {
   }
   w.remove();
   addMsg("lua", resp);
+  if (acao === "perfil") {
+    const bt = document.createElement("button");
+    bt.className = "chip on";
+    bt.textContent = "⚙️ Abrir meus gostos";
+    bt.onclick = () => abreOnboard(true);
+    $("chatLog").appendChild(bt);
+    $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  }
   chat.msgs.push({ role: "assistant", content: resp });
   chat.esperando = false;
   speak(resp, "pt-BR");
