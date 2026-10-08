@@ -9,7 +9,7 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 
 ## Painel dos pais
 
-`/pais` mostra último uso, calendário dos últimos 28 dias, acerto por tema e a lista de **tudo que ela errou** (com o que respondeu, a resposta certa e se já acertou depois). `/pais/log.csv` baixa o histórico completo. O acesso é por senha (qualquer usuário, senha = `PAIS_SENHA`). Sem `PAIS_SENHA` definida, o painel fica desligado.
+`/pais` mostra último uso, calendário dos últimos 28 dias, acerto por tema e a lista de **tudo que ela errou** (com o que respondeu, a resposta certa e se já acertou depois). `/pais/log.csv` baixa o histórico completo; `/pais/conversas.csv` baixa as conversas com a Lua (incluindo as bloqueadas e o motivo, e as de modo teste marcadas); `/pais/perfis.csv` baixa os perfis. O acesso é por senha (qualquer usuário, senha = `PAIS_SENHA`). Sem `PAIS_SENHA` definida, o painel fica desligado.
 
 ### Modo teste e limpeza
 
