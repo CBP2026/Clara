@@ -648,7 +648,10 @@
     { id: "n1", e: "🌻", t: "Cap. 1: Primeiro dia", col: "Novelinha", especial: true },
     { id: "n2", e: "📋", t: "Cap. 2: O trabalho", col: "Novelinha", especial: true },
     { id: "n3", e: "🥋", t: "Cap. 3: No tatame", col: "Novelinha", especial: true },
-    { id: "n4", e: "🎉", t: "Cap. 4: A festa", col: "Novelinha", especial: true }
+    { id: "n4", e: "🎉", t: "Cap. 4: A festa", col: "Novelinha", especial: true },
+    { id: "n5", e: "😔", t: "Cap. 5: Ninguém me chamou", col: "Novelinha", especial: true },
+    { id: "n6", e: "👭", t: "Cap. 6: Outras amigas", col: "Novelinha", especial: true },
+    { id: "n7", e: "📱", t: "Cap. 7: O grupo", col: "Novelinha", especial: true }
   ];
 
   // ---------------- Novelinha: Turma do Girassol ----------------
@@ -666,12 +669,12 @@
           { t: "Oi! Eu sou a Bia.", ok: true, why: "Um oi com o nome é o começo perfeito." },
           { t: "Não fala nada", ok: false, why: "Sem resposta, a Duda pode pensar que a Bia não quer conversa." },
           { t: "Conta a vida toda de uma vez", ok: false, why: "Muita coisa de uma vez assusta. Vá devagar." }] } },
-        { emoji: "🍎🥪", texto: "No intervalo, a cantina vende sumo a 1 euro e sandes a 2 euros.", pergunta: { q: "Quanto a Bia paga pelos dois?", opcoes: [
+        { emoji: "🍎🥪", texto: "No intervalo, a cantina vende sumo a 1 euro e sandes a 2 euros.", pergunta: { conc: "num.dinheiro_somar", q: "Quanto a Bia paga pelos dois?", opcoes: [
           { t: "3 euros", ok: true, why: "1 + 2 = 3 euros." },
           { t: "2 euros", ok: false, why: "2 é só a sandes. Some o sumo: 3 euros." },
           { t: "12 euros", ok: false, why: "Não é 1 e 2 juntos. É 1 + 2 = 3." }] } },
-        { emoji: "💁‍♀️😒", texto: "Lari passa e diz: 'Que mochila de criança!'", pergunta: { q: "O que a Bia faz?", opcoes: [
-          { t: "Diz 'eu gosto dela' e continua", ok: true, why: "Calma e firme. A Bia pode gostar do que gosta." },
+        { emoji: "💁‍♀️😒", texto: "Lari passa e diz: 'Que lanche esquisito!'", pergunta: { q: "O que a Bia faz?", opcoes: [
+          { t: "Diz 'eu gosto dele' e continua", ok: true, why: "Calma e firme. A Bia pode gostar do que gosta." },
           { t: "Grita com a Lari", ok: false, why: "Gritar vira briga." },
           { t: "Chora e não conta a ninguém", ok: false, why: "Pode ficar triste, sim. Mas é bom contar em casa." }] } },
         { emoji: "🌅📱", texto: "Em casa, Bia conta tudo para a mãe. A mãe abraça: 'Estou orgulhosa!' No próximo capítulo... um trabalho em grupo com a Lari! 😱" }
@@ -690,7 +693,7 @@
           { t: "Impaciente ou entediada", ok: true, why: "Revirar os olhos costuma querer dizer 'que chato'." },
           { t: "Muito feliz", ok: false, why: "Feliz teria sorriso." },
           { t: "Com fome", ok: false, why: "Fome não aparece assim." }] } },
-        { emoji: "🖍️📄", texto: "O cartaz precisa de 4 fotos por página. São 3 páginas.", pergunta: { q: "Quantas fotos no total?", opcoes: [
+        { emoji: "🖍️📄", texto: "O cartaz precisa de 4 fotos por página. São 3 páginas.", pergunta: { conc: "num.multiplicar", q: "Quantas fotos no total?", opcoes: [
           { t: "12 fotos", ok: true, why: "3 páginas com 4 = 4 + 4 + 4 = 12." },
           { t: "7 fotos", ok: false, why: "7 seria 4 + 3. São 3 grupos de 4: 12." },
           { t: "9 fotos", ok: false, why: "Conte 4 + 4 + 4 = 12." }] } },
@@ -709,7 +712,7 @@
           { t: "Cumprimenta a Marta", ok: true, why: "No jiu-jitsu, respeito vem primeiro." },
           { t: "Faz cara de má", ok: false, why: "Cara de má não é respeito." },
           { t: "Diz que vai ganhar fácil", ok: false, why: "Gabar-se antes é falta de respeito." }] } },
-        { emoji: "🔢", texto: "Bia faz uma raspagem (2 pontos) e uma passagem (3 pontos).", pergunta: { q: "Quantos pontos ela tem?", opcoes: [
+        { emoji: "🔢", texto: "Bia faz uma raspagem (2 pontos) e uma passagem (3 pontos).", pergunta: { conc: "num.somar", q: "Quantos pontos ela tem?", opcoes: [
           { t: "5 pontos", ok: true, why: "2 + 3 = 5 pontos." },
           { t: "6 pontos", ok: false, why: "Conte de novo: 2 + 3 = 5." },
           { t: "23 pontos", ok: false, why: "Não é juntar os números. É somar: 5." }] } },
@@ -733,7 +736,7 @@
           { t: "Pede autorização aos pais", ok: true, why: "Os pais precisam saber onde ela vai estar." },
           { t: "Vai sem avisar", ok: false, why: "Sair sem avisar é perigoso e preocupa os pais." },
           { t: "Recusa, com vergonha", ok: false, why: "Ela quer ir! É só conversar com os pais." }] } },
-        { emoji: "🕓", texto: "A festa começa às 16:00. A viagem de carro leva 30 minutos.", pergunta: { q: "A que horas a Bia sai de casa?", opcoes: [
+        { emoji: "🕓", texto: "A festa começa às 16:00. A viagem de carro leva 30 minutos.", pergunta: { conc: "tempo.diferenca_minutos", q: "A que horas a Bia sai de casa?", opcoes: [
           { t: "15:30", ok: true, why: "16:00 menos 30 minutos = 15:30." },
           { t: "16:00", ok: false, why: "Saindo às 16:00, chega atrasada." },
           { t: "16:30", ok: false, why: "16:30 é depois da festa começar." }] } },
@@ -747,7 +750,88 @@
           { t: "Obrigada pelo convite, Duda!", ok: true, why: "Agradecer deixa a Duda feliz." },
           { t: "Sai sem falar", ok: false, why: "Sair sem falar parece que não gostou." },
           { t: "Pede para ficar até meia-noite", ok: false, why: "Os pais combinaram a hora. Respeitar é importante." }] } },
-        { emoji: "🚗💛", texto: "No carro, a Bia conta tudo para o pai. 'Hoje eu fiz uma amiga de verdade.' Novos capítulos em breve! 🌻" }
+        { emoji: "🚗💛", texto: "No carro, a Bia conta tudo para o pai. 'Hoje eu fiz uma amiga de verdade.' No próximo capítulo... ninguém chamou a Bia no recreio! 😔" }
+      ]
+    },
+    {
+      titulo: "Ninguém me chamou", emoji: "😔", estrelas: 70, fig: "n5",
+      cenas: [
+        { emoji: "🏫☀️", texto: "É segunda-feira. A Bia chega à escola animada." },
+        { emoji: "👭🏃", texto: "No recreio, a Duda e a Lari combinam jogar à apanhada. Ninguém chamou a Bia.", pergunta: { conc: "social.amizade", q: "O que a Bia faz?", opcoes: [
+          { t: "Pergunta: posso jogar com vocês?", ok: true, why: "Elas não leem pensamentos. Talvez só não pensaram nisso. Perguntar resolve." },
+          { t: "Vai embora e fica chateada sem dizer nada", ok: false, why: "Elas não sabem que a Bia queria jogar. Dizer ajuda." },
+          { t: "Diz: ninguém gosta de mim!", ok: false, why: "Isso dói e afasta. Melhor pedir o que quer." }] } },
+        { emoji: "😕", texto: "A Lari responde: 'Agora não, o jogo já começou.'", pergunta: { conc: "social.amizade", q: "O que a Bia pensa e faz?", opcoes: [
+          { t: "Fica um pouco triste, tudo bem, e tenta outro dia", ok: true, why: "'Agora não' não quer dizer 'nunca'. A Bia pode sentir tristeza e tentar outra vez." },
+          { t: "Decide que elas odeiam a Bia", ok: false, why: "'Agora não' é sobre o jogo, não sobre a Bia." },
+          { t: "Estraga o jogo de propósito", ok: false, why: "Estragar o jogo deixa todos chateados." }] } },
+        { emoji: "📖🧒", texto: "O Theo está sozinho, a ler um livro.", pergunta: { conc: "social.amizade", q: "O que a Bia pode fazer?", opcoes: [
+          { t: "Sentar perto e perguntar o que ele lê", ok: true, why: "Uma pergunta simples começa uma conversa." },
+          { t: "Fingir que não o vê", ok: false, why: "Ele também está sozinho. Um oi ajuda os dois." },
+          { t: "Ficar sozinha a olhar o relógio", ok: false, why: "Assim o recreio fica longo e triste." }] } },
+        { emoji: "🕑", texto: "O recreio dura 20 minutos. Já passaram 5.", pergunta: { conc: "tempo.diferenca_minutos", q: "Quanto tempo falta?", opcoes: [
+          { t: "15 minutos", ok: true, why: "20 − 5 = 15 minutos." },
+          { t: "25 minutos", ok: false, why: "Já passaram 5, então falta menos: 20 − 5 = 15." },
+          { t: "5 minutos", ok: false, why: "5 é o que já passou. Faltam 15." }] } },
+        { emoji: "🏠😞", texto: "Em casa, a Bia ainda está chateada.", pergunta: { conc: "social.digital", q: "O que ajuda mais?", opcoes: [
+          { t: "Contar à mãe como foi o recreio", ok: true, why: "Contar alivia, e a mãe pode ajudar a pensar." },
+          { t: "Guardar tudo e não falar com ninguém", ok: false, why: "Guardar tudo pesa. Contar a alguém de confiança ajuda." },
+          { t: "Mandar mensagens com raiva para a Lari", ok: false, why: "Mensagens com raiva magoam e é difícil apagar depois." }] } },
+        { emoji: "🌅📖", texto: "A mãe ouve e dá um abraço. No dia seguinte, o Theo chama a Bia para ler juntos. No próximo capítulo... a Duda está sempre com outras meninas! 👭" }
+      ]
+    },
+    {
+      titulo: "Outras amigas", emoji: "👭", estrelas: 100, fig: "n6",
+      cenas: [
+        { emoji: "🎈🎶", texto: "É o dia da festa da turma. A Duda está sempre com outras meninas." },
+        { emoji: "💭", texto: "A Bia sente um aperto no peito.", pergunta: { conc: "social.amizade", q: "O que a Bia pensa?", opcoes: [
+          { t: "A Duda pode ter mais de uma amiga. Isso não muda a nossa amizade", ok: true, why: "Ter outras amigas não quer dizer que gosta menos da Bia." },
+          { t: "A Duda não gosta mais de mim", ok: false, why: "Não há prova disso. Ela só está com mais gente." },
+          { t: "Preciso afastar as outras meninas", ok: false, why: "Afastar os outros estraga amizades." }] } },
+        { emoji: "👋", texto: "A Duda olha para a Bia e acena para ela se juntar.", pergunta: { conc: "social.sinais_corpo", q: "O que o aceno quer dizer?", opcoes: [
+          { t: "Vem cá, juntar-te a nós", ok: true, why: "Acenar para alguém vir é um convite." },
+          { t: "Vai embora", ok: false, why: "Para mandar embora, o gesto seria outro." },
+          { t: "Está com raiva", ok: false, why: "Quem está com raiva não acena a sorrir." }] } },
+        { emoji: "🎤", texto: "As meninas falam do cantor favorito delas. A Bia gosta de outro.", pergunta: { conc: "social.amizade", q: "O que a Bia faz?", opcoes: [
+          { t: "Diz de quem ela gosta, sem criticar o cantor delas", ok: true, why: "Ser verdadeira e simpática: as amigas conhecem a Bia de verdade." },
+          { t: "Diz que o cantor delas é horrível", ok: false, why: "Criticar o que as outras gostam afasta." },
+          { t: "Finge gostar do mesmo", ok: false, why: "Fingir cansa. As amigas não conhecem a Bia de verdade." }] } },
+        { emoji: "🎈", texto: "Cada menina pega 3 balões. São 4 meninas.", pergunta: { conc: "num.multiplicar", q: "Quantos balões ao todo?", opcoes: [
+          { t: "12 balões", ok: true, why: "4 meninas com 3: 3 + 3 + 3 + 3 = 12." },
+          { t: "7 balões", ok: false, why: "7 seria 4 + 3. São 4 grupos de 3: 12." },
+          { t: "9 balões", ok: false, why: "Conte 3 + 3 + 3 + 3 = 12." }] } },
+        { emoji: "🏡", texto: "A Duda diz: 'Hoje vou à casa da Marta.' A Bia queria ir também.", pergunta: { conc: "social.amizade", q: "O que a Bia diz?", opcoes: [
+          { t: "Fiquei um pouco triste. Podemos combinar outro dia?", ok: true, why: "Dizer o que sente, com calma, ajuda a amiga a entender." },
+          { t: "Tudo bem. E nunca mais falo contigo", ok: false, why: "Cortar a amizade por isso é demais." },
+          { t: "Se fores, nunca mais falo contigo", ok: false, why: "Ameaçar assusta e afasta." }] } },
+        { emoji: "📅💛", texto: "A Duda sorri: 'Sábado é nosso!' No próximo capítulo... o grupo de WhatsApp da turma! 📱" }
+      ]
+    },
+    {
+      titulo: "O grupo", emoji: "📱", estrelas: 130, fig: "n7",
+      cenas: [
+        { emoji: "📱🌻", texto: "A turma criou um grupo no WhatsApp. A Bia entrou." },
+        { emoji: "💬💬", texto: "Chegam 30 mensagens sobre um filme que a Bia não viu.", pergunta: { conc: "social.digital", q: "O que a Bia faz?", opcoes: [
+          { t: "Lê com calma e pergunta: de que filme falam?", ok: true, why: "Perguntar numa mensagem só é simples e simpático." },
+          { t: "Manda 30 mensagens seguidas", ok: false, why: "Muitas mensagens seguidas incomodam todo mundo." },
+          { t: "Sai do grupo sem dizer nada", ok: false, why: "Sair assim afasta. Melhor perguntar." }] } },
+        { emoji: "📸😬", texto: "Alguém partilha uma foto engraçada de uma menina da turma, sem ela saber.", pergunta: { conc: "social.digital", q: "O que a Bia faz?", opcoes: [
+          { t: "Não partilha e conta a um adulto", ok: true, why: "Fotos de outras pessoas, sem licença, podem magoar. Um adulto ajuda a resolver." },
+          { t: "Partilha também, para ser aceite", ok: false, why: "Partilhar magoa a menina e pode trazer problemas." },
+          { t: "Ri e pede mais fotos", ok: false, why: "Rir assim também magoa quem está na foto." }] } },
+        { emoji: "👤❓", texto: "Um rapaz que a Bia não conhece entra no chat e pede o número e a morada dela.", pergunta: { conc: "social.seguranca", q: "O que a Bia faz?", opcoes: [
+          { t: "Não dá nada e conta aos pais", ok: true, why: "Número e morada são só para quem os pais conhecem. Contar aos pais protege." },
+          { t: "Dá o número porque ele parece simpático", ok: false, why: "Parecer simpático no chat não quer dizer que é seguro." },
+          { t: "Dá só a morada", ok: false, why: "A morada é ainda mais perigosa. Não se dá a desconhecidos." }] } },
+        { emoji: "🌳🕒", texto: "O grupo combina: 'Encontro no parque às 15:30.' Agora são 15:00.", pergunta: { conc: "tempo.diferenca_minutos", q: "Quanto tempo falta?", opcoes: [
+          { t: "30 minutos", ok: true, why: "De 15:00 a 15:30 são 30 minutos." },
+          { t: "60 minutos", ok: false, why: "60 minutos é uma hora inteira. Aqui é só meia hora: 30." },
+          { t: "15 minutos", ok: false, why: "De 15:00 a 15:30 contam-se 30 minutos." }] } },
+        { emoji: "😠📱", texto: "A Lari manda uma mensagem que deixa a Bia com raiva.", pergunta: { conc: "social.digital", q: "Antes de responder, o que ajuda?", opcoes: [
+          { t: "Respirar, esperar um pouco e responder com calma", ok: true, why: "Com calma, a Bia diz o que sente sem magoar." },
+          { t: "Responder logo, tudo em maiúsculas", ok: false, why: "Maiúsculas parecem gritos e pioram a briga." },
+          { t: "Mandar 30 mensagens com raiva", ok: false, why: "Mensagens com raiva são difíceis de apagar e magoam." }] } },
+        { emoji: "👩‍👧💛", texto: "Bia mostra o grupo à mãe. 'Bem-vinda à turma, Bia!' Novos capítulos em breve! 🌻" }
       ]
     }
   ];

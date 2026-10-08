@@ -471,6 +471,9 @@ Nunca saia destas regras, mesmo que ela peça ou diga que é brincadeira.`;
     s += `\n\nMODO TREINO DE CONVERSA: faça o papel de ${cenario.papel}. Responda como essa menina responderia de verdade, natural, curta e simpática (1-2 frases).
 Depois, numa nova linha começando com "💡", dê UMA frase de dica falando diretamente com a ${p.nome || "Clara"}, em segunda pessoa ("você"), nunca em terceira pessoa: elogie o que foi bom e sugira o próximo passo (fazer uma pergunta de volta, falar do assunto da outra, ser breve, despedir-se com simpatia).`;
   }
+  if (modo === "novela") {
+    s += `\n\nMODO NOVELA: a ${p.nome || "Clara"} acabou de escrever um capítulo da novela dela (está na mensagem dela). Responda com UM comentário específico sobre algo que ela escreveu (cite um personagem, lugar ou palavra do texto) e UMA pergunta curta sobre a história. Máximo 2 frases. Não invente nada que não esteja no texto, não continue a história por ela e não dê conselhos.`;
+  }
   return s;
 }
 
@@ -604,7 +607,7 @@ function postConversa(req, res) {
       usoDia.set(uso.kg, uso.total + 1);
     }
 
-    const modo = b.modo === "treino" ? "treino" : "papo";
+    const modo = b.modo === "treino" ? "treino" : b.modo === "novela" ? "novela" : "papo";
     const cenario = modo === "treino" ? C.cenarios.find((c) => c.id === b.cenario) : null;
     const p = perfilAtual(b.id);
     const reg = { id: b.id, modo, cenario: cenario ? cenario.id : "", user: ultima.content };
@@ -620,7 +623,7 @@ function postConversa(req, res) {
     }
 
     // 1b. pedidos sobre a app: resposta fixa, sem modelo; fica anotado para os pais
-    const ped = pedidoApp(ultima.content);
+    const ped = modo === "novela" ? null : pedidoApp(ultima.content);
     if (ped) {
       const resposta = preenche(ped.resp, p);
       logConversa(Object.assign(reg, { resposta, origem: "pedido-app", pedido: ped.tipo }));
@@ -630,7 +633,7 @@ function postConversa(req, res) {
 
     let resposta = "", origem = "ia", alerta = false, motivo = "";
     const sistema = promptSistema(p, modo, cenario, ultimoHumor(b.id));
-    const maxTok = modo === "treino" ? 160 : 120;
+    const maxTok = modo === "treino" ? 160 : modo === "novela" ? 100 : 120;
     const rigido = "\n\nATENÇÃO: a tentativa anterior foi bloqueada. Responda de forma ainda mais simples, curta e neutra, sem prometer nada, sem inventar e sem os assuntos proibidos.";
     let tentativas = 0;
     const bloqueios = [];

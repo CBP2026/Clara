@@ -1191,6 +1191,7 @@ function startCap(i) {
     q: fill(c.texto),
     hint: c.pergunta ? fill(c.pergunta.q) : "",
     stage: `<div class="word">${esc(c.emoji)}</div>`,
+    conc: c.pergunta ? (c.pergunta.conc || conceitoDe("soc", c.texto + " " + c.pergunta.q, 0)) : "",
     choices: c.pergunta ? shuffle(c.pergunta.opcoes).map(o => ({ t: fill(o.t), ok: o.ok, why: fill(o.why) })) : []
   }));
   state.total = state.queue.length;
@@ -1529,13 +1530,36 @@ function novelaEscreve(n) {
   const acabaCap = () => {
     cap.fim = true; saveNovela(n);
     track({ tipo: "novela", k: "fim", cap: idx });
-    state.stars += 1; saveStars();
-    $("novBody").innerHTML = novelaBubble("Capítulo " + idx + " pronto! Você ganhou uma estrela ⭐ Que história linda, " + (perfil.nome || "Clara") + "!") +
+    // estrela só com esforço mínimo: pelo menos 12 palavras escritas no capítulo
+    const palavras = cap.passos.reduce((a, p) => a + p.t.split(/\s+/).filter(Boolean).length, 0);
+    const ganha = palavras >= 12;
+    if (ganha) { state.stars += 1; saveStars(); }
+    const msg = ganha ? "Capítulo " + idx + " pronto! Você ganhou uma estrela ⭐ Que história linda, " + (perfil.nome || "Clara") + "!"
+      : "Capítulo " + idx + " pronto! Para ganhar a estrela, escreva um pouquinho mais no próximo, tá? 💛";
+    $("novBody").innerHTML = novelaBubble(msg) + `<div id="novLua"></div>` +
       `<button class="next show" id="novVolta">Voltar à novela</button>`;
-    speak("Capítulo pronto! Você ganhou uma estrela.", "pt-BR");
+    speak(ganha ? "Capítulo pronto! Você ganhou uma estrela." : "Capítulo pronto!", "pt-BR");
     $("novVolta").onclick = () => novelaHub(n);
+    luaComentaNovela(cap, n);
   };
   passo();
+}
+// A Lua comenta o que ela escreveu: 1 comentário específico + 1 pergunta (passa pelos mesmos filtros de segurança)
+async function luaComentaNovela(cap, n) {
+  if (!config.chat) return;
+  const texto = cap.passos.map(p => p.t).join(" ").slice(0, 300);
+  try {
+    const r = await fetch("/api/conversa", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: deviceId(), modo: "novela", msgs: [{ role: "user", content: texto }], teste: TESTE })
+    });
+    if (!r.ok) return;
+    const j = await r.json();
+    const box = $("novLua");
+    if (!box || !j.resposta) return;
+    box.innerHTML = novelaBubble(j.resposta);
+    speak(j.resposta, "pt-BR");
+  } catch (e) { /* sem internet: segue sem comentário */ }
 }
 function novelaLer(n) {
   let h = `<div class="panel"><b class="t">${esc(n.titulo)}</b><div class="mut">Personagens: ${esc(n.pers.map(p => p.nome).join(", "))}</div></div>`;

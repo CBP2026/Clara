@@ -107,3 +107,13 @@ test("modo teste não conta no limite e fica marcado", async () => {
   await fala("oi", { teste: true });
   assert.equal((await conversas()).pop().teste, true);
 });
+
+test("modo novela: prompt próprio, ignora pedidos de app e aceita comentário", async () => {
+  chamadas = [];
+  chatRoteiro = ["Que bonito o Sol! O que ele faz depois?"]; modRoteiro = ["SEGURA"];
+  const r = await fala("O Sol era um cavalo e quero mudar a novela para o mar", { modo: "novela" });
+  assert.match(r.resposta, /Sol/);
+  assert.equal(r.acao, undefined);
+  assert.ok(chamadas.find((c) => !c.mod).sistema.includes("MODO NOVELA"));
+  assert.equal((await conversas()).pop().modo, "novela");
+});
