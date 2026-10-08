@@ -1350,19 +1350,20 @@ function achaArtista(nome) {
   return null;
 }
 // Editor de lista: chips com ✕, campo e botão Adicionar
-function montaCantores(box, lista, onChange) {
+function montaCantores(box, lista, onChange, o) {
+  o = Object.assign({ max: 10, maxLen: 40, id: "cant", ph: "Nome do cantor ou grupo" }, o);
   const draw = () => {
     box.innerHTML = `<div class="row" style="margin:0 0 12px">${lista.map((c, i) => `<span class="chip on cantchip">${esc(c)} <b data-i="${i}" aria-label="Tirar ${esc(c)}">✕</b></span>`).join("") || '<span class="mut">Ainda não tem nenhum.</span>'}</div>
-      ${lista.length < 10 ? `<div class="chatform"><input class="inp" id="cantIn" maxlength="40" placeholder="Nome do cantor ou grupo" autocomplete="off"><button type="button" id="cantAdd">Adicionar</button></div>` : '<div class="mut">Máximo de 10. Tire um para colocar outro.</div>'}`;
+      ${lista.length < o.max ? `<div class="chatform"><input class="inp" id="${o.id}In" maxlength="${o.maxLen}" placeholder="${esc(o.ph)}" autocomplete="off"><button type="button" id="${o.id}Add">Adicionar</button></div>` : `<div class="mut">Máximo de ${o.max}. Tire um para colocar outro.</div>`}`;
     box.querySelectorAll("b[data-i]").forEach(b => b.onclick = () => { lista.splice(Number(b.dataset.i), 1); draw(); if (onChange) onChange(); });
     const add = () => {
-      const v = $("cantIn").value.trim().slice(0, 40);
-      if (!v || lista.some(x => normNome(x) === normNome(v))) { $("cantIn").value = ""; return; }
-      lista.push(v); draw(); if (onChange) onChange(); $("cantIn").focus();
+      const v = $(o.id + "In").value.trim().slice(0, o.maxLen);
+      if (!v || lista.some(x => normNome(x) === normNome(v))) { $(o.id + "In").value = ""; return; }
+      lista.push(v); draw(); if (onChange) onChange(); $(o.id + "In").focus();
     };
-    if ($("cantAdd")) {
-      $("cantAdd").onclick = add;
-      $("cantIn").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
+    if ($(o.id + "Add")) {
+      $(o.id + "Add").onclick = add;
+      $(o.id + "In").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
     }
   };
   draw();
@@ -1664,9 +1665,7 @@ function renderOb() {
   } else if (passo === "cantores") {
     h = `<div class="bubble">${esc(p.luaEmoji)} Quais cantores ou grupos você mais gosta? Escreva um de cada vez. Depois você pode tirar ou colocar outros quando quiser.</div><div id="cantEd"></div>`;
   } else if (passo === "influs") {
-    const vals = p.influs.concat(["", "", "", "", ""]).slice(0, 5);
-    h = `<div class="bubble">${esc(p.luaEmoji)} Quem você mais gosta de assistir? Escreva até 5 nomes.</div>
-      ${vals.map((v, i) => `<label class="field"><span>Influencer ${i + 1}</span><input class="inp obInf" maxlength="30" value="${esc(v)}"></label>`).join("")}`;
+    h = `<div class="bubble">${esc(p.luaEmoji)} Quem você mais gosta de assistir? Escreva um nome de cada vez. Depois você pode tirar ou colocar outros quando quiser.</div><div id="infEd"></div>`;
   } else if (passo === "jj") {
     const opts = (sel) => C.faixas.map(f => `<option ${f === sel ? "selected" : ""}>${esc(f)}</option>`).join("");
     h = `<div class="bubble">${esc(p.luaEmoji)} Me conta do seu esporte!</div>
@@ -1700,6 +1699,7 @@ function renderOb() {
     b.classList.toggle("on", i < 0);
   });
   if (passo === "cantores") montaCantores($("cantEd"), p.cantores, null);
+  if (passo === "influs") montaCantores($("infEd"), p.influs, null, { max: 5, maxLen: 30, id: "inf", ph: "Nome do influencer" });
   if (passo === "jj") {
     $("obJjS").onclick = () => { p.jj = true; lePasso(); renderOb(); };
     $("obJjN").onclick = () => { p.jj = false; lePasso(); renderOb(); };
@@ -1727,7 +1727,8 @@ function lePasso() {
     const inp = $("cantIn");
     if (inp && inp.value.trim() && p.cantores.length < 10) p.cantores.push(inp.value.trim().slice(0, 40));
   } else if (passo === "influs") {
-    p.influs = [...document.querySelectorAll(".obInf")].map(i => i.value.trim().slice(0, 30)).filter(Boolean).slice(0, 5);
+    const inp = $("infIn");
+    if (inp && inp.value.trim() && p.influs.length < 5) p.influs.push(inp.value.trim().slice(0, 30));
   } else if (passo === "jj" && $("obAcad")) {
     p.academia = $("obAcad").value.trim().slice(0, 30) || "academia";
     p.faixa = $("obFaixa").value;
