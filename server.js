@@ -14,7 +14,7 @@ const tz = process.env.PAIS_TZ || "Europe/Lisbon";
 const tzClara = process.env.CLARA_TZ || "Europe/Lisbon";
 const veniceKey = process.env.VENICE_API_KEY || "";
 const VENICE_URL = process.env.VENICE_URL || "https://api.venice.ai/api/v1/chat/completions";
-const VENICE_CHAT = process.env.VENICE_MODELO || "venice-uncensored-1-2";
+const VENICE_CHAT = process.env.VENICE_MODELO || "mistral-small-3-2-24b-instruct";
 const VENICE_MOD = process.env.VENICE_MODERADOR || "qwen3-5-9b";
 // Modelo por papel. Se comecar por "claude-" usa a API da Anthropic (precisa de ANTHROPIC_API_KEY); senao, Venice.
 const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
