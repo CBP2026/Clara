@@ -916,6 +916,23 @@ function graficoEvolucao(semanas, maxNivel) {
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evolução por semana">${bars}${linha}${dots}${labels}</svg>`;
 }
 
+// O que ela tenta fazer com a Lua: classificacao por regras (sem modelo, sem custo), so para os pais verem.
+const INTENCOES = [
+  { k: "casa", nome: "Trabalho de casa / estudo", re: /(trabalho|dever|tpc|licao|exercicio|prova|teste|ficha|redacao|resumo|materia|estudar|explica|ajuda\w* (com|na|no|a)).{0,40}(escola|casa|matematica|portugues|ingles|historia|geografia|ciencias?|fisica|quimica|biologia|conta|prova|teste)|\b(matematica|portugues|geografia|historia|ciencias|fisica|quimica|biologia)\b|quanto (e|da|fica) \d|\d+ ?(\+|-|x|\*|vezes|mais|menos) ?\d+|(como|o que) (se )?(faz|resolve|e) .{0,25}(conta|problema|exercicio)|tenho (prova|teste|trabalho)|amanha tenho/ },
+  { k: "app", nome: "Pedidos sobre a app", re: null },
+  { k: "fatos", nome: "Perguntas de factos (quem, quando, quantos…)", re: /^(quem|quando|onde|quantos?|quantas?|por ?que|porque|qual|quais|o que|que horas|como se chama)\b|\bsabe (quando|quem|onde|qual)\b/ },
+  { k: "web", nome: "Quer algo que precisa da internet / fora da app", re: /(procura|pesquisa|busca|google|youtube|tiktok|instagram|video|foto|link|musica toca|toca a|manda\w* (foto|video|musica|link))/ },
+  { k: "sentir", nome: "Sentimentos e amizades", re: /(triste|sozinha|medo|raiva|chorei|chorar|ansios|preocupad|cansad|feliz|animad|amig[ao]s?|colega|recreio|bullying|riram|ninguem)/ },
+  { k: "pais", nome: "Fala dos pais / segredos", re: /\b(meus? (pais|pai|mae)|minha mae|segredo)\b/ },
+  { k: "gostos", nome: "Música, novelas, jiu-jitsu", re: /(musica|cantor|cantora|novela|serie|jiu|treino|faixa|ariana|taylor|billie|olivia|sabrina|selena|anitta|dua)/ }
+];
+function intencao(c) {
+  if (c.origem === "pedido-app") return "app";
+  const n = normaliza(c.user || "");
+  for (const i of INTENCOES) if (i.re && i.re.test(n)) return i.k;
+  return "outro";
+}
+
 function montaPainel() {
   const todosEvs = lerLog();
   const todasConversas = lerJsonl(conversasFile);
@@ -1157,6 +1174,14 @@ function montaPainel() {
   const pedidos = conversas.filter((c) => c.origem === "pedido-app" && c.quando >= agora - 14 * 864e5).reverse();
   const pedidosHtml = pedidos.map((c) => `<li><div class="mut">${esc(fmtHora.format(new Date(c.quando)))} · ${esc(c.pedido || "")}</div><div>👧 ${esc(c.user)}</div></li>`).join("");
 
+  // ---- o que ela tenta fazer com a Lua (14 dias) ----
+  const convIntencao = conversas.filter((c) => (c.modo === "papo" || !c.modo) && c.quando >= agora - 14 * 864e5);
+  const porIntencao = {};
+  for (const c of convIntencao) (porIntencao[intencao(c)] = porIntencao[intencao(c)] || []).push(c);
+  const nomeIntencao = Object.fromEntries(INTENCOES.map((i) => [i.k, i.nome]).concat([["outro", "Conversa livre"]]));
+  const ordemInt = INTENCOES.map((i) => i.k).concat(["outro"]).filter((k) => porIntencao[k]);
+  const intencaoHtml = ordemInt.length ? ordemInt.map((k) => `<details${k === "casa" || k === "fatos" || k === "web" ? " open" : ""}><summary>${esc(nomeIntencao[k])} (${porIntencao[k].length})</summary><ul class="erros">${porIntencao[k].slice(-8).reverse().map((c) => `<li><div>👧 ${esc(c.user)}</div><div class="mut">${esc(fmtHora.format(new Date(c.quando)))}${c.origem !== "ia" ? " · " + esc(c.origem) : ""}</div></li>`).join("")}</ul></details>`).join("") : '<span class="mut">Ela ainda não conversou com a Lua nos últimos 14 dias.</span>';
+
   // ---- perfil e configuracao ----
   const p = perfilAtual();
   const temPerfil = Object.keys(estado.perfis).length > 0;
@@ -1202,6 +1227,7 @@ function montaPainel() {
   }
   if (lista.length > 60) L.push("(mais " + (lista.length - 60) + " erros mais antigos não listados)");
   L.push("HUMOR (últimos 10): " + (humores.slice(-10).map((h) => hm(h.quando) + " " + (h.rosto >= 0 ? C.humor.rostos[h.rosto].t : "") + (h.chips.length ? " [" + h.chips.join(", ") + "]" : "") + (h.texto ? " “" + h.texto + "”" : "")).join(" | ") || "sem registros"));
+  L.push("O QUE ELA TENTA FAZER COM A LUA (14 dias, nº de mensagens): " + (ordemInt.map((k) => nomeIntencao[k] + " " + porIntencao[k].length + (k === "casa" || k === "fatos" || k === "web" ? " [" + porIntencao[k].slice(-5).map((c) => "“" + c.user + "”").join(" ") + "]" : "")).join("; ") || "sem conversas"));
   L.push("AVISOS (14 dias): " + (alertas.slice(0, 10).map((a) => hm(a.q) + " " + a.t + ". " + a.d).join(" | ") || "nenhum"));
   const contexto = L.join("\n");
 
@@ -1299,6 +1325,9 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
 
 <h2>O que a Lua sabe dela</h2>
 <div class="card">${memoriaHtml}</div>
+
+<h2>O que ela tenta fazer com a Lua (14 dias)</h2>
+<div class="card"><div class="mut" style="margin-bottom:6px">Mensagens agrupadas por intenção. Mostra, por exemplo, se ela pede ajuda com trabalhos de casa ou factos que a Lua não consegue dar.</div>${intencaoHtml}</div>
 
 <h2>Pedidos dela sobre a app (14 dias)</h2>
 <div class="card">${pedidosHtml ? `<ul class="erros">${pedidosHtml}</ul>` : '<span class="mut">Nenhum pedido. Quando ela pedir para mudar algo na app, aparece aqui.</span>'}</div>
@@ -1717,4 +1746,4 @@ server.listen(port, "0.0.0.0", () => {
 });
 
 // usado por scripts/avalia-modelos.js
-module.exports = { server, temaSegredo, temaIdadeArtista, planoPendencia, analisaConceitos, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };
+module.exports = { server, intencao, temaSegredo, temaIdadeArtista, planoPendencia, analisaConceitos, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };

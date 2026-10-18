@@ -17,3 +17,14 @@ test("segredo contra os pais e idade de artista tem resposta fixa", () => {
   assert.strictEqual(S.temaIdadeArtista("eu gosto da Ariana Grande"), null);
   S.server.close();
 });
+
+test("classifica o que ela tenta fazer com a Lua", () => {
+  const i = (user, origem) => S.intencao({ user, origem: origem || "ia" });
+  assert.strictEqual(i("amanhã tenho prova de matemática"), "casa");
+  assert.strictEqual(i("quanto é 7 mais 8?"), "casa");
+  assert.strictEqual(i("quem é a Billie?"), "fatos");
+  assert.strictEqual(i("estou triste"), "sentir");
+  assert.strictEqual(i("faz mais capítulos", "pedido-app"), "app");
+  assert.strictEqual(i("oi"), "outro");
+  S.server.close();
+});
