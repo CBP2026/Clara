@@ -17,14 +17,12 @@ const veniceKey = process.env.VENICE_API_KEY || "";
 const VENICE_URL = process.env.VENICE_URL || "https://api.venice.ai/api/v1/chat/completions";
 const VENICE_CHAT = process.env.VENICE_MODELO || "claude-haiku-5-5";
 const VENICE_MOD = process.env.VENICE_MODERADOR || "qwen3-5-9b";
-// Modelo por papel. Se comecar por "claude-" usa a API da Anthropic (precisa de ANTHROPIC_API_KEY); senao, Venice.
-const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
+// Modelo por papel. Toda chamada a LLM passa pela Venice (inclusive claude-haiku-5-5); nunca se chama a API de outro fornecedor diretamente.
 const MODELOS = {
   chat: process.env.LUA_MODELO || VENICE_CHAT,
   moderador: process.env.LUA_MODERADOR || VENICE_MOD
 };
-const ehClaude = (m) => /^claude-/.test(m);
-function llmPronto() { return !!(veniceKey || (anthropicKey && (ehClaude(MODELOS.chat) || ehClaude(MODELOS.moderador)))); }
+function llmPronto() { return !!veniceKey; }
 const LIMITE_DIA = 30;
 const LIMITE_GUIA_DIA = 120;
 const LIMITE_GLOBAL_DIA = 300;
@@ -610,40 +608,16 @@ Nunca corrija, julgue nem conte a história por ela. Se o texto tiver doença, m
   return s;
 }
 
-async function chamaAnthropic(model, messages, maxTokens, temperature) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 20000);
-  try {
-    const sistema = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({
-        model, max_tokens: maxTokens, temperature, system: sistema,
-        messages: messages.filter((m) => m.role !== "system")
-      }),
-      signal: ctrl.signal
-    });
-    if (!r.ok) throw new Error("Anthropic " + r.status);
-    const j = await r.json();
-    return String((j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("")).trim();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-// papel: "chat" ou "moderador". Tenta o modelo configurado; se falhar, cai no modelo Venice padrao do papel.
+// papel: "chat" ou "moderador". Se o modelo configurado falhar e for diferente do padrao do papel, tenta o padrao.
 async function chamaLLM(papel, messages, maxTokens, temperature) {
   const modelo = MODELOS[papel];
-  const reserva = papel === "chat" ? VENICE_CHAT : VENICE_MOD;
-  if (ehClaude(modelo) && anthropicKey) {
-    try { return await chamaAnthropic(modelo, messages, maxTokens, temperature); }
-    catch (e) {
-      if (!veniceKey) throw e;
-      console.warn("LLM " + papel + ": " + e.message + " (a usar " + reserva + ")");
-    }
+  const padrao = papel === "chat" ? VENICE_CHAT : VENICE_MOD;
+  try { return await chamaVenice(modelo, messages, maxTokens, temperature); }
+  catch (e) {
+    if (modelo === padrao) throw e;
+    console.warn("LLM " + papel + ": " + e.message + " (a usar " + padrao + ")");
+    return chamaVenice(padrao, messages, maxTokens, temperature);
   }
-  return chamaVenice(ehClaude(modelo) ? reserva : modelo, messages, maxTokens, temperature);
 }
 
 async function chamaVenice(model, messages, maxTokens, temperature) {

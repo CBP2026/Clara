@@ -21,7 +21,7 @@ App web para celular. Missões de 5 passos: números concretos, tempo, inglês e
 
 - Pedidos sobre a app (mudar novela, tirar missão, suporte, e-mail) têm **resposta fixa**, sem modelo, e aparecem no painel em “Pedidos dela sobre a app”. Para mudar gostos, a resposta traz um botão que abre o ⚙️.
 - Se o filtro de palavras ou o moderador bloquear uma resposta, a Lua tenta **mais uma vez** com instrução mais rígida antes de usar a frase genérica. O painel e o CSV de conversas guardam o motivo exato, o que o moderador respondeu e as tentativas anteriores.
-- **Modelo por papel:** `LUA_MODELO` (conversa) e `LUA_MODERADOR` (segurança). Se o nome começar por `claude-` usa a API da Anthropic (precisa de `ANTHROPIC_API_KEY`); caso contrário, Venice. Se a chamada falhar, cai nos modelos Venice (`VENICE_MODELO`, `VENICE_MODERADOR`).
+- **Modelo por papel:** `LUA_MODELO` (conversa e capítulos) e `LUA_MODERADOR` (segurança). Tudo passa pela Venice (`VENICE_API_KEY`), inclusive `claude-haiku-5-5`, o padrão da conversa. Não há chamadas diretas a outras APIs.
 - **Avaliar modelos:** `node scripts/avalia-modelos.js venice:venice-uncensored-1-2 claude-haiku-5-5 claude-sonnet-5-5` corre os 30 casos de `test/casos-lua.json` e imprime um relatório para leitura humana. Só depois de ler o relatório vale trocar `LUA_MODELO`.
 
 ### Tutor (Números, Tempo, English, Amigos)

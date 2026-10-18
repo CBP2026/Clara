@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Compara modelos da Lua com os casos de test/casos-lua.json.
 // Uso:  node scripts/avalia-modelos.js venice:venice-uncensored-1-2 claude-haiku-5-5 claude-sonnet-5-5
-// Chaves: VENICE_API_KEY e/ou ANTHROPIC_API_KEY. O moderador usa o modelo padrão do servidor.
+// Chave: VENICE_API_KEY (todos os modelos, inclusive claude-*, vão pela Venice). O moderador usa o modelo padrão do servidor.
 // Escreve um relatório em markdown (stdout) para revisão humana; as verificações automáticas são só um filtro.
 process.env.PORT = process.env.PORT || "18999";
 process.env.DATA_DIR = process.env.DATA_DIR || require("os").tmpdir() + "/clara-avalia";
