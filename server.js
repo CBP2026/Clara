@@ -25,6 +25,7 @@ const MODELOS = {
 const ehClaude = (m) => /^claude-/.test(m);
 function llmPronto() { return !!(veniceKey || (anthropicKey && (ehClaude(MODELOS.chat) || ehClaude(MODELOS.moderador)))); }
 const LIMITE_DIA = 30;
+const LIMITE_GUIA_DIA = 120;
 const LIMITE_GLOBAL_DIA = 300;
 
 // Pasta do historico. No Railway, monte um Volume em /data.
@@ -577,6 +578,12 @@ Depois, numa nova linha começando com "💡", dê UMA frase de dica falando dir
   if (modo === "novela") {
     s += `\n\nMODO NOVELA: a ${p.nome || "Clara"} acabou de escrever um capítulo da novela dela (está na mensagem dela). Responda com UM comentário específico sobre algo que ela escreveu (cite um personagem, lugar ou palavra do texto) e UMA pergunta curta sobre a história. Máximo 2 frases. Não invente nada que não esteja no texto, não continue a história por ela e não dê conselhos.`;
   }
+  if (modo === "guia") {
+    s += `\n\nMODO GUIA DA NOVELA: a ${p.nome || "Clara"} escreve a SUA novela e você ajuda a história a crescer, sem escrever por ela. A mensagem traz o título, as personagens, o que já aconteceu e um TIPO.
+Se o TIPO for IDEIAS: responda só com 3 ideias curtas (até 6 palavras cada) para o que pode acontecer agora, separadas por | (barra), partindo de algo que ela escreveu. Exemplo: Aparece uma amiga nova|A professora acha um bilhete|Começa a chover.
+Qualquer outro TIPO: responda só com UMA pergunta curta (até 15 palavras), simples, que parta de algo concreto que ela escreveu (nome, lugar, coisa) e a convide a imaginar mais, sem dar a resposta nem opções. Tipos: LUGAR (onde está, o que vê, ouve ou cheira), PROBLEMA (surge uma dificuldade), SENTIR (como a personagem se sente e por quê), AJUDA (quem ajuda ou o que ela faz para resolver), NOVO (alguém ou algo novo aparece), PORQUE (por que aconteceu), FINAL (como o capítulo termina, com vontade de ler o próximo).
+Nunca corrija, julgue nem conte a história por ela. Se o texto tiver doença, morte, medo ou perigo, não repita nem detalhe: pergunte com carinho quem ajuda ou como a personagem se sente. Sem aspas e no máximo 1 emoji.`;
+  }
   return s;
 }
 
@@ -698,26 +705,32 @@ function postConversa(req, res) {
     if (!estado.chat || !llmPronto()) { json(res, 403, { erro: "desligado" }); return; }
     const msgs = b.msgs.slice(-10)
       .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-      .map((m) => ({ role: m.role, content: m.content.slice(0, 300) }));
+      .map((m) => ({ role: m.role, content: m.content.slice(0, b.modo === "guia" ? 1300 : 300) }));
     const ultima = msgs[msgs.length - 1];
     if (!ultima || ultima.role !== "user") { res.writeHead(400); res.end(); return; }
 
     const teste = b.teste === true;
     if (!teste) {
       const uso = contaUso(b.id);
-      if (uso.n >= LIMITE_DIA || uso.total >= LIMITE_GLOBAL_DIA) { json(res, 429, { erro: "limite" }); return; }
-      usoDia.set(uso.kid, uso.n + 1);
+      if (b.modo === "guia") {
+        // o guia da novela tem limite proprio: nao gasta as mensagens de conversa dela
+        const kg = uso.kid + "|guia", n = usoDia.get(kg) || 0;
+        if (n >= LIMITE_GUIA_DIA || uso.total >= LIMITE_GLOBAL_DIA) { json(res, 429, { erro: "limite" }); return; }
+        usoDia.set(kg, n + 1);
+      } else if (uso.n >= LIMITE_DIA || uso.total >= LIMITE_GLOBAL_DIA) { json(res, 429, { erro: "limite" }); return; }
+      if (b.modo !== "guia") usoDia.set(uso.kid, uso.n + 1);
       usoDia.set(uso.kg, uso.total + 1);
     }
 
-    const modo = b.modo === "treino" ? "treino" : b.modo === "novela" ? "novela" : b.modo === "dia" ? "dia" : "papo";
+    const modo = b.modo === "treino" ? "treino" : b.modo === "novela" ? "novela" : b.modo === "guia" ? "guia" : b.modo === "dia" ? "dia" : "papo";
     const cenario = modo === "treino" ? C.cenarios.find((c) => c.id === b.cenario) : null;
     const p = perfilAtual(b.id);
     const reg = { id: b.id, modo, cenario: cenario ? cenario.id : "", user: ultima.content };
     if (teste) reg.teste = true;
 
     // 1. filtro de entrada: frase de risco nao vai para a IA
-    const risco = temRisco(ultima.content);
+    // no guia da novela o texto dela e ficcao: o alerta aos pais ja sai do registo da novela; aqui so se evita falar do assunto
+    const risco = modo === "guia" ? null : temRisco(ultima.content);
     if (risco) {
       const resposta = respostaRisco(p);
       logConversa(Object.assign(reg, { resposta, origem: "filtro-entrada", alerta: true, motivo: risco }));
@@ -726,7 +739,7 @@ function postConversa(req, res) {
     }
 
     // 1b. pedidos sobre a app: resposta fixa, sem modelo; fica anotado para os pais
-    const ped = modo === "novela" ? null : pedidoApp(ultima.content);
+    const ped = modo === "novela" || modo === "guia" ? null : pedidoApp(ultima.content);
     if (ped) {
       const resposta = preenche(ped.resp, p);
       logConversa(Object.assign(reg, { resposta, origem: "pedido-app", pedido: ped.tipo }));
@@ -734,7 +747,7 @@ function postConversa(req, res) {
       return;
     }
 
-    if (modo !== "novela" && temaNamoro(ultima.content)) {
+    if (modo !== "novela" && modo !== "guia" && temaNamoro(ultima.content)) {
       const resposta = preenche("Gostar de alguém é normal, {nome}. Eu não sei falar bem disso, mas a mãe ou o pai sabem! Quer me contar das suas amigas? 💛", p);
       logConversa(Object.assign(reg, { resposta, origem: "tema-namoro" }));
       json(res, 200, { resposta });
@@ -743,7 +756,7 @@ function postConversa(req, res) {
 
     let resposta = "", origem = "ia", alerta = false, motivo = "";
     const sistema = promptSistema(p, modo, cenario, ultimoHumor(b.id), factosDe(b.id));
-    const maxTok = modo === "treino" ? 160 : modo === "novela" ? 100 : 120;
+    const maxTok = modo === "treino" ? 160 : modo === "novela" ? 100 : modo === "guia" ? 90 : 120;
     const rigido = "\n\nATENÇÃO: a tentativa anterior foi bloqueada. Responda de forma ainda mais simples, curta e neutra, sem prometer nada, sem inventar e sem os assuntos proibidos.";
     let tentativas = 0;
     const bloqueios = [];
@@ -771,8 +784,8 @@ function postConversa(req, res) {
     if (tentativas > 2) tentativas = 2;
     const original = resposta;
     const previos = origem === "ia" ? bloqueios : bloqueios.slice(0, -1);
-    if (origem !== "ia") resposta = preenche(pick(FALLBACKS), p);
-    if (origem === "ia" && !teste && modo !== "novela") aprendeFato(b.id, ultima.content);
+    if (origem !== "ia") resposta = modo === "guia" ? "" : preenche(pick(FALLBACKS), p);
+    if (origem === "ia" && !teste && modo !== "novela" && modo !== "guia") aprendeFato(b.id, ultima.content);
     logConversa(Object.assign(reg, { resposta, origem, alerta, motivo, tentativas, bloqueada: origem !== "ia" && original ? original.slice(0, 450) : undefined, anteriores: previos.length ? previos : undefined }));
     json(res, 200, { resposta });
   });

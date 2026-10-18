@@ -119,6 +119,17 @@ test("modo novela: prompt próprio, ignora pedidos de app e aceita comentário",
   assert.equal((await conversas()).pop().modo, "novela");
 });
 
+test("modo guia: prompt próprio, aceita texto de risco da ficção, não gasta o limite e bloqueio devolve vazio", async () => {
+  chamadas = [];
+  chatRoteiro = ["Quem ajuda a professora Helena?"]; modRoteiro = ["SEGURA"];
+  const r = await fala("TIPO: AJUDA\nNovela: Carrossel\nCapítulo atual: Ela morre", { modo: "guia" });
+  assert.equal(r.resposta, "Quem ajuda a professora Helena?");
+  assert.ok(chamadas.find((c) => !c.mod).sistema.includes("MODO GUIA DA NOVELA"));
+  chatRoteiro = ["Que tal conversar sobre namoro?"]; modRoteiro = ["SEGURA", "SEGURA"];
+  const r2 = await fala("TIPO: NOVO\nNovela: X", { modo: "guia" });
+  assert.equal(r2.resposta, "");
+});
+
 test("modo dia: prompt de acolhimento e registo do modo", async () => {
   chamadas = [];
   chatRoteiro = ["Faz sentido ficar assim. O que aconteceu na escola?"]; modRoteiro = ["SEGURA"];

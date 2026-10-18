@@ -1556,29 +1556,82 @@ function novelaHub(n) {
   if (n.caps.length) $("novLer").onclick = () => novelaLer(n);
   $("novPers").onclick = () => novelaNovaPers(n, false);
 }
+// A Lua guia a história: cada pergunta nasce do que ela já escreveu (sem limite de passos nem de capítulos)
+const NOVELA_TIPOS = ["LUGAR", "PROBLEMA", "SENTIR", "AJUDA", "NOVO", "PORQUE", "FINAL"];
+function novelaTipo(k, primeiroDoCap) {
+  if (primeiroDoCap) return "NOVO";
+  return k < 6 ? NOVELA_TIPOS[k] : ["SENTIR", "NOVO", "PORQUE", "PROBLEMA", "AJUDA", "FINAL"][(k - 6) % 6];
+}
+function novelaContexto(n, cap, tipo) {
+  const pers = n.pers.map(p => p.nome + (p.desc ? " (" + p.desc.slice(0, 60) + ")" : "")).join("; ");
+  const ant = n.caps.filter(c => c !== cap && c.fim).slice(-2).map(c => c.passos.slice(-3).map(p => p.t).join(" ")).join(" // ");
+  const atual = cap.passos.map(p => p.t).join(" ");
+  return `TIPO: ${tipo}\nNovela: ${n.titulo}\nPersonagens: ${pers}\nAntes: ${ant || "(nada ainda)"}\nCapítulo atual: ${atual || "(começando)"}`.slice(0, 1200);
+}
+async function novelaPedeLua(n, cap, tipo) {
+  if (!config.chat) return "";
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 7000);
+  try {
+    const r = await fetch("/api/conversa", {
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: ctrl.signal,
+      body: JSON.stringify({ id: deviceId(), modo: "guia", msgs: [{ role: "user", content: novelaContexto(n, cap, tipo) }], teste: TESTE })
+    });
+    if (!r.ok) return "";
+    const j = await r.json();
+    return String(j.resposta || "").replace(/["“”]/g, "").trim();
+  } catch (e) { return ""; } finally { clearTimeout(timer); }
+}
 function novelaEscreve(n) {
   let cap = n.caps[n.caps.length - 1];
   if (!cap || cap.fim) { cap = { passos: [], fim: false }; n.caps.push(cap); }
   const idx = n.caps.length;
   const pnome = n.pers[0].nome;
-  const passo = () => {
+  let livre = false;
+  const passo = async () => {
     const k = cap.passos.length;
-    const perg = (k < NOVELA_PASSOS.length ? NOVELA_PASSOS[k] : pick(NOVELA_MAIS)).replace("{p}", pnome);
-    $("novBody").innerHTML = `<div class="streak">Capítulo ${idx} · passo ${k + 1}</div>` + novelaBubble(perg) +
-      `<label class="field"><textarea class="inp" id="novIn" maxlength="500" placeholder="Escreva o que você quiser..."></textarea></label>
-       <button class="next show" id="novOk">Continuar ✏️</button>
-       ${k >= 2 ? '<button class="bigbtn" id="novFim" style="margin-top:10px">🎬 Terminar o capítulo</button>' : ""}`;
-    speak(perg, "pt-BR");
-    $("novIn").focus();
-    const grava = () => {
-      const t = $("novIn").value.trim().slice(0, 500);
-      if (!t) return false;
-      cap.passos.push({ q: perg, t }); saveNovela(n);
-      track({ tipo: "novela", k: "passo", cap: idx, perg, texto: t });
-      return true;
+    const fixa = (k < NOVELA_PASSOS.length && idx === 1 ? NOVELA_PASSOS[k] : pick(NOVELA_MAIS)).replace("{p}", pnome);
+    const tipo = novelaTipo(k, k === 0 && idx > 1);
+    const usaLua = !livre && config.chat && !(k === 0 && idx === 1);
+    const monta = (perg, ideias) => {
+      $("novBody").innerHTML = `<div class="streak">Capítulo ${idx} · passo ${k + 1}</div>` + novelaBubble(perg) +
+        (ideias && ideias.length ? `<div class="row" id="novIdeias" style="margin:10px 0">${ideias.map(i => `<button class="chip" type="button">${esc(i)}</button>`).join("")}</div>` : "") +
+        `<label class="field"><textarea class="inp" id="novIn" maxlength="500" placeholder="Escreva o que você quiser..."></textarea></label>
+         <button class="next show" id="novOk">Continuar ✏️</button>
+         ${config.chat ? `<button class="bigbtn" id="novIdeia" style="margin-top:10px">💡 Preciso de uma ideia</button>` : ""}
+         ${config.chat ? `<button class="bigbtn" id="novModo" style="margin-top:10px">${livre ? "🌙 A Lua me ajuda com perguntas" : "✍️ Quero escrever do meu jeito"}</button>` : ""}
+         ${k >= 1 ? '<button class="bigbtn" id="novFim" style="margin-top:10px">🎬 Terminar o capítulo</button>' : ""}`;
+      speak(perg, "pt-BR");
+      $("novIn").focus();
+      const grava = () => {
+        const t = $("novIn").value.trim().slice(0, 500);
+        if (!t) return false;
+        cap.passos.push({ q: perg, t }); saveNovela(n);
+        track({ tipo: "novela", k: "passo", cap: idx, perg, texto: t });
+        return true;
+      };
+      $("novOk").onclick = () => { if (grava()) { speak(pick(NOVELA_ELOGIO), "pt-BR"); passo(); } };
+      if (k >= 1) $("novFim").onclick = () => { if (!$("novIn").value.trim() || grava()) acabaCap(); };
+      if ($("novModo")) $("novModo").onclick = () => { livre = !livre; passo(); };
+      if ($("novIdeias")) $("novIdeias").onclick = (e) => {
+        const b = e.target.closest("button.chip"); if (!b) return;
+        $("novIn").value = b.textContent; $("novIn").focus();
+      };
+      if ($("novIdeia")) $("novIdeia").onclick = async () => {
+        $("novIdeia").disabled = true; $("novIdeia").textContent = "🌙 Pensando...";
+        const txt = await novelaPedeLua(n, cap, "IDEIAS");
+        const ideias = txt.split("|").map(s => s.trim()).filter(s => s && s.length <= 60).slice(0, 3);
+        const antes = $("novIn").value;
+        monta(perg, ideias);
+        $("novIn").value = antes;
+        if (!ideias.length) { const m = document.createElement("div"); m.className = "mut"; m.textContent = "Não achei ideia agora. Escreva o que vier à cabeça 💛"; $("novOk").before(m); }
+      };
     };
-    $("novOk").onclick = () => { if (grava()) { speak(pick(NOVELA_ELOGIO), "pt-BR"); passo(); } };
-    if (k >= 2) $("novFim").onclick = () => { if (!$("novIn").value.trim() || grava()) acabaCap(); };
+    if (usaLua) {
+      $("novBody").innerHTML = `<div class="streak">Capítulo ${idx} · passo ${k + 1}</div>` + novelaBubble("🌙 Estou pensando na sua história...");
+      const q = await novelaPedeLua(n, cap, tipo);
+      monta(q && q.length <= 160 ? q : fixa);
+    } else monta(livre ? "Continue a sua história. O que acontece agora?" : fixa);
   };
   const acabaCap = () => {
     cap.fim = true; saveNovela(n);
