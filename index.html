@@ -2018,6 +2018,7 @@ function abreChat() {
     const b = document.createElement("button");
     b.className = "chip";
     b.dataset.m = m.id;
+    p.anoNasc = p.aniversario ? av.slice(0, 4) : "";
     b.textContent = m.t;
     b.onclick = () => iniciaChat(m.id);
     box.appendChild(b);
@@ -2104,7 +2105,7 @@ function renderOb() {
     h = `<div class="bubble">${esc(p.luaEmoji)} Oi! Eu vou ser a sua companheira aqui. Vamos nos conhecer?</div>
       <label class="field"><span>Como você se chama?</span><input class="inp" id="obNome" maxlength="30" value="${esc(p.nome)}"></label>
       <label class="field"><span>Que nome você quer me dar?</span><input class="inp" id="obLua" maxlength="20" value="${esc(p.lua)}"></label>
-      <label class="field"><span>Quando é o seu aniversário? (pode pular)</span><input class="inp" id="obAniv" type="date" value="${esc(p.aniversario ? "2000-" + p.aniversario : "")}"></label>
+      <label class="field"><span>Quando é o seu aniversário? (pode pular)</span><input class="inp" id="obAniv" type="date" value="${esc(p.aniversario ? (p.anoNasc || "2000") + "-" + p.aniversario : "")}"></label>
       <div class="field"><span>Escolha o meu rostinho</span><div class="avs" id="obAvs">${AVATARES.map(a => `<button data-a="${a}" class="${a === p.luaEmoji ? "on" : ""}">${a}</button>`).join("")}</div></div>`;
   } else if (passo === "novelas") {
     h = `<div class="bubble">${esc(p.luaEmoji)} Quais novelas ou séries você ama? Escreva uma de cada vez. Depois você pode tirar ou colocar outras quando quiser.</div><div id="novEd"></div>`;
