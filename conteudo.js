@@ -871,53 +871,53 @@
   ];
 
   // ---------------- Música: cantores, músicas e curiosidades ----------------
-  // Só factos conferidos. f.certa + f.erradas (2) formam as 3 opções.
+  // Só factos conferidos (nasc = data de nascimento conferida na Wikipédia/Britannica em 2026-10; usada para responder a idade). f.certa + f.erradas (2) formam as 3 opções.
   C.musica = [
-    { id: "ariana", nome: "Ariana Grande", e: "💜",
+    { id: "ariana", nome: "Ariana Grande", e: "💜", nasc: "1993-06-26",
       musicas: ["thank u, next", "7 rings", "positions", "Side to Side", "Into You", "Break Free", "yes, and?", "we can't be friends"],
       fatos: [
         { q: "Que personagem a Ariana Grande fazia na série Victorious?", certa: "Cat Valentine", erradas: ["Maya Hart", "Alex Russo"], why: "Ela era a Cat Valentine, a amiga de cabelo ruivo." },
         { q: "No filme Wicked, que personagem a Ariana faz?", certa: "Glinda", erradas: ["Elphaba", "Dorothy"], why: "Ela é a Glinda. A Elphaba é a Cynthia Erivo." },
         { q: "Qual penteado é a marca registrada da Ariana?", certa: "Rabo de cavalo alto", erradas: ["Franja curta", "Cabelo bem curto"], why: "O rabo de cavalo alto é a marca dela." }
       ] },
-    { id: "taylor", nome: "Taylor Swift", e: "🦋",
+    { id: "taylor", nome: "Taylor Swift", e: "🦋", nasc: "1989-12-13",
       musicas: ["Shake It Off", "Love Story", "Blank Space", "Anti-Hero", "Cruel Summer", "You Belong with Me"],
       fatos: [
         { q: "Como são chamados os fãs da Taylor Swift?", certa: "Swifties", erradas: ["Arianators", "Beliebers"], why: "Os fãs da Taylor são os Swifties." },
         { q: "Como se chama a turnê mais famosa da Taylor?", certa: "The Eras Tour", erradas: ["Sweetener Tour", "Short n' Sweet Tour"], why: "É a The Eras Tour, com músicas de todas as fases dela." },
         { q: "Qual é o número da sorte da Taylor Swift?", certa: "13", erradas: ["7", "21"], why: "O número da sorte dela é o 13." }
       ] },
-    { id: "billie", nome: "Billie Eilish", e: "💚",
+    { id: "billie", nome: "Billie Eilish", e: "💚", nasc: "2001-12-18",
       musicas: ["bad guy", "Ocean Eyes", "Happier Than Ever", "BIRDS OF A FEATHER", "What Was I Made For?"],
       fatos: [
         { q: "Quem escreve as músicas junto com a Billie Eilish?", certa: "O irmão, Finneas", erradas: ["O pai", "Um primo"], why: "O irmão dela, o Finneas, faz as músicas com ela." },
         { q: "“What Was I Made For?” é de qual filme?", certa: "Barbie", erradas: ["Wicked", "Frozen"], why: "Ela cantou essa música no filme Barbie." }
       ] },
-    { id: "olivia", nome: "Olivia Rodrigo", e: "💜",
+    { id: "olivia", nome: "Olivia Rodrigo", e: "💜", nasc: "2003-02-20",
       musicas: ["drivers license", "good 4 u", "vampire", "deja vu", "traitor"],
       fatos: [
         { q: "Quais são os dois álbuns da Olivia Rodrigo?", certa: "SOUR e GUTS", erradas: ["1989 e Midnights", "Positions e Sweetener"], why: "Os álbuns dela são SOUR e GUTS." },
         { q: "Em qual série ela atuou antes de ficar famosa na música?", certa: "High School Musical: A Série", erradas: ["Victorious", "Garota Conhece o Mundo"], why: "Ela fez a Nini em High School Musical: A Série." }
       ] },
-    { id: "sabrina", nome: "Sabrina Carpenter", e: "☕",
+    { id: "sabrina", nome: "Sabrina Carpenter", e: "☕", nasc: "1999-05-11",
       musicas: ["Espresso", "Please Please Please", "Nonsense", "Feather", "Taste"],
       fatos: [
         { q: "“Espresso” está em qual álbum da Sabrina Carpenter?", certa: "Short n' Sweet", erradas: ["SOUR", "Midnights"], why: "Espresso está no álbum Short n' Sweet." },
         { q: "Em qual série da Disney a Sabrina fez a Maya?", certa: "Garota Conhece o Mundo", erradas: ["Os Feiticeiros de Waverly Place", "Victorious"], why: "Ela era a Maya em Garota Conhece o Mundo." }
       ] },
-    { id: "dua", nome: "Dua Lipa", e: "🪩",
+    { id: "dua", nome: "Dua Lipa", e: "🪩", nasc: "1995-08-22",
       musicas: ["Levitating", "New Rules", "Don't Start Now", "Dance the Night", "Houdini"],
       fatos: [
         { q: "Em que cidade a Dua Lipa nasceu?", certa: "Londres", erradas: ["Nova York", "Paris"], why: "Ela nasceu em Londres." },
         { q: "“Dance the Night” faz parte de qual filme?", certa: "Barbie", erradas: ["Wicked", "Moana"], why: "É uma música do filme Barbie." }
       ] },
-    { id: "selena", nome: "Selena Gomez", e: "🌟",
+    { id: "selena", nome: "Selena Gomez", e: "🌟", nasc: "1992-07-22",
       musicas: ["Lose You to Love Me", "Calm Down", "Come & Get It", "Love You Like a Love Song", "Who Says"],
       fatos: [
         { q: "Que personagem a Selena Gomez fazia em Os Feiticeiros de Waverly Place?", certa: "Alex Russo", erradas: ["Cat Valentine", "Maya Hart"], why: "Ela era a Alex Russo." },
         { q: "Com qual cantor a Selena fez “Calm Down”?", certa: "Rema", erradas: ["Khalid", "Finneas"], why: "Calm Down é a parceria da Selena com o Rema." }
       ] },
-    { id: "anitta", nome: "Anitta", e: "🇧🇷",
+    { id: "anitta", nome: "Anitta", e: "🇧🇷", nasc: "1993-03-30",
       musicas: ["Envolver", "Girl from Rio", "Medicina", "Vai Malandra"],
       fatos: [
         { q: "De que cidade é a Anitta?", certa: "Rio de Janeiro", erradas: ["São Paulo", "Lisboa"], why: "Ela é do Rio de Janeiro." },

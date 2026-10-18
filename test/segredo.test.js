@@ -9,8 +9,11 @@ test("segredo contra os pais e idade de artista tem resposta fixa", () => {
   assert.ok(S.temaSegredo("posso te contar um segredo que os meus pais não podem saber?"));
   assert.ok(S.temaSegredo("não conta pra minha mãe, é segredo"));
   assert.ok(!S.temaSegredo("hoje eu treinei jiu-jitsu"));
-  assert.ok(S.temaIdadeArtista("quantos anos a Ariana tem?"));
-  assert.ok(!S.temaIdadeArtista("quantos anos você tem?") || true);
-  assert.ok(!S.temaIdadeArtista("eu gosto da Ariana Grande"));
+  const r = S.temaIdadeArtista("quantos anos a Ariana tem?", Date.parse("2026-10-18T12:00:00Z"));
+  assert.strictEqual(r.nome, "Ariana Grande");
+  assert.strictEqual(r.idade, 33);
+  assert.strictEqual(S.temaIdadeArtista("quantos anos a Ariana tem?", Date.parse("2026-06-25T12:00:00Z")).idade, 32);
+  assert.strictEqual(S.temaIdadeArtista("quantos anos a minha mãe tem?"), null);
+  assert.strictEqual(S.temaIdadeArtista("eu gosto da Ariana Grande"), null);
   S.server.close();
 });

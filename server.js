@@ -517,7 +517,23 @@ function temaNamoro(txt) { return RE_NAMORO.test(normaliza(txt)); }
 const RE_SEGREDO = /segredo\w*.{0,40}(pais|mae|pai)|(pais|mae|pai).{0,40}segredo|nao (pode|podem|quero que).{0,20}(os )?(meus )?(pais|mae|pai).{0,20}(saib|sab|fal|cont)/;
 const RE_IDADE_ARTISTA = /quantos anos (a |o )?[a-z]{3,}.{0,20}(tem|fez|faz)|idade (da|do|de) [a-z]{3,}|quando (a |o )?[a-z]{3,}.{0,15}nasceu/;
 function temaSegredo(txt) { return RE_SEGREDO.test(normaliza(txt)); }
-function temaIdadeArtista(txt) { return RE_IDADE_ARTISTA.test(normaliza(txt)); }
+// Devolve { nome, idade, aniv } se ela perguntou a idade de um artista que conhecemos (data conferida em conteudo.js); senao null e a pergunta segue para a IA.
+function temaIdadeArtista(txt, agoraMs) {
+  const n = normaliza(txt);
+  if (!RE_IDADE_ARTISTA.test(n)) return null;
+  const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  for (const a of C.musica) {
+    if (!a.nasc) continue;
+    const nomes = [normaliza(a.nome), normaliza(a.nome).split(" ")[0]].concat((a.apelidos || []).map(normaliza));
+    if (!nomes.some((x) => new RegExp("\\b" + x + "\\b").test(n))) continue;
+    const [ano, mes, dia] = a.nasc.split("-").map(Number);
+    const hoje = diaKey(agoraMs || Date.now()).split("-").map(Number); // AAAA-MM-DD no fuso da app
+    let idade = hoje[0] - ano;
+    if (hoje[1] < mes || (hoje[1] === mes && hoje[2] < dia)) idade -= 1;
+    return { nome: a.nome, idade, aniv: dia + " de " + MESES[mes - 1] };
+  }
+  return null;
+}
 function pedidoApp(txt) {
   const n = normaliza(txt);
   return PEDIDOS_APP.find((x) => x.re.test(n)) || null;
@@ -765,8 +781,9 @@ function postConversa(req, res) {
       json(res, 200, { resposta });
       return;
     }
-    if (modo !== "novela" && modo !== "guia" && temaIdadeArtista(ultima.content)) {
-      const resposta = preenche("Eu não sei isso, {nome}. Qual música dela você mais gosta? 🎶", p);
+    const idadeArt = modo !== "novela" && modo !== "guia" ? temaIdadeArtista(ultima.content) : null;
+    if (idadeArt) {
+      const resposta = `A ${idadeArt.nome} tem ${idadeArt.idade} anos! Faz anos em ${idadeArt.aniv}. Qual música dela você mais gosta? 🎶`;
       logConversa(Object.assign(reg, { resposta, origem: "tema-artista" }));
       json(res, 200, { resposta });
       return;
