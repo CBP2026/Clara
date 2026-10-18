@@ -609,20 +609,20 @@ Nunca corrija, julgue nem conte a história por ela. Se o texto tiver doença, m
 }
 
 // papel: "chat" ou "moderador". Se o modelo configurado falhar e for diferente do padrao do papel, tenta o padrao.
-async function chamaLLM(papel, messages, maxTokens, temperature) {
+async function chamaLLM(papel, messages, maxTokens, temperature, timeoutMs) {
   const modelo = MODELOS[papel];
   const padrao = papel === "chat" ? VENICE_CHAT : VENICE_MOD;
-  try { return await chamaVenice(modelo, messages, maxTokens, temperature); }
+  try { return await chamaVenice(modelo, messages, maxTokens, temperature, timeoutMs); }
   catch (e) {
     if (modelo === padrao) throw e;
     console.warn("LLM " + papel + ": " + e.message + " (a usar " + padrao + ")");
-    return chamaVenice(padrao, messages, maxTokens, temperature);
+    return chamaVenice(padrao, messages, maxTokens, temperature, timeoutMs);
   }
 }
 
-async function chamaVenice(model, messages, maxTokens, temperature) {
+async function chamaVenice(model, messages, maxTokens, temperature, timeoutMs) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 20000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs || 20000);
   try {
     const r = await fetch(VENICE_URL, {
       method: "POST",
@@ -1702,6 +1702,7 @@ function sinaisDaSemana(id) {
   const dica = { "num.somar": "soma", "num.subtrair": "subtracao", "num.multiplicar": "vezes", "tempo.duracao": "hora" }[conc] || "";
   return { linhas, dicaConta: dica, sociais };
 }
+let ultimoErroCap = "";
 async function geraCapitulo(id, tema, teste) {
   const p = perfilAtual(id);
   const sinais = sinaisDaSemana(id);
@@ -1719,7 +1720,7 @@ async function geraCapitulo(id, tema, teste) {
   for (let t = 0; t < 3; t++) {
     let raw = "";
     try {
-      raw = await chamaLLM("chat", [{ role: "system", content: CAP.sistemaCapitulo() }, { role: "user", content: user + (ultimoErro ? `\n\nA tentativa anterior falhou (${ultimoErro}). Corrija e responda só com o JSON.` : "") }], 2200, 0.8);
+      raw = await chamaLLM("chat", [{ role: "system", content: CAP.sistemaCapitulo() }, { role: "user", content: user + (ultimoErro ? `\n\nA tentativa anterior falhou (${ultimoErro}). Corrija e responda só com o JSON.` : "") }], 2200, 0.8, 60000);
       const cap = CAP.validaCapitulo(raw, (txt) => saidaProibida(txt) || temRisco(txt) || (RE_NAMORO.test(normaliza(txt)) ? "namoro" : ""));
       const mod = await moderador("Capítulo de novela infantil para menina de 15 anos", [cap.titulo, cap.resumo].concat(cap.cenas.map((c) => c.texto)).join("\n"));
       if (!mod.ok) { ultimoErro = "moderador"; continue; }
@@ -1733,6 +1734,7 @@ async function geraCapitulo(id, tema, teste) {
     } catch (e) { ultimoErro = String(e.message).slice(0, 80); }
   }
   console.warn("Capitulo nao gerado: " + ultimoErro);
+  ultimoErroCap = ultimoErro;
   return null;
 }
 function postCapitulo(req, res) {
@@ -1743,7 +1745,7 @@ function postCapitulo(req, res) {
     if (err || !b || typeof b.id !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(b.id)) { res.writeHead(400); res.end(); return; }
     if (!estado.chat || !llmPronto()) { json(res, 403, { erro: "desligado" }); return; }
     const r = await tentaCapitulo(b.id, txt(b.tema, 120), b.teste === true);
-    if (r.cap) json(res, 200, { cap: r.cap }); else json(res, r.erro === "falhou" ? 502 : 429, { erro: r.erro });
+    if (r.cap) json(res, 200, { cap: r.cap }); else json(res, r.erro === "falhou" ? 502 : 429, { erro: r.erro, motivo: r.motivo });
   });
 }
 // Limites e geracao: usado pela app (botao) e pela conversa com a Lua
@@ -1758,7 +1760,7 @@ async function tentaCapitulo(id, tema, teste) {
   capsEmCurso.add(id);
   try {
     const cap = await geraCapitulo(id, tema, teste);
-    return cap ? { cap } : { erro: "falhou" };
+    return cap ? { cap } : { erro: "falhou", motivo: ultimoErroCap };
   } finally { capsEmCurso.delete(id); }
 }
 function getCapitulos(req, res) {
