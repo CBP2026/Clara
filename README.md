@@ -76,7 +76,7 @@ O serviço lê `railway.toml` e roda `node server.js`. A variável `PORT` é inj
    - `PAIS_TZ` (padrão `Europe/Lisbon`): fuso do painel dos pais.
    - `CLARA_TZ` (padrão `Europe/Lisbon`): fuso dos lembretes (07h, 19h, 21h).
    - `DATA_DIR` (padrão `/data`).
-   - `VENICE_MODELO` (padrão `mistral-small-3-2-24b-instruct`) e `VENICE_MODERADOR` (padrão `qwen3-5-9b`).
+   - `VENICE_MODELO` (padrão `claude-haiku-5-5`, via Venice) e `VENICE_MODERADOR` (padrão `qwen3-5-9b`).
    - `VAPID_PUBLIC`, `VAPID_PRIVATE`, `VAPID_CONTATO`: chaves das notificações push. Se ausentes, são geradas e guardadas em `/data` (precisa de Volume para não mudarem a cada deploy).
 5. Abra `https://SEU-APP.up.railway.app/pais`.
 

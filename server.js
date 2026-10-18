@@ -14,7 +14,7 @@ const tz = process.env.PAIS_TZ || "Europe/Lisbon";
 const tzClara = process.env.CLARA_TZ || "Europe/Lisbon";
 const veniceKey = process.env.VENICE_API_KEY || "";
 const VENICE_URL = process.env.VENICE_URL || "https://api.venice.ai/api/v1/chat/completions";
-const VENICE_CHAT = process.env.VENICE_MODELO || "mistral-small-3-2-24b-instruct";
+const VENICE_CHAT = process.env.VENICE_MODELO || "claude-haiku-5-5";
 const VENICE_MOD = process.env.VENICE_MODERADOR || "qwen3-5-9b";
 // Modelo por papel. Se comecar por "claude-" usa a API da Anthropic (precisa de ANTHROPIC_API_KEY); senao, Venice.
 const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
@@ -513,6 +513,11 @@ const PEDIDOS_APP = [
 // Namoro: assunto normal aos 15, mas a Lua nao fala disso; resposta fixa e calma, sem alerta.
 const RE_NAMORO = /\b(namor\w*|paquera\w*|crush|beij\w*|ficar com (um )?(menino|rapaz|garoto))/;
 function temaNamoro(txt) { return RE_NAMORO.test(normaliza(txt)); }
+// Segredo contra os pais e idade/vida de artistas: nenhum modelo cumpre sempre, entao resposta fixa.
+const RE_SEGREDO = /segredo\w*.{0,40}(pais|mae|pai)|(pais|mae|pai).{0,40}segredo|nao (pode|podem|quero que).{0,20}(os )?(meus )?(pais|mae|pai).{0,20}(saib|sab|fal|cont)/;
+const RE_IDADE_ARTISTA = /quantos anos (a |o )?[a-z]{3,}.{0,20}(tem|fez|faz)|idade (da|do|de) [a-z]{3,}|quando (a |o )?[a-z]{3,}.{0,15}nasceu/;
+function temaSegredo(txt) { return RE_SEGREDO.test(normaliza(txt)); }
+function temaIdadeArtista(txt) { return RE_IDADE_ARTISTA.test(normaliza(txt)); }
 function pedidoApp(txt) {
   const n = normaliza(txt);
   return PEDIDOS_APP.find((x) => x.re.test(n)) || null;
@@ -754,9 +759,23 @@ function postConversa(req, res) {
       return;
     }
 
+    if (modo !== "novela" && modo !== "guia" && temaSegredo(ultima.content)) {
+      const resposta = preenche("Eu não guardo segredo dos seus pais, {nome}. Mas pode me contar o que está pesando, e a gente pensa junto como contar a eles 💛", p);
+      logConversa(Object.assign(reg, { resposta, origem: "tema-segredo", alerta: true, motivo: "falou em segredo dos pais" }));
+      json(res, 200, { resposta });
+      return;
+    }
+    if (modo !== "novela" && modo !== "guia" && temaIdadeArtista(ultima.content)) {
+      const resposta = preenche("Eu não sei isso, {nome}. Qual música dela você mais gosta? 🎶", p);
+      logConversa(Object.assign(reg, { resposta, origem: "tema-artista" }));
+      json(res, 200, { resposta });
+      return;
+    }
+
     let resposta = "", origem = "ia", alerta = false, motivo = "";
     const sistema = promptSistema(p, modo, cenario, ultimoHumor(b.id), factosDe(b.id));
-    const maxTok = modo === "treino" ? 160 : modo === "novela" ? 100 : modo === "guia" ? 90 : 120;
+    // folga alem do tamanho final: alguns modelos (ex.: claude-haiku-5-5 via Venice) gastam tokens a raciocinar e devolvem vazio com limites baixos; cortaResposta limita o texto
+    const maxTok = 600;
     const rigido = "\n\nATENÇÃO: a tentativa anterior foi bloqueada. Responda de forma ainda mais simples, curta e neutra, sem prometer nada, sem inventar e sem os assuntos proibidos.";
     let tentativas = 0;
     const bloqueios = [];
@@ -1681,4 +1700,4 @@ server.listen(port, "0.0.0.0", () => {
 });
 
 // usado por scripts/avalia-modelos.js
-module.exports = { server, planoPendencia, analisaConceitos, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };
+module.exports = { server, temaSegredo, temaIdadeArtista, planoPendencia, analisaConceitos, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };
