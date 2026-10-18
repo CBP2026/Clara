@@ -528,7 +528,8 @@
     manha: [
       "Bom dia, {nome}! Tomou café? Uma missão rapidinha antes da escola? ☀️",
       "Manhã é hora de cérebro fresquinho. Bora? 🧠",
-      "Hoje na escola, tenta dizer oi para uma pessoa nova. Você consegue! 👋"
+      "Hoje na escola, tenta dizer oi para uma pessoa nova. Você consegue! 👋",
+      "Lembra: você pode contar com o papai, a mamãe e a sua irmã. A gente te ama muito 💛 Seja boazinha e dê bom dia a todos!"
     ],
     tarde: [
       "Como foi a escola, {nome}? Me conta no 'Como foi o dia' 💬",
@@ -617,12 +618,11 @@
 
   C.push = {
     manha: [
-      "Bom dia, {nome}! Hoje vai ser um dia incrível ☀️",
-      "Bom dia, campeã! Um sorriso e bora para a escola 😊",
-      "Acorda, {nome}! A {lua} está torcendo por você hoje 💛",
-      "Bom dia! Lembra: um oi pode começar uma amizade 👋",
-      "Bom dia, {nome}! Você é corajosa. Hoje também ✨",
-      "Bom dia! Café da manhã e coragem no bolso 🎒"
+      "Bom dia, {nome}! Você pode sempre contar com o papai, a mamãe e a sua irmã. A gente te ama muito 💛 Hoje seja boazinha e dê bom dia para todo mundo ☀️",
+      "Bom dia, campeã! O papai, a mamãe e a sua irmã estão sempre com você e te amam muito 💛 Dê bom dia a todos com um sorriso 😊",
+      "Acorda, {nome}! Pode contar com a sua família: pai, mãe e irmã te amam demais 💛 Seja boazinha e dê bom dia a todo mundo!",
+      "Bom dia! Lembra: o papai, a mamãe e a sua irmã estão do seu lado sempre. Te amamos muito 💛 Um bom dia para cada pessoa que você encontrar ✨",
+      "Bom dia, {nome}! Você é corajosa e é muito amada pelo pai, pela mãe e pela irmã 💛 Hoje seja boazinha e cumprimente a todos 👋"
     ],
     dia: [
       "Como foi o seu dia, {nome}? Me conta 💬",
