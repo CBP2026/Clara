@@ -164,13 +164,19 @@ test("namoro: resposta fixa sem modelo e sem alerta", async () => {
   assert.ok(!ult.alerta);
 });
 
-test("pedido de mais capítulos (com erro 'mas') é pedido da app, não conversa", async () => {
+test("'faz você' é pedido da app, sem modelo", async () => {
   chamadas = [];
-  for (const f of ["Faz mas capítulos da turma do girassol", "Faz você", "quero mais episodios"]) {
-    const r = await fala(f);
-        assert.match(r.resposta, /não consigo|Eu só consigo|mãe ou ao pai/);
-  }
+  const r = await fala("Faz você");
+  assert.match(r.resposta, /não consigo|Eu só consigo|mãe ou ao pai/);
   assert.equal(chamadas.length, 0);
+});
+
+test("pedido de capítulo (mesmo com erro 'mas') vai para a escrita de capítulo, não para a conversa", async () => {
+  for (const f of ["Faz mas capítulos da turma do girassol", "quero mais episodios"]) {
+    const r = await fala(f);
+    // o modelo de teste não devolve um capítulo válido: a Lua avisa com carinho, sem inventar
+    assert.match(r.resposta, /capítulo/i);
+  }
 });
 
 test("memória: guarda facto, usa no prompt e pais apagam", async () => {
@@ -190,4 +196,33 @@ test("memória: guarda facto, usa no prompt e pais apagam", async () => {
   await fetch(base + "/pais/memoria", { method: "POST", headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" }, body: "id=" + id + "&i=0", redirect: "manual" });
   const html2 = await (await fetch(base + "/pais", { headers: { Authorization: auth } })).text();
   assert.doesNotMatch(html2, /Tem uma gata/);
+});
+
+test("capítulo novo: a Lua escreve, valida, guarda e devolve; pedido pelo chat também", async () => {
+  const opc = (a, b, c) => [{ t: a, ok: true, why: "Boa escolha." }, { t: b, ok: false, why: "Tente outra vez." }, { t: c, ok: false, why: "Pense de novo." }];
+  const soc = (q, conc) => ({ emoji: "🙂🙂", texto: "A Nina pensa no que fazer agora.", pergunta: { conc, q, opcoes: opc("Falar com calma", "Gritar", "Fugir") } });
+  const cap = () => JSON.stringify({ titulo: "O lanche", emoji: "🥪", resumo: "A Nina divide o lanche com a Malu.", cenas: [
+    { emoji: "🏫🙂", texto: "Na hora do recreio, a Nina tem fome." }, soc("O que a Nina faz?", "social.amizade"),
+    { emoji: "🥪🥪", texto: "A Malu tem 3 bolachas e a Nina tem 4.", conta: { tipo: "soma", a: 3, b: 4, objeto: "bolachas" } },
+    soc("E agora?", "social.frustracao"), soc("Como a Malu se sente?", "social.sinais_corpo"),
+    { emoji: "🌻🏠", texto: "Em casa, a Nina conta tudo para a mãe." }] });
+  const id = "eeeeeeee-1";
+  chatRoteiro = ["isto nao e json", cap()]; modRoteiro = ["SEGURA"];
+  const r = await fetch(base + "/api/capitulo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, tema: "a Nina faz uma amiga nova" }) });
+  assert.equal(r.status, 200);
+  const j = await r.json();
+  assert.equal(j.cap.titulo, "O lanche");
+  assert.equal(j.cap.cenas[2].pergunta.opcoes.find((o) => o.ok).t, "7");
+  const lista = await (await fetch(base + "/api/capitulos?id=" + id)).json();
+  assert.equal(lista.caps.length, 1);
+  // pelo chat
+  chatRoteiro = [cap()]; modRoteiro = ["SEGURA"];
+  const c = await fala("Faz mas capítulos da turma do girassol");
+  assert.match(c.resposta, /Escrevi um capítulo novo/);
+  // moderador recusa: nada é guardado
+  chatRoteiro = [cap(), cap(), cap()]; modRoteiro = ["INSEGURA", "INSEGURA", "INSEGURA"];
+  const antes = (await (await fetch(base + "/api/capitulos?id=" + id)).json()).caps.length;
+  const f = await fetch(base + "/api/capitulo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+  assert.equal(f.status, 502);
+  assert.equal((await (await fetch(base + "/api/capitulos?id=" + id)).json()).caps.length, antes);
 });
