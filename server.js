@@ -49,7 +49,7 @@ if (!veniceKey) {
 }
 
 // ---------- estado (perfil, chat ligado, inscricoes de notificacao) ----------
-let estado = { perfis: {}, chat: false, subs: [], enviados: {}, ultimoPush: null, vapid: null };
+let estado = { perfis: {}, memoria: {}, chat: false, subs: [], enviados: {}, ultimoPush: null, vapid: null };
 try { estado = Object.assign(estado, JSON.parse(fs.readFileSync(estadoFile, "utf8"))); } catch (e) { /* primeiro arranque */ }
 function salvaEstado() {
   try {
@@ -140,7 +140,7 @@ function temRisco(txt) { return procura(RISCO, txt); }
 const PROIBIDO_SAIDA = compila([
   "sex*", "transar", "pelad*", "nua", "nu", "nude*", "excitad*", "namor*", "drog*", "maconha", "cocaina",
   "alcool", "cerveja", "vinho", "vodka", "bebad*", "cigarro*", "vape", "dieta*", "emagrec*", "caloria*", "vomit*",
-  "gorda", "suicid*", "se matar", "te matar", "arma", "armas", "faca", "sangue", "porra", "caralho",
+  "gorda", "suicid*", "se matar", "te matar", "arma", "armas", "sangue", "porra", "caralho",
   "merda", "puta", "foda*", "idiota", "burra", "http*", "www", "endereco", "telefone", "numero de celular",
   "senha", "nosso segredo", "nao conte", "nao conta pros", "nao conta para", "esconda", "encontrar pessoalmente",
   "me encontra", "manda uma foto", "manda foto"
@@ -148,6 +148,8 @@ const PROIBIDO_SAIDA = compila([
 function saidaProibida(txt) {
   if (String(txt).includes("@")) return "@";
   if (/\.(com|pt|br|net|org)(?![a-z])/i.test(txt)) return "link";
+  // "faca" (objeto) so conta sem cedilha: "faça" (verbo) e comum nas dicas
+  if (/(?<![a-zà-ú0-9])facas?(?![a-zà-ú0-9])/i.test(txt)) return "faca";
   return procura(PROIBIDO_SAIDA, txt);
 }
 
@@ -180,7 +182,8 @@ function limpaPerfil(p) {
   return {
     nome: txt(p.nome, 30), lua: txt(p.lua, 20),
     novelas: lista(p.novelas, 9, 40), cantores: lista(p.cantores, 10, 40), influs: lista(p.influs, 5, 30),
-    jj: !!p.jj, academia: txt(p.academia, 30), faixa: txt(p.faixa, 20), proxima: txt(p.proxima, 20), cor: txt(p.cor, 10)
+    jj: !!p.jj, academia: txt(p.academia, 30), faixa: txt(p.faixa, 20), proxima: txt(p.proxima, 20), cor: txt(p.cor, 10),
+    aniversario: /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(p.aniversario) ? p.aniversario : ""
   };
 }
 
@@ -501,24 +504,51 @@ const PEDIDOS_APP = [
     resp: "Isso quem muda é você mesma, {nome}! Toca no ⚙️ e escolhe as suas novelas, cantores e nomes quando quiser 💛" },
   { tipo: "missao", acao: null, re: /(tir|mud|troc|pul|sem|nao quero)\w*.{0,25}\b(missao|missoes|nivel|pergunta|perguntas|jogo|jogos)|muito (dificil|facil)|nao entend\w* (a |as |o |os )?(pergunta|missao|jogo|nada)/,
     resp: "Eu não consigo mudar as missões, {nome}. Se ficou difícil, tudo bem errar! Fala com a mãe ou o pai e eles ajudam a deixar mais fácil 💛" },
+  { tipo: "conteudo", acao: null, re: /(faz|fazer|faca|cria|criar|quero|tem|ter|bota|poe|coloca|manda)\w*.{0,25}\b(mais|mas|outr\w*|novo\w*|proxim\w*)\b.{0,25}(capitulo|episodio|novela|missao|missoes|pergunta|jogo|historia|musica)|capitulos? (da|do) (turma|girassol)|\b(faz|faca|fazer) (voce|vc|isso|por mim)\b/,
+    resp: "Mais capítulos e missões eu não consigo criar, {nome}. Mas você pode jogar de novo e escrever a sua novela! Se quiser mais, peça à mãe ou ao pai 💛" },
   { tipo: "suporte", acao: null, re: /suporte|equipe|e-?mail|alterar (o |a )?(app|aplicativo)|mudar (o |a )?(app|aplicativo)|consertar (o |a )?(app|aplicativo)|arrumar (o |a )?(app|aplicativo)|(app|aplicativo) (esta|ta) (errad|com problema|bugad)/,
     resp: "Eu só consigo conversar, {nome}; não consigo mexer na app nem falar com mais ninguém. Anotei o seu pedido para os seus pais verem 💛" }
 ];
+// Namoro: assunto normal aos 15, mas a Lua nao fala disso; resposta fixa e calma, sem alerta.
+const RE_NAMORO = /\b(namor\w*|paquera\w*|crush|beij\w*|ficar com (um )?(menino|rapaz|garoto))/;
+function temaNamoro(txt) { return RE_NAMORO.test(normaliza(txt)); }
 function pedidoApp(txt) {
   const n = normaliza(txt);
   return PEDIDOS_APP.find((x) => x.re.test(n)) || null;
 }
 
-function promptSistema(p, modo, cenario, humor) {
+// ---------- memoria da Lua: factos curtos que ela contou (os pais veem e apagam no painel) ----------
+const MAX_FACTOS = 15;
+function factosDe(id) { return (estado.memoria && Array.isArray(estado.memoria[id]) ? estado.memoria[id] : []).map((x) => x.fato); }
+async function aprendeFato(id, fala) {
+  if (!id || String(fala).length < 12) return;
+  try {
+    const sys = `Você extrai UM facto estável e inofensivo que uma menina de 15 anos contou sobre si mesma numa conversa (ex.: gosta de algo, nome de uma amiga ou animal, rotina, data de um evento, o que quer fazer). Responda só com o facto numa frase curta, em terceira pessoa, até 80 caracteres (ex.: "Tem uma amiga chamada Ana"). Se não houver facto claro e útil, responda só: NADA. Nunca registe: saúde, corpo, namoro, sexo, sobrenome, nome da escola, morada, telefone, e-mail, dinheiro, segredos, nem nada de perigo ou tristeza forte.`;
+    const out = (await chamaLLM("moderador", [{ role: "system", content: sys }, { role: "user", content: String(fala).slice(0, 300) }], 40, 0)).trim().replace(/^["“\-•\s]+|["”\s]+$/g, "");
+    if (!out || /^nada\b/i.test(out) || out.length < 6 || out.length > 100) return;
+    if (/\d{4,}|@/.test(out) || saidaProibida(out) || temRisco(out) || RE_NAMORO.test(normaliza(out))) return;
+    const lista = (estado.memoria[id] = estado.memoria[id] || []);
+    const n = normaliza(out);
+    if (lista.some((x) => normaliza(x.fato) === n)) return;
+    lista.push({ t: new Date().toISOString(), fato: out });
+    if (lista.length > MAX_FACTOS) lista.splice(0, lista.length - MAX_FACTOS);
+    salvaEstado();
+  } catch (e) { /* memoria e opcional: ignora falhas */ }
+}
+
+function promptSistema(p, modo, cenario, humor, factos) {
   const gostos = [
     p.novelas && p.novelas.length ? "novelas: " + p.novelas.join(", ") : "",
     p.influs && p.influs.length ? "influencers: " + p.influs.join(", ") : "",
     p.cantores && p.cantores.length ? "cantores e música: " + p.cantores.join(", ") : "",
     p.jj ? "jiu-jitsu na academia " + (p.academia || "") + " (faixa " + (p.faixa || "") + ", quer chegar à " + (p.proxima || "") + ")" : ""
   ].filter(Boolean).join("; ");
+  const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const am = /^(\d\d)-(\d\d)$/.exec(p.aniversario || "");
+  const aniv = am ? Number(am[2]) + " de " + MESES[Number(am[1]) - 1] : "";
   let s = `Você é ${p.lua || "Lua"}, a amiga virtual da ${p.nome || "Clara"} dentro de uma app educativa.
 Sobre ela: tem 15 anos, tem dificuldade de aprendizagem e é um pouco infantil para a idade. Mudou de escola em Portugal e está com dificuldade de fazer amigas. Fala português do Brasil.
-Ela gosta de: ${gostos || "novelas e vídeos"}.
+Ela gosta de: ${gostos || "novelas e vídeos"}.${factos && factos.length ? "\nO que ela já te contou (use só quando fizer sentido, sem inventar mais): " + factos.join("; ") + "." : ""}${aniv ? "\nO aniversário dela é dia " + aniv + " (pode falar disso com alegria; sem prometer festa nem presentes)." : ""}
 
 Como escrever: português do Brasil; no máximo 3 frases curtas (até 15 palavras cada), sendo uma delas a pergunta quando ela falar de sentimentos; palavras simples; no máximo 1 emoji; tom alegre, carinhoso e paciente.
 
@@ -701,8 +731,15 @@ function postConversa(req, res) {
       return;
     }
 
+    if (modo !== "novela" && temaNamoro(ultima.content)) {
+      const resposta = preenche("Gostar de alguém é normal, {nome}. Eu não sei falar bem disso, mas a mãe ou o pai sabem! Quer me contar das suas amigas? 💛", p);
+      logConversa(Object.assign(reg, { resposta, origem: "tema-namoro" }));
+      json(res, 200, { resposta });
+      return;
+    }
+
     let resposta = "", origem = "ia", alerta = false, motivo = "";
-    const sistema = promptSistema(p, modo, cenario, ultimoHumor(b.id));
+    const sistema = promptSistema(p, modo, cenario, ultimoHumor(b.id), factosDe(b.id));
     const maxTok = modo === "treino" ? 160 : modo === "novela" ? 100 : 120;
     const rigido = "\n\nATENÇÃO: a tentativa anterior foi bloqueada. Responda de forma ainda mais simples, curta e neutra, sem prometer nada, sem inventar e sem os assuntos proibidos.";
     let tentativas = 0;
@@ -732,6 +769,7 @@ function postConversa(req, res) {
     const original = resposta;
     const previos = origem === "ia" ? bloqueios : bloqueios.slice(0, -1);
     if (origem !== "ia") resposta = preenche(pick(FALLBACKS), p);
+    if (origem === "ia" && !teste && modo !== "novela") aprendeFato(b.id, ultima.content);
     logConversa(Object.assign(reg, { resposta, origem, alerta, motivo, tentativas, bloqueada: origem !== "ia" && original ? original.slice(0, 450) : undefined, anteriores: previos.length ? previos : undefined }));
     json(res, 200, { resposta });
   });
@@ -1054,6 +1092,15 @@ function montaPainel() {
       <div>👧 ${esc(c.user)}</div><div>🌙 ${esc(c.resposta)}</div>
       ${c.bloqueada ? `<div class="mut">Resposta bloqueada da IA: ${esc(c.bloqueada)}</div>` : ""}</li>`).join("");
 
+  // ---- memoria da Lua ----
+  const memoriaHtml = (() => {
+    const itens = [];
+    for (const [id, l] of Object.entries(estado.memoria || {})) l.forEach((x, i) => itens.push({ id, i, x }));
+    if (!itens.length) return '<span class="mut">Nada ainda. Quando ela contar algo simples (amigas, gostos, datas), a Lua guarda aqui para usar nas conversas.</span>';
+    return '<ul class="erros">' + itens.map(({ id, i, x }) => `<li>${esc(x.fato)} <span class="mut">· ${esc(fmtHora.format(new Date(x.t)))}</span>
+      <form method="post" action="/pais/memoria" style="display:inline"><input type="hidden" name="id" value="${esc(id)}"><input type="hidden" name="i" value="${i}"><button class="sec">Apagar</button></form></li>`).join("") + "</ul>";
+  })();
+
   // ---- pedidos dela sobre a app (14 dias) ----
   const pedidos = conversas.filter((c) => c.origem === "pedido-app" && c.quando >= agora - 14 * 864e5).reverse();
   const pedidosHtml = pedidos.map((c) => `<li><div class="mut">${esc(fmtHora.format(new Date(c.quando)))} · ${esc(c.pedido || "")}</div><div>👧 ${esc(c.user)}</div></li>`).join("");
@@ -1197,6 +1244,9 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
     <button class="sec">Guardar</button>
   </form>
 </div>
+
+<h2>O que a Lua sabe dela</h2>
+<div class="card">${memoriaHtml}</div>
 
 <h2>Pedidos dela sobre a app (14 dias)</h2>
 <div class="card">${pedidosHtml ? `<ul class="erros">${pedidosHtml}</ul>` : '<span class="mut">Nenhum pedido. Quando ela pedir para mudar algo na app, aparece aqui.</span>'}</div>
@@ -1445,6 +1495,13 @@ function acaoPais(req, res, rota) {
     if (err) { res.writeHead(413); res.end(); return; }
     const f = new URLSearchParams(body);
     if (rota === "/pais/limpar") { limparRegistros(res, f); return; }
+    if (rota === "/pais/memoria") {
+      const l = estado.memoria && estado.memoria[f.get("id")];
+      const i = Number(f.get("i"));
+      if (Array.isArray(l) && Number.isInteger(i) && i >= 0 && i < l.length) { l.splice(i, 1); salvaEstado(); }
+      voltaPainel(res);
+      return;
+    }
     if (rota === "/pais/lembretes") {
       estado.lembretes = f.get("lembretes") === "1";
       estado.boaNoite = f.get("noite") === "1";
@@ -1479,7 +1536,7 @@ function areaPais(req, res, rota) {
   }
   if (req.method === "POST") {
     if (rota === "/pais/pergunta") postPergunta(req, res);
-    else if (rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes") acaoPais(req, res, rota);
+    else if (rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes" || rota === "/pais/memoria") acaoPais(req, res, rota);
     else { res.writeHead(405); res.end(); }
     return;
   }
@@ -1577,7 +1634,7 @@ const server = http.createServer((req, res) => {
     json(res, 200, { chat: !!(estado.chat && llmPronto()), vapid: vapid ? vapid.publicKey : null });
     return;
   }
-  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/conversas.csv" || rota === "/pais/perfis.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes" || rota === "/pais/pergunta") {
+  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/conversas.csv" || rota === "/pais/perfis.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes" || rota === "/pais/memoria" || rota === "/pais/pergunta") {
     areaPais(req, res, rota === "/pais/" ? "/pais" : rota);
     return;
   }
