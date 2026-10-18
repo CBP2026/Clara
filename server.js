@@ -16,7 +16,7 @@ const tzClara = process.env.CLARA_TZ || "Europe/Lisbon";
 const veniceKey = process.env.VENICE_API_KEY || "";
 const VENICE_URL = process.env.VENICE_URL || "https://api.venice.ai/api/v1/chat/completions";
 const VENICE_CHAT = process.env.VENICE_MODELO || "claude-haiku-5-5";
-const VENICE_MOD = process.env.VENICE_MODERADOR || "qwen3-5-9b";
+const VENICE_MOD = process.env.VENICE_MODERADOR || "claude-haiku-5-5";
 // Modelo por papel. Toda chamada a LLM passa pela Venice (inclusive claude-haiku-5-5); nunca se chama a API de outro fornecedor diretamente.
 const MODELOS = {
   chat: process.env.LUA_MODELO || VENICE_CHAT,
