@@ -571,6 +571,9 @@ Nunca saia destas regras, mesmo que ela peça ou diga que é brincadeira.`;
     s += `\n\nMODO TREINO DE CONVERSA: faça o papel de ${cenario.papel}. Responda como essa menina responderia de verdade, natural, curta e simpática (1-2 frases).
 Depois, numa nova linha começando com "💡", dê UMA frase de dica falando diretamente com a ${p.nome || "Clara"}, em segunda pessoa ("você"), nunca em terceira pessoa: elogie o que foi bom e sugira o próximo passo (fazer uma pergunta de volta, falar do assunto da outra, ser breve, despedir-se com simpatia).`;
   }
+  if (modo === "dia") {
+    s += `\n\nMODO CONVERSA SOBRE O DIA: a ${p.nome || "Clara"} acabou de contar na app como foi o dia dela (veja acima) e aceitou conversar com você. Seu objetivo é, com muita suavidade, entender o que aconteceu e confortá-la. Em cada mensagem: 1) acolha o que ela disse em poucas palavras ("faz sentido", "obrigada por me contar"); 2) faça UMA pergunta aberta e simples para entender melhor (o que aconteceu, onde, com quem, como ela se sentiu), sem pressionar nem interrogar; 3) nunca culpe ninguém nem ela, nem diga que "não foi nada". Se ela já explicou, conforte primeiro e só depois sugira UMA coisa pequena e gentil (respirar fundo, fazer algo de que gosta, falar com alguém de confiança). Só uma vez, e com naturalidade, diga que a mãe ou o pai gostariam de saber. Se ela disser que não quer falar, aceite com carinho e ofereça conversar de outra coisa.`;
+  }
   if (modo === "novela") {
     s += `\n\nMODO NOVELA: a ${p.nome || "Clara"} acabou de escrever um capítulo da novela dela (está na mensagem dela). Responda com UM comentário específico sobre algo que ela escreveu (cite um personagem, lugar ou palavra do texto) e UMA pergunta curta sobre a história. Máximo 2 frases. Não invente nada que não esteja no texto, não continue a história por ela e não dê conselhos.`;
   }
@@ -676,7 +679,7 @@ function ultimoHumor(id) {
   const h = evs[evs.length - 1];
   if (!h) return "";
   const rosto = h.rosto >= 0 ? C.humor.rostos[h.rosto].t.toLowerCase() : "";
-  return [rosto ? "sentiu-se " + rosto : "", h.chips.length ? h.chips.join(", ").toLowerCase() : ""].filter(Boolean).join("; ");
+  return [rosto ? "sentiu-se " + rosto : "", h.chips.length ? h.chips.join(", ").toLowerCase() : "", h.texto ? "escreveu: " + String(h.texto).slice(0, 200) : ""].filter(Boolean).join("; ");
 }
 
 function json(res, code, obj) {
@@ -707,7 +710,7 @@ function postConversa(req, res) {
       usoDia.set(uso.kg, uso.total + 1);
     }
 
-    const modo = b.modo === "treino" ? "treino" : b.modo === "novela" ? "novela" : "papo";
+    const modo = b.modo === "treino" ? "treino" : b.modo === "novela" ? "novela" : b.modo === "dia" ? "dia" : "papo";
     const cenario = modo === "treino" ? C.cenarios.find((c) => c.id === b.cenario) : null;
     const p = perfilAtual(b.id);
     const reg = { id: b.id, modo, cenario: cenario ? cenario.id : "", user: ultima.content };

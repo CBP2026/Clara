@@ -303,6 +303,7 @@
       <textarea class="inp" id="humorTxt" maxlength="500" placeholder="Escreva aqui..."></textarea></label>
     <button class="next show" id="humorSend">Enviar 💛</button>
     <div class="bubble hidden" id="humorResp" style="margin-top:14px"></div>
+    <button class="bigbtn hl hidden" id="humorPapo" style="margin-top:12px">💬 Quer me contar mais?</button>
   </section>
 
   <section id="girassol" class="hidden">
@@ -1862,7 +1863,31 @@ $("humorSend").onclick = () => {
   $("humorResp").textContent = resp;
   $("humorResp").classList.remove("hidden");
   $("humorSend").classList.add("hidden");
+  $("humorPapo").classList.toggle("hidden", !config.chat);
   speak(resp, "pt-BR");
+  humorUlt = { rosto: humorSel.rosto, chips: humorSel.chips.slice(), texto };
+};
+let humorUlt = null;
+$("humorPapo").onclick = () => {
+  const u = humorUlt || {};
+  chat = { modo: "dia", cenario: null, msgs: [], esperando: false };
+  $("chatModes").innerHTML = "";
+  $("chatTitle").textContent = (perfil.luaEmoji || "🌙") + " " + (perfil.lua || "Lua");
+  $("chatLog").innerHTML = "";
+  show("chat");
+  const graves = ["Tive um problema", "Riram de mim", "Fiquei sozinha"];
+  const grave = (u.chips || []).find(c => graves.includes(c));
+  let oi;
+  if (grave === "Riram de mim") oi = "Obrigada por me contar, {nome}. Isso machuca, e não é culpa sua. Quer me contar o que aconteceu? Sem pressa 💛";
+  else if (grave === "Fiquei sozinha") oi = "Obrigada por me contar, {nome}. Ficar sozinha dói. Quer me contar como foi hoje? Sem pressa 💛";
+  else if (grave === "Tive um problema") oi = "Obrigada por me contar, {nome}. Estou aqui com você. O que aconteceu? Pode escrever do seu jeito 💛";
+  else if (u.rosto >= 3) oi = "Sinto muito que o dia foi difícil, {nome}. Estou aqui com você. Quer me contar o que aconteceu? 💛";
+  else if (u.rosto === 2) oi = "Entendo, {nome}. Dias mais ou menos acontecem. Teve alguma coisa que te deixou assim? 💛";
+  else oi = "Que bom conversar com você, {nome}! O que foi a melhor parte do seu dia? 😊";
+  oi = (perfil.luaEmoji || "🌙") + " " + fill(oi);
+  addMsg("lua", oi);
+  chat.msgs.push({ role: "assistant", content: oi });
+  speak(oi, "pt-BR");
 };
 
 // ---------- chat ----------
@@ -1881,7 +1906,7 @@ function abreChat() {
   });
   $("chatTitle").textContent = (perfil.luaEmoji || "🌙") + " " + (perfil.lua || "Lua");
   show("chat");
-  iniciaChat(chat.modo || "papo");
+  iniciaChat(chat.modo === "treino" ? chat.cenario : "papo");
 }
 function iniciaChat(id) {
   chat = { modo: id === "papo" ? "papo" : "treino", cenario: id === "papo" ? null : id, msgs: [], esperando: false };

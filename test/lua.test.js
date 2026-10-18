@@ -119,6 +119,15 @@ test("modo novela: prompt próprio, ignora pedidos de app e aceita comentário",
   assert.equal((await conversas()).pop().modo, "novela");
 });
 
+test("modo dia: prompt de acolhimento e registo do modo", async () => {
+  chamadas = [];
+  chatRoteiro = ["Faz sentido ficar assim. O que aconteceu na escola?"]; modRoteiro = ["SEGURA"];
+  const r = await fala("hoje foi ruim", { modo: "dia" });
+  assert.match(r.resposta, /escola/);
+  assert.ok(chamadas.find((c) => !c.mod).sistema.includes("MODO CONVERSA SOBRE O DIA"));
+  assert.equal((await conversas()).pop().modo, "dia");
+});
+
 test("dica com 'faça' não é bloqueada como 'faca'", async () => {
   chatRoteiro = ["Oi! Que bom te ver 😊\n💡 Ótimo começo, agora faça uma pergunta de volta!"];
   modRoteiro = ["SEGURA"];
