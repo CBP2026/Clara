@@ -216,6 +216,7 @@ function limpaEvento(b) {
     ev.perg = txt(b.perg, 120);
     if (!ev.perg) return null;
     ev.q = txt(b.q, 160);
+    ev.ctx = txt(b.ctx, 200);
     ev.esc = txt(b.esc, 80);
     ev.certa = txt(b.certa, 80);
     ev.why = txt(b.why, 200);
@@ -825,7 +826,7 @@ function graficoEvolucao(semanas, maxNivel) {
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evolução por semana">${bars}${linha}${dots}${labels}</svg>`;
 }
 
-function painel(res) {
+function montaPainel() {
   const todosEvs = lerLog();
   const todasConversas = lerJsonl(conversasFile);
   const evs = todosEvs.filter((e) => !e.teste);
@@ -870,12 +871,13 @@ function painel(res) {
       const k = ev.mundo + "|" + ev.perg;
       let g = grupos.get(k);
       if (!g) {
-        g = { mundo: ev.mundo, perg: ev.perg, q: "", n: 0, ultimo: 0, esc: [], certa: "", why: "", resolvido: false };
+        g = { mundo: ev.mundo, perg: ev.perg, q: "", ctx: "", n: 0, ultimo: 0, esc: [], certa: "", why: "", resolvido: false };
         grupos.set(k, g);
       }
       g.n += 1;
       g.ultimo = ev.quando;
       g.q = ev.q || g.q;
+      g.ctx = ev.ctx || g.ctx;
       g.certa = ev.certa || g.certa;
       g.why = ev.why || g.why;
       if (ev.esc && !g.esc.includes(ev.esc)) g.esc.push(ev.esc);
@@ -937,10 +939,29 @@ function painel(res) {
   // ---- alertas (14 dias) ----
   const limiteAlerta = agora - 14 * 864e5;
   const alertas = [];
-  for (const h of humores) if (h.alerta && h.quando >= limiteAlerta) alertas.push({ q: h.quando, txt: "Como foi o dia: " + (h.motivo || "") + (h.texto ? " — “" + h.texto + "”" : "") });
-  for (const n of novela) if (n.alerta && n.quando >= limiteAlerta) alertas.push({ q: n.quando, txt: "Novela: ela escreveu “" + n.texto + "”" + (n.motivo ? " · " + n.motivo : "") });
-  for (const m of musica) if (m.alerta && m.quando >= limiteAlerta) alertas.push({ q: m.quando, txt: "Música (" + m.artista + "): ela escreveu “" + m.texto + "”" + (m.motivo ? " · " + m.motivo : "") });
-  for (const c of conversas) if (c.alerta && c.quando >= limiteAlerta) alertas.push({ q: c.quando, txt: "Conversa (" + c.origem + "): ela escreveu “" + c.user + "”" + (c.motivo ? " · " + c.motivo : "") });
+  // cada aviso: t = o que aconteceu, d = detalhe, o = o que fazer
+  const aspas = (x) => "“" + x + "”";
+  for (const h of humores) if (h.alerta && h.quando >= limiteAlerta) {
+    const chips = (h.chips || []).join(", ");
+    alertas.push({ q: h.quando, t: "No check-in “Como foi o dia?” ela marcou: " + (chips || "(nada)"),
+      d: h.texto ? "Também escreveu: " + aspas(h.texto) : "Não escreveu nada além disso." + (h.motivo && h.motivo.startsWith("texto:") ? " Palavra de risco no texto: " + h.motivo.slice(7) : ""),
+      o: "Pergunte com calma como foi esse dia. Não há resposta da Lua a este aviso." });
+  }
+  for (const n of novela) if (n.alerta && n.quando >= limiteAlerta) alertas.push({ q: n.quando, t: "Na novela ela escreveu algo sensível", d: aspas(n.texto) + (n.motivo ? " (palavra detetada: " + n.motivo.replace(/^texto: /, "") + ")" : ""), o: "Pode ser só ficção. Leia a novela com ela, se ela quiser." });
+  for (const m of musica) if (m.alerta && m.quando >= limiteAlerta) alertas.push({ q: m.quando, t: "Na música (" + m.artista + ") ela escreveu algo sensível", d: aspas(m.texto) + (m.motivo ? " (palavra detetada: " + m.motivo.replace(/^texto: /, "") + ")" : ""), o: "Pode ser só a letra. Pergunte se ela quiser contar." });
+  for (const c of conversas) if (c.alerta && c.quando >= limiteAlerta) {
+    const mot = String(c.motivo || "");
+    const ela = "Ela escreveu à Lua: " + aspas(c.user);
+    if (c.origem === "filtro-saida") {
+      alertas.push({ q: c.quando, t: "Resposta da Lua bloqueada pelo filtro (ela não fez nada de errado)", d: ela + (c.bloqueada ? " · A Lua ia responder: " + aspas(c.bloqueada) : "") + " · O filtro barrou a resposta por conter “" + mot.replace(/^resposta tinha: /, "") + "”. No lugar, a Lua mandou uma frase padrão.", o: "Normalmente nada a fazer. Se o assunto for sensível (ex.: namoro), vale conversar com ela." });
+    } else if (c.origem === "filtro-entrada") {
+      alertas.push({ q: c.quando, t: "🚨 Mensagem de risco dela", d: ela + " · Não foi enviada à IA; a Lua respondeu com uma mensagem de acolhimento." + (mot ? " Motivo: " + mot : ""), o: "Converse com ela hoje, com calma." });
+    } else if (c.origem === "moderador") {
+      alertas.push({ q: c.quando, t: "Resposta da Lua barrada pelo segundo verificador", d: ela + (c.bloqueada ? " · A Lua ia responder: " + aspas(c.bloqueada) : "") + " · No lugar, a Lua mandou uma frase padrão.", o: "Normalmente nada a fazer." });
+    } else {
+      alertas.push({ q: c.quando, t: "Conversa com a Lua (" + c.origem + ")", d: ela + (mot ? " · " + mot : ""), o: "" });
+    }
+  }
   // humor triste/raiva 3 dias seguidos
   const humorPorDia = {};
   for (const h of humores) if (h.rosto >= 0) humorPorDia[diaKey(h.quando)] = h.rosto;
@@ -950,7 +971,7 @@ function painel(res) {
     if (r === undefined) { if (i === dias.length - 1) continue; break; }
     if (r >= 3) tristes += 1; else break;
   }
-  if (tristes >= 3) alertas.push({ q: agora, txt: "Ela disse que estava triste ou com raiva 3 dias seguidos." });
+  if (tristes >= 3) alertas.push({ q: agora, t: "Ela disse que estava triste ou com raiva 3 dias seguidos", d: "Nos últimos 3 check-ins diários ela escolheu o rosto triste ou bravo.", o: "Converse com ela sobre como tem se sentido." });
   alertas.sort((a, b) => b.q - a.q);
   // ---- resumo da semana ----
   const sem7 = agora - 7 * 864e5;
@@ -981,7 +1002,7 @@ function painel(res) {
   <p><b>Sinais:</b> humor difícil em ${humorDificil} dia(s) · ${nPedidos} pedido(s) sobre a app · ${alertas.length} aviso(s) em “Atenção”${testes.length ? " · " + testes.length + " registro(s) de teste ignorados" : ""}</p>
   <p><b>Para fazer em casa (3 min):</b> ${esc(casa)}</p></div>`;
   const alertasHtml = alertas.length ? `<div class="card alerta"><b>⚠️ Atenção (${alertas.length})</b><ul class="erros">${alertas.slice(0, 30).map((a) =>
-    `<li><div>${esc(a.txt)}</div><div class="mut">${esc(fmtHora.format(new Date(a.q)))}</div></li>`).join("")}</ul></div>` : "";
+    `<li><div><b>${esc(a.t)}</b></div><div>${esc(a.d)}</div>${a.o ? `<div class="mut">👉 ${esc(a.o)}</div>` : ""}<div class="mut">${esc(fmtHora.format(new Date(a.q)))}</div></li>`).join("")}</ul></div>` : "";
 
   // ---- humor ----
   const rostos = C.humor.rostos.map((r) => r.e);
@@ -1018,6 +1039,7 @@ function painel(res) {
     const pergunta = g.q && !g.perg.includes(g.q) ? g.perg + " — " + g.q : g.perg;
     return `<li class="${g.resolvido ? "ok" : "pend"}">
       <div><b>${esc(mundos[g.mundo] || g.mundo)}</b> · ${esc(pergunta)}</div>
+      ${g.ctx ? `<div class="mut">Na tela: ${esc(g.ctx)}</div>` : ""}
       ${g.esc.length ? `<div>Respondeu: ${g.esc.map(esc).join("; ")}</div>` : ""}
       ${g.certa ? `<div>Certa: <b>${esc(g.certa)}</b></div>` : ""}
       ${g.why ? `<div class="mut">${esc(g.why)}</div>` : ""}
@@ -1064,6 +1086,26 @@ function painel(res) {
     <div>Influencers: ${esc((p.influs || []).join(", ") || "–")}</div>
     <div>Cantores: ${esc((p.cantores || []).join(", ") || "–")}</div>
     <div>Jiu-jitsu: ${p.jj ? esc(p.academia + " · faixa " + p.faixa + " → " + p.proxima) : "não"}</div>` : `<span class="mut">Ela ainda não preencheu “Do que você gosta?”.</span>`;
+  // ---- contexto em texto para o chat dos pais ----
+  const hm = (q) => fmtHora.format(new Date(q));
+  const L = [];
+  L.push("Hoje: " + hm(agora) + " (" + tz + "). Último uso: " + (ultimo ? hm(ultimo) : "nenhum") + ". Dias com uso nos últimos 28: " + diasUsados + ". Sequência: " + seq + ".");
+  L.push("Esta semana: " + resps.length + " respostas" + (medianaMs !== null ? ", demora mediana " + (medianaMs / 1000).toFixed(1) + " s até tocar" : "") + (rapidasPct !== null ? ", " + rapidasPct + "% com menos de 2 s" : "") + ", " + avisosRapido + " avisos de resposta rápida, “Não sei” " + naoSei + "×.");
+  L.push("Conceitos dominados esta semana: " + (dominados.map(nomeConc).join("; ") || "nenhum") + ". Em dificuldade: " + (emDificuldade.map((x) => nomeConc(x.k) + " (" + x.n + " erros)").join("; ") || "nenhum") + ".");
+  L.push("POR MUNDO (28 dias):");
+  for (const k of ["math", "time", "en", "soc"]) {
+    const m = C.mundos[k], hist = niveis[k] || [], at = hist.length ? hist[hist.length - 1].para : 0, st = stats[k];
+    L.push("- " + m.nome + ": " + (at ? "nível " + at + " de " + m.niveis.length + " (treinando: " + m.niveis[at - 1] + ")" : "sem teste de nível") + "; " + st.missoes + " missões, " + st.resp + " respostas, acerto à 1ª " + (st.resp ? Math.round(100 * st.certas / st.resp) + "%" : "–") + "; semanas (acerto%/nível, da mais antiga à atual): " + semanas[k].map((w) => (w.resp ? Math.round(100 * w.certas / w.resp) : "–") + "/" + w.nivel).join(" "));
+  }
+  L.push("PERGUNTAS ERRADAS (mais recentes e frequentes primeiro; “na tela” descreve o que ela via; “certa” é a resposta correta):");
+  for (const g of lista.slice(0, 60)) {
+    L.push("- [" + (mundos[g.mundo] || g.mundo) + "] " + g.perg + (g.q ? " — pergunta: " + g.q : "") + (g.ctx ? " — na tela: " + g.ctx : "") + " — respondeu: " + (g.esc.join("; ") || "?") + " — certa: " + (g.certa || "?") + " — " + g.n + "× erros, última " + hm(g.ultimo) + ", " + (g.resolvido ? "já acertou depois" : "ainda não acertou") + (g.why ? " — explicação dada: " + g.why : ""));
+  }
+  if (lista.length > 60) L.push("(mais " + (lista.length - 60) + " erros mais antigos não listados)");
+  L.push("HUMOR (últimos 10): " + (humores.slice(-10).map((h) => hm(h.quando) + " " + (h.rosto >= 0 ? C.humor.rostos[h.rosto].t : "") + (h.chips.length ? " [" + h.chips.join(", ") + "]" : "") + (h.texto ? " “" + h.texto + "”" : "")).join(" | ") || "sem registros"));
+  L.push("AVISOS (14 dias): " + (alertas.slice(0, 10).map((a) => hm(a.q) + " " + a.t + ". " + a.d).join(" | ") || "nenhum"));
+  const contexto = L.join("\n");
+
   const up = estado.ultimoPush;
   const chatPronto = llmPronto();
 
@@ -1126,6 +1168,15 @@ ${evolucao}
 <h2>Por tema (28 dias)</h2>
 <div class="card"><table><tr><th>Tema</th><th>Missões</th><th>Respostas</th><th>Acerto 1ª</th></tr>${linhas}</table></div>
 
+<h2>💬 Perguntar sobre a evolução</h2>
+<div class="card" id="pchat">
+  ${chatPronto ? `<div class="mut" style="margin-bottom:8px">Pergunte em linguagem normal. Ex.: “Como era a pergunta ‘Contar 18’?”, “Em que ela mais erra?”, “Está melhorando em Números?”. A resposta usa só os registros acima.</div>
+  <div id="pmsgs"></div>
+  <form id="pform" onsubmit="return false"><textarea id="pq" rows="2" maxlength="500" placeholder="Escreva a sua pergunta…" style="width:100%;box-sizing:border-box;border-radius:12px;border:0;padding:10px;font:inherit;font-size:14px;background:#fff8ef;color:#2a1c08"></textarea>
+  <button id="psend">Perguntar</button> <button type="button" class="sec" id="pclear">Limpar conversa</button></form>
+  <div style="margin-top:6px"><button type="button" class="sec pchip">Como foi a semana?</button><button type="button" class="sec pchip">O que ela mais erra?</button><button type="button" class="sec pchip">Em que está melhorando?</button></div>` : '<span class="mut">Indisponível: falta a chave do modelo (VENICE_API_KEY) no servidor.</span>'}
+</div>
+
 <h2>Tudo que ela errou (${lista.length}${lista.length ? ", " + naoResolvidos + " ainda sem acertar" : ""})</h2>
 <div class="card">${topErros ? `<details><summary>Ver lista</summary><ul class="erros">${topErros}</ul></details>` : '<span class="mut">Sem erros registrados.</span>'}
 ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}. O CSV tem tudo.</p>` : ""}</div>
@@ -1187,13 +1238,65 @@ ${lista.length > LIMITE ? `<p class="mut">Mostrando ${LIMITE} de ${lista.length}
 <div class="card mut">Feita para dificuldade com o abstrato: primeiro objetos, depois o número. Sem cronômetro, sem ranking. Cada tema ajusta o nível sozinho: sobe depois de 2 missões com 4+ acertos de 5 e desce, sem avisar, com 2 ou menos. Em “Amigos” há situações de escola nova, bullying e segurança online. A companheira sempre incentiva a contar tudo aos pais. Fiquem ao lado nas primeiras vezes.</div>
 
 <p class="mut"><a href="/pais/log.csv">Baixar CSV completo</a> · <a href="/pais/conversas.csv">Conversas (CSV)</a> · <a href="/pais/perfis.csv">Perfis (CSV)</a></p>
-</main></body></html>`;
+</main><script>
+(function(){
+  var box=document.getElementById("pmsgs"); if(!box) return;
+  var q=document.getElementById("pq"), btn=document.getElementById("psend"), hist=[], busy=false;
+  function add(cls,t){var d=document.createElement("div");d.style.cssText="padding:8px 10px;margin:6px 0;border-radius:12px;white-space:pre-wrap;font-size:14px;line-height:1.45;background:"+(cls==="u"?"rgba(124,196,255,.18)":"rgba(255,255,255,.1)");d.textContent=(cls==="u"?"Você: ":"")+t;box.appendChild(d);d.scrollIntoView({block:"nearest"});return d;}
+  function envia(t){
+    t=(t||"").trim(); if(!t||busy) return; busy=true; btn.disabled=true; q.value="";
+    add("u",t); var w=add("a","A pensar…");
+    fetch("/pais/pergunta",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pergunta:t,historico:hist.slice(-6)})})
+      .then(function(r){return r.json().catch(function(){return {};});})
+      .then(function(j){var a=j.resposta||j.erro||"Não consegui responder agora. Tente de novo.";w.textContent=a;if(j.resposta){hist.push({role:"user",content:t},{role:"assistant",content:a});}})
+      .catch(function(){w.textContent="Sem ligação. Tente de novo.";})
+      .then(function(){busy=false;btn.disabled=false;});
+  }
+  btn.onclick=function(){envia(q.value);};
+  q.onkeydown=function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();envia(q.value);}};
+  document.getElementById("pclear").onclick=function(){hist=[];box.textContent="";};
+  [].forEach.call(document.querySelectorAll(".pchip"),function(b){b.onclick=function(){envia(b.textContent);};});
+})();
+</script>
+</body></html>`;
+  return { html, contexto };
+}
+
+function painel(res) {
+  const { html } = montaPainel();
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex"
   });
   res.end(html);
+}
+
+const SISTEMA_PAIS = `Você ajuda os pais da Clara (15 anos, défice cognitivo, discalculia grave) a entender a evolução dela numa app de estudo. Responda em português do Brasil, com frases curtas e simples, de forma calorosa e prática.
+Use SÓ os dados abaixo. Se a resposta não estiver nos dados, diga isso com franqueza e não invente. Quando perguntarem como era uma pergunta, use “pergunta” e “na tela” (por exemplo, “Contar 18” mostra 18 figuras em linhas de 5 e pergunta quantas há) e diga qual era a resposta certa e o que ela respondeu. Se faltar “na tela”, explique pelo nome da pergunta e diga que é uma pergunta antiga sem esse detalhe. Não faça diagnósticos médicos. Dê no máximo uma sugestão prática. Responda em até 120 palavras, sem tabelas.\n\nDADOS:\n`;
+
+function postPergunta(req, res) {
+  const origem = req.headers.origin;
+  if (origem && origem !== "null") {
+    let host = "";
+    try { host = new URL(origem).host; } catch (e) { host = ""; }
+    if (host !== req.headers.host) { res.writeHead(403); res.end(); return; }
+  }
+  readBody(req, 8192, (err, body) => {
+    if (err) { res.writeHead(413); res.end(); return; }
+    let b = {};
+    try { b = JSON.parse(body); } catch (e) { b = {}; }
+    const pergunta = txt(b.pergunta, 500).trim();
+    if (!pergunta) { json(res, 400, { erro: "Escreva uma pergunta." }); return; }
+    if (!llmPronto()) { json(res, 503, { erro: "O modelo não está configurado no servidor." }); return; }
+    const hist = (Array.isArray(b.historico) ? b.historico : []).slice(-6)
+      .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .map((m) => ({ role: m.role, content: txt(m.content, 1200) }));
+    const msgs = [{ role: "system", content: SISTEMA_PAIS + montaPainel().contexto }].concat(hist, [{ role: "user", content: pergunta }]);
+    chamaLLM("chat", msgs, 500, 0.3)
+      .then((r) => json(res, 200, { resposta: r || "Não consegui responder agora. Tente de novo." }))
+      .catch((e) => { console.warn("pergunta pais: " + e.message); json(res, 502, { erro: "Não consegui responder agora. Tente de novo." }); });
+  });
 }
 
 function csvCel(v) {
@@ -1375,7 +1478,8 @@ function areaPais(req, res, rota) {
     return;
   }
   if (req.method === "POST") {
-    if (rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes") acaoPais(req, res, rota);
+    if (rota === "/pais/pergunta") postPergunta(req, res);
+    else if (rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes") acaoPais(req, res, rota);
     else { res.writeHead(405); res.end(); }
     return;
   }
@@ -1473,7 +1577,7 @@ const server = http.createServer((req, res) => {
     json(res, 200, { chat: !!(estado.chat && llmPronto()), vapid: vapid ? vapid.publicKey : null });
     return;
   }
-  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/conversas.csv" || rota === "/pais/perfis.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes") {
+  if (rota === "/pais" || rota === "/pais/" || rota === "/pais/log.csv" || rota === "/pais/conversas.csv" || rota === "/pais/perfis.csv" || rota === "/pais/chat" || rota === "/pais/push-teste" || rota === "/pais/limpar" || rota === "/pais/lembretes" || rota === "/pais/pergunta") {
     areaPais(req, res, rota === "/pais/" ? "/pais" : rota);
     return;
   }

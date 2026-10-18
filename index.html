@@ -1012,12 +1012,20 @@ function renderItem() {
   speak(falar, it.lang || "pt-BR");
 }
 
+// O que aparecia na tela, em texto, para os pais saberem qual era a pergunta
+function textoStage(h) {
+  if (!h) return "";
+  const d = document.createElement("div");
+  d.innerHTML = String(h).replace(/<svg[\s\S]*?<\/svg>/g, " [relógio] ").replace(/<br\s*\/?>/g, " | ");
+  return d.textContent.replace(/\s+/g, " ").trim().slice(0, 190);
+}
+
 function registraErro(chosen) {
   const it = state.item;
   const certa = it.choices.find(c => c.ok);
   if (state.tries === 1) bumpErro(state.world + "|" + it.key, 1);
   track({
-    tipo: "erro", mundo: state.world, perg: it.key, q: it.q,
+    tipo: "erro", mundo: state.world, perg: it.key, q: it.q, ctx: textoStage(it.stage),
     esc: chosen.t, certa: certa ? certa.t : "", why: certa ? certa.why : "",
     ms: state.firstMs, pos: it.choices.indexOf(chosen), conc: it.conc
   });
