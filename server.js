@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const C = require("./conteudo.js");
+const CAP = require("./capitulos.js");
 
 let webpush = null;
 try { webpush = require("web-push"); } catch (e) { console.warn("AVISO: pacote web-push ausente. Notificações desligadas."); }
@@ -50,7 +51,7 @@ if (!veniceKey) {
 }
 
 // ---------- estado (perfil, chat ligado, inscricoes de notificacao) ----------
-let estado = { perfis: {}, memoria: {}, chat: false, subs: [], enviados: {}, ultimoPush: null, vapid: null };
+let estado = { perfis: {}, memoria: {}, capitulos: {}, chat: false, subs: [], enviados: {}, ultimoPush: null, vapid: null };
 try { estado = Object.assign(estado, JSON.parse(fs.readFileSync(estadoFile, "utf8"))); } catch (e) { /* primeiro arranque */ }
 function salvaEstado() {
   try {
@@ -506,11 +507,12 @@ const PEDIDOS_APP = [
   { tipo: "missao", acao: null, re: /(tir|mud|troc|pul|sem|nao quero)\w*.{0,25}\b(missao|missoes|nivel|pergunta|perguntas|jogo|jogos)|muito (dificil|facil)|nao entend\w* (a |as |o |os )?(pergunta|missao|jogo|nada)/,
     resp: "Eu não consigo mudar as missões, {nome}. Se ficou difícil, tudo bem errar! Fala com a mãe ou o pai e eles ajudam a deixar mais fácil 💛" },
   { tipo: "conteudo", acao: null, re: /(faz|fazer|faca|cria|criar|quero|tem|ter|bota|poe|coloca|manda)\w*.{0,25}\b(mais|mas|outr\w*|novo\w*|proxim\w*)\b.{0,25}(capitulo|episodio|novela|missao|missoes|pergunta|jogo|historia|musica)|capitulos? (da|do) (turma|girassol)|\b(faz|faca|fazer) (voce|vc|isso|por mim)\b/,
-    resp: "Mais capítulos e missões eu não consigo criar, {nome}. Mas você pode jogar de novo e escrever a sua novela! Se quiser mais, peça à mãe ou ao pai 💛" },
+    resp: "Mais missões ou perguntas eu não consigo criar, {nome}. Mas você pode jogar de novo! Se quiser mais, peça à mãe ou ao pai 💛" },
   { tipo: "suporte", acao: null, re: /suporte|equipe|e-?mail|alterar (o |a )?(app|aplicativo)|mudar (o |a )?(app|aplicativo)|consertar (o |a )?(app|aplicativo)|arrumar (o |a )?(app|aplicativo)|(app|aplicativo) (esta|ta) (errad|com problema|bugad)/,
     resp: "Eu só consigo conversar, {nome}; não consigo mexer na app nem falar com mais ninguém. Anotei o seu pedido para os seus pais verem 💛" }
 ];
 // Namoro: assunto normal aos 15, mas a Lua nao fala disso; resposta fixa e calma, sem alerta.
+const RE_CAPITULO = /(mais|mas|outr\w*|novo\w*|proxim\w*|cria\w*|faz\w*|fac\w*|escrev\w*|quero|tem)\b.{0,30}(capitulo|episodio|girassol)|capitulos? (novo|da|do)|(girassol|novela da app).{0,25}(mais|novo|continu)/;
 const RE_NAMORO = /\b(namor\w*|paquera\w*|crush|beij\w*|ficar com (um )?(menino|rapaz|garoto))/;
 function temaNamoro(txt) { return RE_NAMORO.test(normaliza(txt)); }
 // Segredo contra os pais e idade/vida de artistas: nenhum modelo cumpre sempre, entao resposta fixa.
@@ -755,6 +757,15 @@ function postConversa(req, res) {
     if (risco) {
       const resposta = respostaRisco(p);
       logConversa(Object.assign(reg, { resposta, origem: "filtro-entrada", alerta: true, motivo: risco }));
+      json(res, 200, { resposta });
+      return;
+    }
+
+    // 1a. pedido de capitulo novo: a Lua escreve na hora e avisa onde esta
+    if (modo !== "novela" && modo !== "guia" && RE_CAPITULO.test(normaliza(ultima.content))) {
+      const r = await tentaCapitulo(b.id, ultima.content, teste);
+      const resposta = preenche(r.cap ? "Escrevi um capítulo novo para você, {nome}! 🌻 Ele se chama “" + r.cap.titulo + "”. Toque em 📺 Turma do Girassol para ver." : r.erro === "limite" ? "Hoje já escrevi capítulos demais, {nome} 😊 Amanhã tem mais! Que tal ver os que já estão lá?" : "Agora não consegui escrever o capítulo. Tente de novo daqui a pouco 💛", p);
+      logConversa(Object.assign(reg, { resposta, origem: "pedido-capitulo", pedido: "capitulo" }));
       json(res, 200, { resposta });
       return;
     }
@@ -1689,6 +1700,99 @@ async function getArtista(req, res) {
   }
 }
 
+// ---------- capitulos da Turma do Girassol, escritos pela Lua quando ela pede ----------
+const MAX_CAPS_DIA = 3, MAX_CAPS = 40;
+const capsEmCurso = new Set();
+function capsDe(id) { return (estado.capitulos && Array.isArray(estado.capitulos[id])) ? estado.capitulos[id] : []; }
+// O que o servidor sabe da semana dela (humor, o que contou, o que errou), em linhas curtas e sem risco
+function sinaisDaSemana(id) {
+  const sem = Date.now() - 7 * 864e5;
+  const evs = lerLog().filter((e) => e.id === id && !e.teste && e.quando >= sem);
+  const linhas = [];
+  const humores = evs.filter((e) => e.tipo === "humor").slice(-3).map((h) => {
+    const rosto = h.rosto >= 0 ? C.humor.rostos[h.rosto].t.toLowerCase() : "";
+    const t = [rosto, h.chips.join(", ").toLowerCase()].filter(Boolean).join("; ");
+    return temRisco(h.texto || "") ? t : [t, h.texto ? "contou: " + String(h.texto).slice(0, 120) : ""].filter(Boolean).join("; ");
+  }).filter(Boolean);
+  if (humores.length) linhas.push("Como se sentiu nos últimos dias: " + humores.join(" | "));
+  const fatos = factosDe(id).slice(-5);
+  if (fatos.length) linhas.push("O que ela já contou à Lua: " + fatos.join("; "));
+  const conta = new Map();
+  for (const e of evs) if (e.conc && (e.tipo === "erro" || e.tipo === "naosei")) conta.set(e.conc, (conta.get(e.conc) || 0) + 1);
+  const fracos = [...conta.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map((x) => x[0]);
+  const sociais = fracos.filter((c) => c.startsWith("social."));
+  const numeros = fracos.filter((c) => /^(num|tempo)\./.test(c));
+  if (sociais.length) linhas.push("Situações sociais em que ela mais errou: " + sociais.map(nomeConc).join(", "));
+  if (numeros.length) linhas.push("Conceitos de número/tempo mais difíceis para ela: " + numeros.map(nomeConc).join(", "));
+  const conc = numeros.find((c) => ["num.somar", "num.subtrair", "num.multiplicar", "tempo.duracao"].includes(c)) || "";
+  const dica = { "num.somar": "soma", "num.subtrair": "subtracao", "num.multiplicar": "vezes", "tempo.duracao": "hora" }[conc] || "";
+  return { linhas, dicaConta: dica, sociais };
+}
+async function geraCapitulo(id, tema, teste) {
+  const p = perfilAtual(id);
+  const sinais = sinaisDaSemana(id);
+  const anteriores = capsDe(id).slice(-5).map((c, i) => `Capítulo extra: ${c.titulo} — ${c.resumo}`);
+  let pedido = "";
+  if (tema && !temRisco(tema) && !temaNamoro(tema) && !saidaProibida(tema)) pedido = String(tema).slice(0, 120);
+  const user = [
+    anteriores.length ? "Últimos capítulos gerados:\n" + anteriores.join("\n") : "",
+    sinais.linhas.length ? "Sinais da semana (use só para escolher o tema; nunca cite nem mencione que vêm dela; troque tudo por uma situação da Nina e dos amigos):\n" + sinais.linhas.join("\n") : "",
+    pedido ? `Ela pediu: "${pedido}". Inclua essa ideia de forma segura, na história da Nina.` : "",
+    sinais.dicaConta ? `Para a conta use o tipo "${sinais.dicaConta}".` : "",
+    "Escreva o próximo capítulo."
+  ].filter(Boolean).join("\n\n");
+  let ultimoErro = "";
+  for (let t = 0; t < 3; t++) {
+    let raw = "";
+    try {
+      raw = await chamaLLM("chat", [{ role: "system", content: CAP.sistemaCapitulo() }, { role: "user", content: user + (ultimoErro ? `\n\nA tentativa anterior falhou (${ultimoErro}). Corrija e responda só com o JSON.` : "") }], 2200, 0.8);
+      const cap = CAP.validaCapitulo(raw, (txt) => saidaProibida(txt) || temRisco(txt) || (RE_NAMORO.test(normaliza(txt)) ? "namoro" : ""));
+      const mod = await moderador("Capítulo de novela infantil para menina de 15 anos", [cap.titulo, cap.resumo].concat(cap.cenas.map((c) => c.texto)).join("\n"));
+      if (!mod.ok) { ultimoErro = "moderador"; continue; }
+      const lista = (estado.capitulos[id] = estado.capitulos[id] || []);
+      const n = lista.length + 1;
+      const out = Object.assign({ n, t: new Date().toISOString() }, cap);
+      lista.push(out);
+      salvaEstado();
+      logConversa({ id, modo: "capitulo", cenario: "", user: pedido || "(sem pedido)", resposta: cap.titulo + ": " + cap.resumo, origem: "capitulo", sinais: sinais.linhas.join(" || ").slice(0, 400), teste: teste || undefined });
+      return out;
+    } catch (e) { ultimoErro = String(e.message).slice(0, 80); }
+  }
+  console.warn("Capitulo nao gerado: " + ultimoErro);
+  return null;
+}
+function postCapitulo(req, res) {
+  if (limited(clientIp(req))) { res.writeHead(429); res.end(); return; }
+  readBody(req, 4096, async (err, body) => {
+    let b = null;
+    try { b = JSON.parse(body); } catch (e) { b = null; }
+    if (err || !b || typeof b.id !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(b.id)) { res.writeHead(400); res.end(); return; }
+    if (!estado.chat || !llmPronto()) { json(res, 403, { erro: "desligado" }); return; }
+    const r = await tentaCapitulo(b.id, txt(b.tema, 120), b.teste === true);
+    if (r.cap) json(res, 200, { cap: r.cap }); else json(res, r.erro === "falhou" ? 502 : 429, { erro: r.erro });
+  });
+}
+// Limites e geracao: usado pela app (botao) e pela conversa com a Lua
+async function tentaCapitulo(id, tema, teste) {
+  if (capsDe(id).length >= MAX_CAPS) return { erro: "limite" };
+  if (!teste) {
+    const uso = contaUso(id), k = uso.kid + "|cap", n = usoDia.get(k) || 0;
+    if (n >= MAX_CAPS_DIA) return { erro: "limite" };
+    usoDia.set(k, n + 1);
+  }
+  if (capsEmCurso.has(id)) return { erro: "em curso" };
+  capsEmCurso.add(id);
+  try {
+    const cap = await geraCapitulo(id, tema, teste);
+    return cap ? { cap } : { erro: "falhou" };
+  } finally { capsEmCurso.delete(id); }
+}
+function getCapitulos(req, res) {
+  const id = new URL(req.url, "http://x").searchParams.get("id") || "";
+  if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) { res.writeHead(400); res.end(); return; }
+  json(res, 200, { caps: capsDe(id) });
+}
+
 // ---------- servidor ----------
 const server = http.createServer((req, res) => {
   let rota = "/";
@@ -1704,6 +1808,16 @@ const server = http.createServer((req, res) => {
     else if (rota === "/api/push") postPush(req, res);
     else if (rota === "/api/teste-auth") postTesteAuth(req, res);
     else postConversa(req, res);
+    return;
+  }
+  if (rota === "/api/capitulo") {
+    if (req.method !== "POST") { res.writeHead(405, { Allow: "POST" }); res.end(); return; }
+    postCapitulo(req, res);
+    return;
+  }
+  if (rota === "/api/capitulos") {
+    if (req.method !== "GET") { res.writeHead(405, { Allow: "GET" }); res.end(); return; }
+    getCapitulos(req, res);
     return;
   }
   if (rota === "/api/artista") {
@@ -1746,4 +1860,4 @@ server.listen(port, "0.0.0.0", () => {
 });
 
 // usado por scripts/avalia-modelos.js
-module.exports = { server, intencao, temaSegredo, temaIdadeArtista, planoPendencia, analisaConceitos, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };
+module.exports = { server, geraCapitulo, sinaisDaSemana, intencao, temaSegredo, temaIdadeArtista, planoPendencia, analisaConceitos, MODELOS, chamaLLM, moderador, promptSistema, saidaProibida, temRisco, pedidoApp, cortaResposta, perfilAtual, C };
