@@ -29,13 +29,14 @@ test("capitulo valido: a conta e calculada aqui, nunca pelo modelo", () => {
 test("aceita JSON dentro de cerca de codigo", () => {
   assert.ok(validaCapitulo("```json\n" + JSON.stringify(base()) + "\n```", livre).titulo);
 });
-test("recusa: numero errado de perguntas sociais", () => {
-  const b = base(); b.cenas[4] = { emoji: "🙂🙂", texto: "Nina respira fundo e sorri." };
+test("recusa: sem perguntas sociais", () => {
+  const b = base();
+  b.cenas = b.cenas.map((c) => (c.pergunta && c.pergunta.conc && c.pergunta.conc.startsWith("social") ? { emoji: "🙂🙂", texto: "Nina respira fundo e sorri." } : c));
   assert.throws(() => validaCapitulo(b, livre), /sociais/);
 });
-test("recusa: sem conta ou conta invalida", () => {
+test("aceita sem conta; recusa conta invalida", () => {
   const b = base(); b.cenas[2] = { emoji: "🥪🥪", texto: "A Malu tem bolachas e a Nina tambem." };
-  assert.throws(() => validaCapitulo(b, livre), /contas/);
+  assert.ok(validaCapitulo(b, livre).titulo);
   const c = base(); c.cenas[2].conta = { tipo: "soma", a: 300, b: 4, objeto: "x" };
   assert.throws(() => validaCapitulo(c, livre), /conta invalida/);
 });

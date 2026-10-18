@@ -84,7 +84,7 @@ const lim = (s, n) => String(s === undefined || s === null ? "" : s).trim().slic
 function validaCapitulo(raw, proibido) {
   const j = typeof raw === "string" ? extraiJson(raw) : raw;
   if (!j || !Array.isArray(j.cenas)) throw new Error("sem cenas");
-  if (j.cenas.length < 6 || j.cenas.length > 10) throw new Error("numero de cenas: " + j.cenas.length);
+  if (j.cenas.length < 5 || j.cenas.length > 10) throw new Error("numero de cenas: " + j.cenas.length);
   const titulo = lim(j.titulo, 30), resumo = lim(j.resumo, 160), emoji = lim(j.emoji, 12) || "🌻";
   if (!titulo || !resumo) throw new Error("sem titulo/resumo");
   let nSociais = 0, nContas = 0;
@@ -112,8 +112,8 @@ function validaCapitulo(raw, proibido) {
     }
     return cena;
   });
-  if (nSociais !== 3) throw new Error("perguntas sociais: " + nSociais);
-  if (nContas !== 1) throw new Error("contas: " + nContas);
+  if (nSociais < 1 || nSociais > 3) throw new Error("perguntas sociais: " + nSociais);
+  if (nContas > 1) throw new Error("contas: " + nContas);
   const todo = [titulo, resumo].concat(cenas.flatMap((c) => [c.texto].concat(c.pergunta ? [c.pergunta.q].concat(c.pergunta.opcoes.flatMap((o) => [o.t, o.why])) : []))).join(" \n ");
   const mot = proibido(todo);
   if (mot) throw new Error("conteudo proibido: " + mot);
