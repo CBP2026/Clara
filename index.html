@@ -2142,7 +2142,7 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (
 });
 
 // Versao do app: igual ao CACHE do sw.js. Se "app" e "cache" diferirem, o update nao terminou.
-const APP_VERSAO = "v14";
+const APP_VERSAO = "v17";
 (async () => {
   let cache = "";
   try { cache = (await caches.keys()).filter((k) => k.startsWith("clara-v")).map((k) => k.slice(6)).sort().pop() || ""; } catch (e) {}
