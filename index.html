@@ -262,6 +262,7 @@
     <div class="grid" id="worlds"></div>
     <a class="pais" href="/pais" id="paisBtn">👨‍👩‍👧 Área dos pais</a>
     <a class="pais" href="#" id="testeBtn">🧪 Modo teste (pais)</a>
+    <div class="pais" id="versaoApp" style="margin-top:6px;font-size:11px;opacity:.5"></div>
   </section>
 
   <section id="play" class="hidden">
@@ -2221,6 +2222,13 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (
   if (e.data && e.data.abrir === "humor") abreHumor();
 });
 
+// Versao do app: igual ao CACHE do sw.js. Se "app" e "cache" diferirem, o update nao terminou.
+const APP_VERSAO = "v14";
+(async () => {
+  let cache = "";
+  try { cache = (await caches.keys()).filter((k) => k.startsWith("clara-v")).map((k) => k.slice(6)).sort().pop() || ""; } catch (e) {}
+  $("versaoApp").textContent = "Versão " + APP_VERSAO + (cache && cache !== APP_VERSAO ? " (atualizando… " + cache + ")" : "");
+})();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").then(renovaPush).catch(() => {}));
 }
