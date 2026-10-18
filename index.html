@@ -167,6 +167,9 @@
     display: none;
   }
   .next.show { display: block; }
+  .next:disabled { opacity: .4; }
+  .cnt.off { opacity: .2; filter: grayscale(1); }
+  .seg.grp { font-size: 22px; }
   .dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   .dot { width: 10px; height: 10px; border-radius: 99px; background: rgba(255,255,255,.2); }
   .dot.on { background: var(--accent); }
@@ -680,6 +683,87 @@ function opcoes(certo, step, extra) {
   return shuffle([...set]);
 }
 function euro(v) { return (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(".", ",")) + " €"; }
+// ---------- aulas de conta: concreto (objetos) → reta numerada → conferência ----------
+// Cada passo: { t: fala da Lua, visual(), init(root, libera), trava }. Com trava, "Entendi" só abre depois dos toques.
+function objBtns(emoji, n, cls) {
+  let h = "";
+  for (let i = 0; i < n; i++) h += `<button class="cnt ${cls}">${emoji}</button>` + ((i + 1) % 5 === 0 && i + 1 < n ? "<br>" : "");
+  return h;
+}
+// Toca um de cada vez; cada toque diz o número em voz alta. Libera ao chegar em "max".
+function contaToques(root, sel, max, libera, somaPor) {
+  let n = 0;
+  root.querySelectorAll(sel).forEach(b => b.onclick = () => {
+    if (b.classList.contains("on") || b.classList.contains("off") || n >= max) return;
+    b.classList.add(sel === ".tira" ? "off" : "on");
+    n += 1;
+    const v = n * (somaPor || 1);
+    root.querySelector("#cntN").textContent = v;
+    speak(String(v), "pt-BR", true);
+    if (n >= max) libera();
+  });
+}
+function valoresReta(ini, passos, h) { return Array.from({ length: passos + 1 }, (_, i) => ini + i * h); }
+function retaVisual(vals, fmt) {
+  return `<div>${vals.map((v, i) => `<button class="seg chip${i === 0 ? " on" : ""}" data-i="${i}">${fmt(v)}</button>`).join(" → ")}</div>`;
+}
+function retaInit(vals, fmt) {
+  return (root, libera) => {
+    let n = 0;
+    if (vals.length < 2) { libera(); return; }
+    root.querySelectorAll(".chip").forEach(b => b.onclick = () => {
+      const i = +b.dataset.i;
+      if (i !== n + 1) return;
+      b.classList.add("on");
+      n = i;
+      speak(fmt(vals[i]), "pt-BR", true);
+      if (n >= vals.length - 1) libera();
+    });
+  };
+}
+function passoVals(t, vals, fmt) {
+  fmt = fmt || String;
+  return { t, trava: true, visual: () => retaVisual(vals, fmt), init: retaInit(vals, fmt) };
+}
+function passoReta(t, ini, passos, h, fmt) { return passoVals(t, valoresReta(ini, passos, h), fmt); }
+// múltiplos de m: 0, m, 2m, ... até k*m (contar de m em m)
+function multiplos(m, k) { return Array.from({ length: k + 1 }, (_, i) => i * m); }
+function aulaP(passos, fim) { return { passos, fim }; }
+function aulaIngles(w) {
+  return aulaP([{ t: `Ouça e repita em voz alta: “${w.en}” quer dizer “${w.pt}”. Toque no som 2 vezes.`, trava: true,
+    visual: () => `<div style="font-size:48px">${w.emoji}</div><div class="word en md">${esc(w.en)}</div><div>${esc(w.pt)}</div><button class="seg" id="ouve">🔊 Ouvir</button> <span id="cntN">0</span>/2`,
+    init: (root, libera) => { let n = 0; root.querySelector("#ouve").onclick = () => { n += 1; root.querySelector("#cntN").textContent = Math.min(n, 2); speak(w.en, "en-GB", true); if (n >= 2) libera(); }; } }], `${w.en} = ${w.pt}.`);
+}
+function aulaSub(emoji, a, b, r) {
+  return { passos: [
+    { t: `Comece com ${a}. Toque em ${b} para tirar, um de cada vez.`, trava: true,
+      visual: () => `<div>${objBtns(emoji, a, "tira")}</div><div>Tirei: <b id="cntN">0</b> de ${b}</div>`,
+      init: (root, libera) => contaToques(root, ".tira", b, libera) },
+    { t: "Agora conte só os que ficaram. Toque um de cada vez.", trava: true,
+      visual: () => `<div>${objBtns(emoji, r, "ficou")}</div><div>Ficaram: <b id="cntN">0</b></div>`,
+      init: (root, libera) => contaToques(root, ".ficou", r, libera) },
+    passoReta(`Na reta: comece no ${a} e volte ${b} passos. Cada toque é um passo para trás.`, a, b, -1)
+  ], fim: `Confira: ${r} + ${b} = ${a}.` };
+}
+function aulaSoma(emoji, a, b, s) {
+  return { passos: [
+    { t: `Você já tem ${a}. Toque nos ${b} que chegaram para juntar.`, trava: true,
+      visual: () => `<div>${objs(emoji, a)}</div><div style="font-size:24px">+</div><div>${objBtns(emoji, b, "junta")}</div><div>Juntei: <b id="cntN">0</b> de ${b}</div>`,
+      init: (root, libera) => contaToques(root, ".junta", b, libera) },
+    passoReta(`Na reta: comece no ${a} (não precisa contar de novo) e some ${b} passos.`, a, b, 1)
+  ], fim: `${a} e mais ${b} formam ${s}.` };
+}
+function aulaPrecos(ini, passos, h, texto, fmt, fim) {
+  return { passos: [passoReta(texto, ini, passos, h, fmt)], fim };
+}
+function aulaGrupos(emoji, a, b, p) {
+  return { passos: [
+    { t: `${b} grupos de ${a}. Toque em cada grupo e conte de ${a} em ${a}.`, trava: true,
+      visual: () => `<div>${Array.from({ length: b }, () => `<button class="seg grp">${objs(emoji, a)}</button>`).join(" ")}</div><div>Total: <b id="cntN">0</b></div>`,
+      init: (root, libera) => contaToques(root, ".grp", b, libera, a) }
+  ], fim: `${Array(b).fill(a).join(" + ")} = ${p}.` };
+}
+
 function numItem(o) {
   // o: key, q, hint, stage, certo, fmt, step, extra, why(v), nivel
   const fmt = o.fmt || String;
@@ -688,7 +772,8 @@ function numItem(o) {
     choices: opcoes(o.certo, o.step, o.extra).map(v => ({
       t: fmt(v), ok: v === o.certo,
       why: v === o.certo ? o.okWhy : o.noWhy
-    }))
+    })),
+    aula: o.aula
   };
 }
 const EMOJIS = ["🍎", "⭐", "🍪", "🐶", "🎈", "🧁", "🦋"];
@@ -723,6 +808,10 @@ function mathItem(n) {
       let b = rnd(2, 12);
       if (a === b) b = a + 2;
       return {
+        aula: aulaP([
+          { t: `Conte o grupo A. Toque um de cada vez.`, trava: true, visual: () => `<div>${objBtns(emoji, a, "cA")}</div><div>A: <b id="cntN">0</b></div>`, init: (root, libera) => contaToques(root, ".cA", a, libera) },
+          { t: `Agora conte o grupo B.`, trava: true, visual: () => `<div>${objBtns("🌙", b, "cB")}</div><div>B: <b id="cntN">0</b></div>`, init: (root, libera) => contaToques(root, ".cB", b, libera) }
+        ], `${a} e ${b}: o número maior vem mais tarde na contagem, por isso tem mais.`),
         key: "Mais: " + a + " x " + b, q: "Onde tem mais?", hint: "Toque no grupo maior.", speak: "Onde tem mais?",
         stage: `<div class="pile"><div class="objs sm">${objRows(emoji, a)}</div><div>A</div></div><div class="pile"><div class="objs sm">${objRows("🌙", b)}</div><div>B</div></div>`,
         choices: [
@@ -733,7 +822,7 @@ function mathItem(n) {
     }
     const s = rnd(1, 16);
     return numItem({ key: "Depois de " + (s + 2), q: "Qual número vem depois?", stage: `<div class="word">${s}  ${s + 1}  ${s + 2}  ?</div>`,
-      certo: s + 3, okWhy: `Depois de ${s + 2} vem ${s + 3}.`, noWhy: `A fila sobe de 1 em 1. Depois de ${s + 2} vem ${s + 3}.` });
+      certo: s + 3, aula: aulaP([passoReta(`Conte em fila: ${s + 2} e o próximo número. Toque no próximo.`, s + 2, 1, 1)], `Depois de ${s + 2} vem ${s + 3}.`), okWhy: `Depois de ${s + 2} vem ${s + 3}.`, noWhy: `A fila sobe de 1 em 1. Depois de ${s + 2} vem ${s + 3}.` });
   }
   if (n === 2) {
     const k = pick(["fig", "eps", "golpes", "sub", "influ"]);
@@ -741,6 +830,7 @@ function mathItem(n) {
       const g = shuffle(GOLPES).slice(0, rnd(2, 3));
       const tot = g.reduce((a, x) => a + x[1], 0);
       return numItem({ key: "Placar " + g.map(x => x[0]).join("+"), q: "No treino você fez: " + g.map(x => x[0] + " (" + x[1] + ")").join(" + ") + ". Quantos pontos?",
+        aula: aulaP([passoVals("Vá somando um golpe de cada vez. Toque no total que aparece.", g.reduce((acc, x) => acc.concat(acc[acc.length - 1] + x[1]), [0]))], `${g.map(x => x[1]).join(" + ")} = ${tot}.`),
         hint: "Some os pontos de cada golpe.", stage: `<div class="word">🥋 ${g.map(x => x[1]).join(" + ")} = ?</div>`, certo: tot,
         okWhy: `${g.map(x => x[1]).join(" + ")} = ${tot} pontos!`, noWhy: `Some: ${g.map(x => x[1]).join(" + ")} = ${tot}.` });
     }
@@ -748,36 +838,48 @@ function mathItem(n) {
       const a = rnd(6, 20), b = rnd(1, a - 2), r = a - b;
       const q = k === "influ" ? fill(`A {influ} postou ${a} vídeos. Você já viu ${b}. Quantos faltam?`)
         : fill(`{nome} tinha ${a} figurinhas. Deu ${b} para a amiga. Quantas sobraram?`);
-      return numItem({ key: (k === "influ" ? "Vídeos " : "Tirar ") + a + "-" + b, q, hint: `${a} − ${b} = ?`,
+      const itT = numItem({ key: (k === "influ" ? "Vídeos " : "Tirar ") + a + "-" + b, q, hint: `${a} − ${b} = ?`,
         stage: a <= 12 ? `<div class="objs sm">${objRows(emoji, r)}</div><div class="objs sm" style="opacity:.3">${objRows(emoji, b)}</div>` : `<div class="word">${a} − ${b}</div>`,
         certo: r, okWhy: `${a} − ${b} = ${r}.`, noWhy: `Tire ${b} de ${a}. Ficam ${r}.` });
+      itT.aula = aulaSub(emoji, a, b, r);
+      return itT;
     }
     const a = rnd(2, 12), b = rnd(2, 8), s = a + b;
     const q = k === "eps" ? fill(`Você viu ${a} episódios de {novela} ontem e ${b} hoje. Quantos ao todo?`)
       : fill(`{nome} tem ${a} figurinhas. Ganhou mais ${b}. Quantas tem agora?`);
-    return numItem({ key: "Somar " + a + "+" + b, q, hint: `${a} + ${b} = ?`,
+    const itS = numItem({ key: "Somar " + a + "+" + b, q, hint: `${a} + ${b} = ?`,
       stage: s <= 14 ? `<div class="pile"><div class="objs sm">${objRows(emoji, a)}</div></div><div style="font-size:28px">+</div><div class="pile"><div class="objs sm">${objRows(emoji, b)}</div></div>` : `<div class="word">${a} + ${b}</div>`,
       certo: s, okWhy: `${a} + ${b} = ${s}.`, noWhy: `Junte tudo: ${a} + ${b} = ${s}.` });
+    itS.aula = aulaSoma(emoji, a, b, s);
+    return itS;
   }
   if (n === 3) {
     const [x, y] = shuffle(LOJA).slice(0, 2);
     if (Math.random() < 0.5) {
       const tot = x[1] + y[1];
-      return numItem({ key: "Loja " + x[0] + "+" + y[0], q: `Na cantina: ${x[0]} ${euro(x[1])} e ${y[0]} ${euro(y[1])}. Quanto é tudo?`,
+      const h = (x[1] % 1 || y[1] % 1) ? 0.5 : 1;
+      const itL = numItem({ key: "Loja " + x[0] + "+" + y[0], q: `Na cantina: ${x[0]} ${euro(x[1])} e ${y[0]} ${euro(y[1])}. Quanto é tudo?`,
         hint: "Some os dois preços.", stage: `<div class="word md">💶 ${euro(x[1])} + ${euro(y[1])}</div>`, certo: tot, step: tot % 1 ? 0.5 : 1, fmt: euro,
         okWhy: `${euro(x[1])} + ${euro(y[1])} = ${euro(tot)}.`, noWhy: `Some: ${euro(x[1])} + ${euro(y[1])} = ${euro(tot)}.` });
+      itL.aula = aulaPrecos(x[1], y[1] / h, h, `Na reta: comece no preço do ${x[0]} (${euro(x[1])}) e some o preço do ${y[0]}, um passo de cada vez.`, euro, `${euro(x[1])} + ${euro(y[1])} = ${euro(tot)}.`);
+      return itL;
     }
     const pago = x[1] <= 4 ? 5 : 10, troco = pago - x[1];
-    return numItem({ key: "Troco " + x[0] + " " + pago, q: `O ${x[0]} custa ${euro(x[1])}. Você paga com ${euro(pago)}. Qual é o troco?`,
+    const hT = troco % 1 ? 0.5 : 1;
+    const itR = numItem({ key: "Troco " + x[0] + " " + pago, q: `O ${x[0]} custa ${euro(x[1])}. Você paga com ${euro(pago)}. Qual é o troco?`,
       hint: `${euro(pago)} − ${euro(x[1])} = ?`, stage: `<div class="word md">💶 ${euro(pago)} − ${euro(x[1])}</div>`, certo: troco, step: troco % 1 ? 0.5 : 1, fmt: euro,
       okWhy: `${euro(pago)} − ${euro(x[1])} = ${euro(troco)} de troco.`, noWhy: `Tire o preço do que pagou: ${euro(troco)}.` });
+    itR.aula = aulaPrecos(x[1], troco / hT, hT, `O vendedor conta para cima: comece no preço (${euro(x[1])}) e vá subindo até ${euro(pago)}. O que você subiu é o troco.`, euro, `Do preço ${euro(x[1])} até ${euro(pago)} faltam ${euro(troco)}. Esse é o troco.`);
+    return itR;
   }
   if (n === 4) {
     const a = pick([2, 3, 4, 5, 10]), b = rnd(2, 5), p = a * b;
     const ctx = pick([["sacos", "balas", "🍬"], ["caixas", "lápis", "✏️"], ["mesas", "colegas", "🧒"], ["pacotes", "figurinhas", "🃏"]]);
-    return numItem({ key: "Grupos " + b + "x" + a, q: `${b} ${ctx[0]} com ${a} ${ctx[1]} cada. Quantos ${ctx[1]} ao todo?`,
+    const itG = numItem({ key: "Grupos " + b + "x" + a, q: `${b} ${ctx[0]} com ${a} ${ctx[1]} cada. Quantos ${ctx[1]} ao todo?`,
       hint: `${b} grupos de ${a}: ${b} × ${a}`, stage: p <= 25 ? Array.from({ length: b }, () => `<div class="pile"><div class="objs sm">${objRows(ctx[2], a)}</div></div>`).join("") : `<div class="word">${b} × ${a}</div>`,
       certo: p, extra: [a + b, p + a, p - a], okWhy: `${b} × ${a} = ${p}.`, noWhy: `Some ${b} vezes o ${a}: ${Array(b).fill(a).join(" + ")} = ${p}.` });
+    itG.aula = aulaGrupos(ctx[2], a, b, p);
+    return itG;
   }
   if (n === 5) {
     const k = pick(["metade", "dobro", "d50", "d10", "d25"]);
@@ -785,6 +887,9 @@ function mathItem(n) {
       const v = k === "metade" ? 2 * rnd(2, 20) : rnd(3, 25), r = k === "metade" ? v / 2 : v * 2;
       return numItem({ key: k + " " + v, q: `Quanto é ${k === "metade" ? "a metade" : "o dobro"} de ${v}?`,
         hint: k === "metade" ? "Metade = dividir em 2 partes iguais." : "Dobro = duas vezes.", stage: `<div class="word">${k === "metade" ? "½" : "2×"} ${v}</div>`,
+        aula: k === "metade"
+          ? aulaP([passoVals(`Metade é repartir em 2 partes iguais. Teste ${r}: ${r} e mais ${r}. Toque.`, [0, r, v])], `${r} + ${r} = ${v}. A metade de ${v} é ${r}.`)
+          : aulaP([passoVals(`Dobro é duas vezes o mesmo número: ${v} e mais ${v}. Toque.`, [0, v, r])], `${v} + ${v} = ${r}.`),
         certo: r, extra: [v + 2, r + 2], okWhy: `${k === "metade" ? "Metade" : "O dobro"} de ${v} é ${r}.`, noWhy: k === "metade" ? `${r} + ${r} = ${v}. A metade é ${r}.` : `${v} + ${v} = ${r}.` });
     }
     const pct = k === "d50" ? 50 : k === "d10" ? 10 : 25;
@@ -792,11 +897,15 @@ function mathItem(n) {
     const desc = preco * pct / 100;
     if (pct === 50) {
       return numItem({ key: "Desconto 50 " + preco, q: `Uma camiseta custa ${euro(preco)}. Tem 50% de desconto. Quanto fica?`,
-        hint: "50% = metade.", stage: `<div class="word md">👕 ${euro(preco)} −50%</div>`, certo: preco - desc, fmt: euro, extra: [preco],
+        hint: "50% = metade.", stage: `<div class="word md">👕 ${euro(preco)} −50%</div>`, aula: aulaP([passoVals(`50% é a metade. Reparta ${euro(preco)} em 2 partes iguais: ${euro(desc)} e ${euro(desc)}. Toque.`, [0, desc, preco], euro)], `Metade de ${euro(preco)} é ${euro(desc)}. Você paga ${euro(preco - desc)}.`),
+        certo: preco - desc, fmt: euro, extra: [preco],
         okWhy: `50% é metade. Fica ${euro(preco - desc)}.`, noWhy: `50% = metade de ${euro(preco)} = ${euro(preco - desc)}.` });
     }
     return numItem({ key: "Pct " + pct + " " + preco, q: `Quanto é ${pct}% de ${euro(preco)}?`,
       hint: pct === 10 ? "10% = dividir por 10." : "25% = um quarto = metade da metade.", stage: `<div class="word md">${pct}% de ${euro(preco)}</div>`,
+      aula: pct === 10
+        ? aulaP([passoVals(`10% é 1 de 10 pedaços iguais. Conte de ${euro(desc)} em ${euro(desc)} até ${euro(preco)}: são 10 pedaços.`, multiplos(desc, 10), euro)], `${euro(preco)} ÷ 10 = ${euro(desc)}.`)
+        : aulaP([passoVals(`25% é a metade da metade. Comece em ${euro(preco)}, tire a metade, e tire a metade outra vez.`, [preco, preco / 2, desc], euro)], `Metade de ${euro(preco)} é ${euro(preco / 2)}; metade disso é ${euro(desc)}.`),
       certo: desc, fmt: euro, okWhy: `${pct}% de ${euro(preco)} = ${euro(desc)}.`, noWhy: pct === 10 ? `${preco} ÷ 10 = ${desc}.` : `Metade de ${preco} é ${preco / 2}, metade disso é ${desc}.` });
   }
   if (n === 6) {
@@ -804,35 +913,38 @@ function mathItem(n) {
     if (k === "x") {
       const b = rnd(2, 5), x = rnd(2, 10), c = b * x;
       return numItem({ key: "? x " + b + " = " + c, q: "Qual número falta?", stage: `<div class="word">? × ${b} = ${c}</div>`,
-        hint: `Que número vezes ${b} dá ${c}?`, certo: x, okWhy: `${x} × ${b} = ${c}.`, noWhy: `Experimente: ${x} × ${b} = ${c}.` });
+        hint: `Que número vezes ${b} dá ${c}?`, aula: aulaP([passoVals(`Conte de ${b} em ${b} até ${c}. Quantos toques você deu? Esse é o número que falta.`, multiplos(b, x))], `${x} × ${b} = ${c}.`), certo: x, okWhy: `${x} × ${b} = ${c}.`, noWhy: `Experimente: ${x} × ${b} = ${c}.` });
     }
     if (k === "-") {
       const b = rnd(2, 9), c = rnd(3, 15), x = b + c;
       return numItem({ key: "? - " + b + " = " + c, q: "Qual número falta?", stage: `<div class="word">? − ${b} = ${c}</div>`,
-        hint: `Dica: ${c} + ${b}`, certo: x, okWhy: `${x} − ${b} = ${c}.`, noWhy: `Faça ao contrário: ${c} + ${b} = ${x}.` });
+        hint: `Dica: ${c} + ${b}`, aula: aulaP([passoReta(`Faça ao contrário: comece no ${c} e suba ${b} passos. Onde você chega?`, c, b, 1)], `${c} + ${b} = ${x}, então ${x} − ${b} = ${c}.`), certo: x, okWhy: `${x} − ${b} = ${c}.`, noWhy: `Faça ao contrário: ${c} + ${b} = ${x}.` });
     }
     const a = rnd(2, 12), x = rnd(2, 15), c = a + x;
     const txt = k === "a+" ? `${a} + ? = ${c}` : `? + ${a} = ${c}`;
     return numItem({ key: txt, q: "Qual número falta?", stage: `<div class="word">${txt}</div>`,
-      hint: `Dica: ${c} − ${a}`, certo: x, okWhy: `${a} + ${x} = ${c}.`, noWhy: `Faça ao contrário: ${c} − ${a} = ${x}.` });
+      hint: `Dica: ${c} − ${a}`, aula: aulaP([passoReta(`Comece no ${a} e suba até ${c}. Quantos passos você deu? Esse é o número que falta.`, a, x, 1)], `${a} + ${x} = ${c}.`), certo: x, okWhy: `${a} + ${x} = ${c}.`, noWhy: `Faça ao contrário: ${c} − ${a} = ${x}.` });
   }
   // nível 7: proporção
   const k = pick(["receita", "preco", "unit"]);
   if (k === "receita") {
     const ovos = rnd(2, 4), f = pick([2, 3]);
     return numItem({ key: "Receita " + ovos + "x" + f, q: `Para 2 pessoas, a receita usa ${ovos} ovos. Para ${2 * f} pessoas?`,
-      hint: `${2 * f} pessoas é ${f} vezes mais.`, stage: `<div class="word md">🥚 2 → ${ovos} · ${2 * f} → ?</div>`, certo: ovos * f, extra: [ovos + 2 * f],
+      hint: `${2 * f} pessoas é ${f} vezes mais.`, stage: `<div class="word md">🥚 2 → ${ovos} · ${2 * f} → ?</div>`, aula: aulaP([passoVals(`A cada 2 pessoas a mais, somam-se ${ovos} ovos. Toque ${f} vezes.`, multiplos(ovos, f))], `${f} × ${ovos} = ${ovos * f} ovos.`),
+      certo: ovos * f, extra: [ovos + 2 * f],
       okWhy: `${f} vezes mais pessoas, ${f} vezes mais ovos: ${ovos * f}.`, noWhy: `${ovos} × ${f} = ${ovos * f} ovos.` });
   }
   if (k === "preco") {
     const p = rnd(2, 5), q = rnd(3, 6);
     return numItem({ key: "Preço " + p + "x" + q, q: `Um caderno custa ${euro(p)}. Quanto custam ${q} cadernos?`,
-      hint: `${q} × ${p}`, stage: `<div class="word md">📒 1 → ${euro(p)} · ${q} → ?</div>`, certo: p * q, fmt: euro, extra: [p + q],
+      hint: `${q} × ${p}`, stage: `<div class="word md">📒 1 → ${euro(p)} · ${q} → ?</div>`, aula: aulaP([passoVals(`Cada caderno custa ${euro(p)}. Some um caderno de cada vez.`, multiplos(p, q), euro)], `${q} × ${euro(p)} = ${euro(p * q)}.`),
+      certo: p * q, fmt: euro, extra: [p + q],
       okWhy: `${q} × ${p} = ${euro(p * q)}.`, noWhy: `${q} vezes ${euro(p)} = ${euro(p * q)}.` });
   }
   const u = rnd(2, 5), qn = rnd(2, 4);
   return numItem({ key: "Unit " + qn + "/" + u, q: `${qn} pulseiras custam ${euro(u * qn)}. Quanto custa 1?`,
-    hint: `Divida ${u * qn} por ${qn}.`, stage: `<div class="word md">📿 ${qn} → ${euro(u * qn)} · 1 → ?</div>`, certo: u, fmt: euro,
+    hint: `Divida ${u * qn} por ${qn}.`, stage: `<div class="word md">📿 ${qn} → ${euro(u * qn)} · 1 → ?</div>`, aula: aulaP([passoVals(`Teste ${euro(u)} por pulseira: some ${euro(u)} em ${euro(u)}, ${qn} vezes. Chega em ${euro(u * qn)}?`, multiplos(u, qn), euro)], `${qn} × ${euro(u)} = ${euro(u * qn)}, então 1 custa ${euro(u)}.`),
+    certo: u, fmt: euro,
     okWhy: `${u * qn} ÷ ${qn} = ${euro(u)}.`, noWhy: `${qn} × ${u} = ${u * qn}. Então 1 custa ${euro(u)}.` });
 }
 
@@ -915,13 +1027,13 @@ function wordItem(w, kind, lista, nivel) {
   if (kind === "hear") {
     return {
       key: "Ouvir: " + w.en, q: "Toque no que você ouviu.", hint: "Significa: " + w.pt, speak: w.en, lang: "en-GB",
-      stage: `<div class="word">${w.emoji}</div>`,
+      stage: `<div class="word">${w.emoji}</div>`, aula: aulaIngles(w),
       choices: shuffle([w, ...distract]).map(x => ({ t: x.en, ok: x.en === w.en, why: x.en === w.en ? `${w.en} = ${w.pt}` : `Esta é "${w.en}".` }))
     };
   }
   return {
     key: "Significado: " + w.en, q: w.en, hint: "O que quer dizer?", speak: w.en, lang: "en-GB",
-    stage: `<div class="word en ${nivel > 1 ? "md" : ""}">${esc(w.en)}</div>`,
+    stage: `<div class="word en ${nivel > 1 ? "md" : ""}">${esc(w.en)}</div>`, aula: aulaIngles(w),
     choices: shuffle([w, ...distract]).map(x => ({ t: x.emoji + "  " + x.pt, ok: x.en === w.en, why: x.en === w.en ? `Sim! ${w.en} = ${w.pt}` : `"${w.en}" quer dizer ${w.pt}.` }))
   };
 }
@@ -1177,9 +1289,14 @@ function variante(it) {
 function mostraAula(it, chosen) {
   const correta = it.choices.find(c => c.ok);
   const passos = [{ t: chosen ? "Você escolheu “" + chosen.t + "”. " + chosen.why : "Tudo bem não saber! Vamos ver juntas, com calma.", html: "" }];
-  if (it.aula) passos.push({ t: it.aula.texto, html: it.aula.visual(), init: it.aula.init });
-  else passos.push({ t: "Olhe de novo com calma:", html: it.stage });
-  passos.push({ t: "A resposta certa é “" + correta.t + "”. " + correta.why, html: "" });
+  if (it.aula && it.aula.passos) it.aula.passos.forEach(p => passos.push({ t: p.t, html: p.visual(), init: p.init, trava: p.trava }));
+  else if (it.aula) passos.push({ t: it.aula.texto, html: it.aula.visual(), init: it.aula.init });
+  else {
+    if (it.hint) passos.push({ t: "Uma pista: " + it.hint, html: it.stage });
+    const lista = it.choices.map(c => `<div style="text-align:left;margin:6px 0">${c.ok ? "✅" : "❌"} <b>${esc(c.t)}</b><br><small>${esc(c.why)}</small></div>`).join("");
+    passos.push({ t: "Vamos pensar em cada resposta, uma de cada vez.", html: lista });
+  }
+  passos.push({ t: "A resposta certa é “" + correta.t + "”. " + correta.why + (it.aula && it.aula.fim ? " " + it.aula.fim : ""), html: "" });
   const podeVariante = !it.extra && state.mode === "missao";
   let i = 0;
   const box = $("aula");
@@ -1191,8 +1308,8 @@ function mostraAula(it, chosen) {
     const p = passos[i];
     const ultimo = i === passos.length - 1;
     box.innerHTML = `<div class="bubble">${esc(perfil.luaEmoji || "🌙")} ${esc(p.t)}</div>${p.html ? `<div class="aulaVis">${p.html}</div>` : ""}
-      <button class="next show" id="aulaNext">${ultimo ? "Entendi! Tentar uma parecida ›" : "Entendi ›"}</button>`;
-    if (p.init) p.init(box);
+      <button class="next show" id="aulaNext"${p.trava ? " disabled" : ""}>${ultimo ? "Entendi! Tentar uma parecida ›" : "Entendi ›"}</button>`;
+    if (p.init) p.init(box, () => { const nb = $("aulaNext"); if (nb) nb.disabled = false; });
     speak(p.t, "pt-BR");
     $("aulaNext").onclick = () => {
       if (!ultimo) { i += 1; desenha(); return; }
@@ -2142,7 +2259,7 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (
 });
 
 // Versao do app: igual ao CACHE do sw.js. Se "app" e "cache" diferirem, o update nao terminou.
-const APP_VERSAO = "v17";
+const APP_VERSAO = "v19";
 (async () => {
   let cache = "";
   try { cache = (await caches.keys()).filter((k) => k.startsWith("clara-v")).map((k) => k.slice(6)).sort().pop() || ""; } catch (e) {}
