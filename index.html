@@ -146,6 +146,12 @@
   .aulaVis { background: rgba(255,255,255,.1); border-radius: 16px; padding: 12px; margin: 10px 0; text-align: center; font-size: 20px; line-height: 1.6; }
   .cnt { font-size: 28px; background: transparent; border: 2px solid transparent; border-radius: 12px; padding: 2px 4px; cursor: pointer; }
   .cnt.on { border-color: #3ddc97; background: rgba(61,220,151,.2); }
+  .grp5 { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 6px 8px; margin: 6px auto; max-width: 280px; border-radius: 14px; border: 2px solid rgba(255,255,255,.18); }
+  .grp5.alt { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.3); }
+  .tc { font-size: 30px; line-height: 1.2; background: transparent; border: 2px solid transparent; border-radius: 12px; padding: 2px 4px; cursor: pointer; min-width: 44px; min-height: 44px; position: relative; color: inherit; }
+  .tc.on { border-color: #3ddc97; background: rgba(61,220,151,.25); }
+  .tc i { position: absolute; right: -2px; top: -4px; font-style: normal; font-size: 13px; font-weight: 700; background: #3ddc97; color: #06251a; border-radius: 9px; padding: 0 5px; }
+  .tcn { text-align: center; font-size: 15px; margin-top: 4px; opacity: .85; }
   .seg { font-size: 16px; font-weight: 800; background: rgba(255,255,255,.14); border: 2px solid transparent; border-radius: 12px; padding: 8px 10px; margin: 3px; cursor: pointer; color: inherit; }
   .seg.on { border-color: #3ddc97; background: rgba(61,220,151,.25); }
   .feedback {
@@ -634,6 +640,39 @@ function objRows(emoji, n) {
   for (let i = 0; i < n; i += 5) rows.push(objs(emoji, Math.min(5, n - i)));
   return rows.join("<br>");
 }
+// Até onde ela conta bem: sobe de 2 em 2 com 4 de 5 certas, desce com 2 ou menos. Começa em 8.
+function contarMax() { return Math.max(5, Math.min(20, (lsJSON("mc-contar", {}).max) || 8)); }
+function contarReg(ok) {
+  const c = lsJSON("mc-contar", {});
+  c.max = contarMax(); c.r = (c.r || []).concat(ok ? 1 : 0).slice(-5);
+  if (c.r.length >= 5) {
+    const t = c.r.reduce((a, b) => a + b, 0);
+    if (t >= 4) { c.max = Math.min(20, c.max + 2); c.r = []; }
+    else if (t <= 2) { c.max = Math.max(5, c.max - 2); c.r = []; }
+  }
+  lsSet("mc-contar", JSON.stringify(c));
+}
+// Contar de verdade: grupos de 5 com fundo alternado; cada toque marca e diz o número
+function contaStage(emoji, n) {
+  let h = "";
+  for (let i = 0; i < n; i += 5) {
+    const k = Math.min(5, n - i);
+    h += `<div class="grp5${(i / 5) % 2 ? " alt" : ""}">${Array.from({ length: k }, (_, j) => `<button type="button" class="tc" data-i="${i + j}" aria-label="contar">${emoji}</button>`).join("")}</div>`;
+  }
+  return h + `<div class="tcn">Toque em cada um para contar: <b id="tcN">0</b></div>`;
+}
+function contaInit(root) {
+  let n = 0;
+  root.querySelectorAll(".tc").forEach(b => b.onclick = () => {
+    if (b.classList.contains("on")) return;
+    n += 1;
+    b.classList.add("on");
+    b.insertAdjacentHTML("beforeend", `<i>${n}</i>`);
+    const el = root.querySelector("#tcN");
+    if (el) el.textContent = n;
+    speak(String(n), "pt-BR", true);
+  });
+}
 // 3 valores diferentes (> 0), incluindo o certo
 function opcoes(certo, step, extra) {
   step = step || 1;
@@ -666,10 +705,11 @@ function mathItem(n) {
   if (n === 1) {
     const k = pick(["count", "count", "more", "next"]);
     if (k === "count") {
-      const v = rnd(3, 20);
-      const it = numItem({ key: "Contar " + v, q: "Quantos você vê?", hint: "Cada linha tem 5. Conte um por um.",
-        stage: `<div class="objs ${v > 10 ? "sm" : ""}">${objRows(emoji, v)}</div>`, certo: v,
+      const v = rnd(3, contarMax());
+      const it = numItem({ key: "Contar " + v, q: "Quantos você vê?", hint: "Toque em cada um. Cada caixinha tem 5.",
+        stage: contaStage(emoji, v), certo: v,
         okWhy: `São ${v}.`, noWhy: `Conte de novo, devagar. São ${v}.` });
+      it.stageInit = contaInit;
       it.aula = {
         texto: "Vamos contar juntas. Toque em cada um, um de cada vez.",
         visual: () => `<div>${Array.from({ length: v }, (_, i) => `<button class="cnt" data-i="${i}">${emoji}</button>`).join("")}</div><div>Contei: <b id="cntN">0</b></div>`,
@@ -989,6 +1029,7 @@ function renderItem() {
   $("hint").className = "hint" + (nov && it.hint ? " pq" : "");
   $("hint").textContent = it.hint;
   $("stage").innerHTML = it.stage;
+  if (it.stageInit) it.stageInit($("stage"));
   $("feedback").className = "feedback";
   $("feedback").textContent = "";
   $("nextBtn").classList.remove("show");
@@ -1083,6 +1124,7 @@ function answer(idx) {
   } else if (it.conc && !extra) {
     concReg(it.conc, "erro");
   }
+  if (!extra && /^Contar \d/.test(it.key || "") && !rapido) contarReg(firstTry);
   if (firstTry && !extra) { state.firsts += 1; bumpErro(state.world + "|" + it.key, -1); }
   if (!extra && (rapido || state.rapidFlag)) state.rapidosN += 1;
   if (estrelasNovas) { state.stars += estrelasNovas; saveStars(); }
@@ -1257,8 +1299,10 @@ function terminaMissao() {
     texto = prox ? (state.stars >= prox.estrelas ? "O próximo capítulo já está liberado! 📺" : "Faltam " + (prox.estrelas - state.stars) + " estrelas para o próximo capítulo. Faça missões para liberar! ⭐") : "Você viu todos os capítulos! Novos em breve 🌻";
     track({ tipo: "missao", mundo: "nov" });
   } else if (state.mode === "musica") {
-    titulo = "Quiz de música feito!";
+    titulo = "Treino de música feito!";
     big = "🎵";
+    const fatos = perfil.cantores.map(artistaDe).filter(Boolean).flatMap(a => (a.fatos || []).map(f => ({ a, f })));
+    if (fatos.length) { const x = pick(fatos); texto = (x.a.e || "🎵") + " " + x.a.nome + ": " + x.f.certa + ". " + x.f.why; }
     track({ tipo: "missao", mundo: "music" });
     fig = ganhaFig();
   } else {
@@ -1296,7 +1340,7 @@ function terminaMissao() {
   $("rewardLua").textContent = (perfil.luaEmoji || "🌙") + " " + fala(C.fimMissao);
   $("rewardFig").classList.toggle("hidden", !fig);
   if (fig) { $("rewardFigE").textContent = fig.e; $("rewardFigT").textContent = "Figurinha nova: " + fig.t + "!"; }
-  $("againBtn").textContent = state.mode === "nov" ? "Ver capítulos" : state.mode === "musica" ? "Outro quiz" : "Outra missão";
+  $("againBtn").textContent = state.mode === "nov" ? "Ver capítulos" : state.mode === "musica" ? "Outro treino" : "Outra missão";
   show("reward");
   speak(titulo + ". " + $("rewardLua").textContent, "pt-BR");
 }
@@ -1727,38 +1771,58 @@ function dadosDe(nome) {
   return d && d.musicas && d.musicas.length ? { id: "dz" + d.id, nome: d.nome, e: "🎵", musicas: d.musicas, albuns: d.albuns || [], fatos: [] } : null;
 }
 function artistaDe(nome) { return achaArtista(nome) || dadosDe(nome); }
+const PALAVRAS_MUS = (m) => String(m).split(/\s+/).map(w => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")).filter(Boolean);
+// Quiz de música = treino de contar e ler, com os títulos dos cantores dela (sem trivia)
 function musicaItens() {
   const mine = perfil.cantores.map(artistaDe).filter(Boolean);
   const unicos = [...new Map(mine.map(a => [a.id, a])).values()];
-  const pool = unicos.concat(C.musica.filter(b => !unicos.some(u => u.id === b.id)));
-  const outros = (a) => shuffle(pool.filter(x => x.id !== a.id));
+  const todas = unicos.flatMap(a => a.musicas.map(m => ({ a, m, w: PALAVRAS_MUS(m) })));
   const cands = [];
-  unicos.forEach(a => {
-    (a.albuns || []).forEach(al => {
-      cands.push({ key: a.nome + " álbum: " + al, make: () => {
-        const falsos = shuffle(outros(a).flatMap(x => x.albuns || [])).slice(0, 2);
-        if (falsos.length < 2) return null;
-        return { q: "Qual álbum é de " + a.nome + "?", hint: "Toque no certo.", speak: "Qual álbum é de " + a.nome + "?", stage: `<div class="word">💿</div>`,
-          choices: shuffle([{ t: al, ok: true, why: al + " é de " + a.nome + "." }].concat(falsos.map(f => ({ t: f, ok: false, why: "Não. O certo é " + al + "." })))) };
-      } });
-    });
-    a.musicas.forEach(m => {
-      cands.push({ key: "Quem canta: " + m, make: () => {
-        const falsos = outros(a).slice(0, 2);
-        return { q: "Quem canta “" + m + "”?", hint: "Escolha o cantor.", speak: "Quem canta " + m + "?", stage: `<div class="word en md">🎵 ${esc(m)}</div>`,
-          choices: shuffle([{ t: a.nome, ok: true, why: m + " é de " + a.nome + "." }].concat(falsos.map(f => ({ t: f.nome, ok: false, why: "Essa é de " + a.nome + "." })))) };
-      } });
-      cands.push({ key: a.nome + ": " + m, make: () => {
-        const falsas = shuffle(outros(a).flatMap(x => x.musicas)).slice(0, 2);
-        return { q: "Qual música é de " + a.nome + "?", hint: "Toque na certa.", speak: "Qual música é de " + a.nome + "?", stage: `<div class="word">${a.e}</div>`,
-          choices: shuffle([{ t: m, ok: true, why: m + " é de " + a.nome + "." }].concat(falsas.map(f => ({ t: f, ok: false, why: "Não. A certa é " + m + "." })))) };
-      } });
-    });
-    a.fatos.forEach(f => cands.push({ key: a.nome + ": " + f.q, make: () => ({
-      q: f.q, hint: "Você sabe?", speak: f.q, stage: `<div class="word">${a.e}</div>`,
-      choices: shuffle([{ t: f.certa, ok: true, why: f.why }].concat(f.erradas.map(e => ({ t: e, ok: false, why: f.why })))) }) }));
+  // 1. Contar as palavras do título (toca em cada palavra)
+  todas.filter(x => x.w.length >= 1 && x.w.length <= 8).forEach(({ a, m, w }) => {
+    cands.push({ key: "Palavras: " + m, conc: "num.contar", make: () => {
+      const it = numItem({ key: "Palavras: " + m, q: "Quantas palavras tem o título?", hint: "Toque em cada palavra para contar.",
+        stage: `<div class="word en md">🎵 ${esc(a.nome)}</div><div class="grp5">${w.map((x, i) => `<button type="button" class="tc" data-i="${i}">${esc(x)}</button>`).join("")}</div><div class="tcn">Contei: <b id="tcN">0</b></div>`,
+        certo: w.length, okWhy: `São ${w.length} palavras.`, noWhy: `Conte de novo, uma de cada vez. São ${w.length}.` });
+      it.stageInit = (root) => {
+        let n = 0;
+        root.querySelectorAll(".tc").forEach(b => b.onclick = () => {
+          if (b.classList.contains("on")) return;
+          n += 1; b.classList.add("on");
+          root.querySelector("#tcN").textContent = n;
+          speak(b.textContent, "en-US", true);
+        });
+      };
+      return it;
+    } });
   });
-  return sorteia(cands, 8, "music").map(c => { const it = c.make(); if (it) it.key = c.key; return it; }).filter(Boolean).slice(0, 5);
+  // 2. Completar o título: falta uma palavra (leitura)
+  const bancoPal = [...new Set(todas.flatMap(x => x.w).filter(w => w.length >= 3 && w.length <= 9).map(w => w.toLowerCase()))];
+  todas.filter(x => x.w.length >= 2 && x.w.length <= 6).forEach(({ a, m, w }) => {
+    const idx = w.map((x, i) => i).filter(i => w[i].length >= 3 && w[i].length <= 9);
+    if (!idx.length || bancoPal.length < 4) return;
+    cands.push({ key: "Falta: " + m, conc: "leitura.palavra", make: () => {
+      const i = pick(idx), certa = w[i];
+      const falsas = shuffle(bancoPal.filter(x => x !== certa.toLowerCase())).slice(0, 2);
+      const mostra = w.map((x, j) => j === i ? "＿＿＿" : x).join(" ");
+      return { key: "Falta: " + m, conc: "leitura.palavra", q: "Qual palavra falta no título?", hint: "Leia devagar e escolha.", speak: "Qual palavra falta no título?",
+        stage: `<div class="word en md">${esc(mostra)}</div><div class="tcn">🎵 ${esc(a.nome)}</div>`,
+        choices: shuffle([{ t: certa, ok: true, why: `O título é “${m}”.` }].concat(falsas.map(f => ({ t: f, ok: false, why: `O título é “${m}”. Falta “${certa}”.` })))) };
+    } });
+  });
+  // 3. Contar os álbuns que aparecem na tela (toca em cada um)
+  unicos.filter(a => (a.albuns || []).length >= 3).forEach(a => {
+    cands.push({ key: "Albuns: " + a.nome, conc: "num.contar", make: () => {
+      const k = rnd(3, Math.min(8, a.albuns.length));
+      const lista = shuffle(a.albuns).slice(0, k);
+      const it = numItem({ key: "Albuns: " + a.nome, q: "Quantos álbuns de " + a.nome + " tem aqui?", hint: "Toque em cada um para contar.",
+        stage: `<div class="grp5">${lista.map((x, i) => `<button type="button" class="tc" data-i="${i}">💿</button>`).join("")}</div><div class="tcn">Contei: <b id="tcN">0</b></div>`,
+        certo: k, okWhy: `São ${k} álbuns.`, noWhy: `Conte de novo, um de cada vez. São ${k}.` });
+      it.stageInit = contaInit;
+      return it;
+    } });
+  });
+  return sorteia(cands, 8, "music").map(c => { const it = c.make(); if (it) { it.key = c.key; it.conc = c.conc; } return it; }).filter(Boolean).slice(0, 5);
 }
 function startMusica() {
   const itens = musicaItens();
@@ -1774,7 +1838,7 @@ function abreMusica() {
   const tem = perfil.cantores.some(artistaDe);
   let h = novelaBubble(perfil.cantores.length ? "Que bom falar de música! Esses são os seus cantores. Pode tirar ou colocar quando quiser." : "Quais cantores ou grupos você gosta? Escreva um de cada vez.");
   h += '<div id="cantEd"></div><div style="height:12px"></div>';
-  if (tem) h += `<button class="world" id="musQuiz"><div class="ico w-music">🎮</div><div><b>Quiz de música</b><span>Quem canta, qual música é de quem e curiosidades.</span></div><div class="go">›</div></button>`;
+  if (tem) h += `<button class="world" id="musQuiz"><div class="ico w-music">🎮</div><div><b>Treino com música</b><span>Contar palavras e álbuns, e completar títulos.</span></div><div class="go">›</div></button>`;
   if (perfil.cantores.length) h += `<button class="world" id="musConta"><div class="ico w-music">💬</div><div><b>Conta pra ${esc(perfil.lua || "Lua")}</b><span>Quais músicas você conhece de cada um.</span></div><div class="go">›</div></button>`;
   if (sem.length) h += `<div class="mut" style="margin-top:8px">Ainda não tenho quiz de: ${esc(sem.join(", "))}. Mas você pode me contar as músicas deles!</div>`;
   $("musBody").innerHTML = h;
