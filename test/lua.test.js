@@ -11,7 +11,7 @@ const base = "http://localhost:" + PORT;
 const auth = "Basic " + Buffer.from("pais:segredo").toString("base64");
 let srv, fake, dir;
 // roteiro do Venice falso: cada pedido de chat tira a proxima resposta; o moderador responde pelo roteiro "mod"
-let chatRoteiro = [], modRoteiro = [], chamadas = [];
+let chatRoteiro = [], modRoteiro = [], factoRoteiro = [], chamadas = [];
 
 before(async () => {
   fake = http.createServer((req, res) => {
@@ -20,8 +20,9 @@ before(async () => {
     req.on("end", () => {
       const j = JSON.parse(body);
       const ehMod = String(j.messages[0].content).includes("moderador de segurança");
-      chamadas.push({ mod: ehMod, sistema: j.messages[0].content });
-      const texto = (ehMod ? modRoteiro : chatRoteiro).shift() || "";
+      const ehFacto = String(j.messages[0].content).includes("extrai UM facto");
+      if (!ehFacto) chamadas.push({ mod: ehMod, sistema: j.messages[0].content });
+      const texto = (ehFacto ? factoRoteiro : ehMod ? modRoteiro : chatRoteiro).shift() || (ehFacto ? "NADA" : "");
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ choices: [{ message: { content: texto } }] }));
     });
@@ -116,4 +117,57 @@ test("modo novela: prompt próprio, ignora pedidos de app e aceita comentário",
   assert.equal(r.acao, undefined);
   assert.ok(chamadas.find((c) => !c.mod).sistema.includes("MODO NOVELA"));
   assert.equal((await conversas()).pop().modo, "novela");
+});
+
+test("dica com 'faça' não é bloqueada como 'faca'", async () => {
+  chatRoteiro = ["Oi! Que bom te ver 😊\n💡 Ótimo começo, agora faça uma pergunta de volta!"];
+  modRoteiro = ["SEGURA"];
+  const r = await fala("Bora falar ?");
+  assert.match(r.resposta, /faça uma pergunta/);
+  assert.equal((await conversas()).pop().origem, "ia");
+});
+
+test("faca como objeto continua bloqueada", async () => {
+  chatRoteiro = ["Pega a faca", "Vamos falar de música? 🎵"];
+  modRoteiro = ["SEGURA"];
+  const r = await fala("o que faço?");
+  assert.match(r.resposta, /música/);
+});
+
+test("namoro: resposta fixa sem modelo e sem alerta", async () => {
+  chamadas = [];
+  const r = await fala("Quero arranjar um namorado");
+  assert.equal(chamadas.length, 0);
+  assert.match(r.resposta, /mãe ou o pai/);
+  const ult = (await conversas()).pop();
+  assert.equal(ult.origem, "tema-namoro");
+  assert.ok(!ult.alerta);
+});
+
+test("pedido de mais capítulos (com erro 'mas') é pedido da app, não conversa", async () => {
+  chamadas = [];
+  for (const f of ["Faz mas capítulos da turma do girassol", "Faz você", "quero mais episodios"]) {
+    const r = await fala(f);
+        assert.match(r.resposta, /não consigo|Eu só consigo|mãe ou ao pai/);
+  }
+  assert.equal(chamadas.length, 0);
+});
+
+test("memória: guarda facto, usa no prompt e pais apagam", async () => {
+  const id = "dddddddd-1";
+  const manda = (c) => fetch(base + "/api/conversa", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, modo: "papo", msgs: [{ role: "user", content: c }] }) });
+  chatRoteiro = ["Que legal! Como ela se chama? 😊"]; modRoteiro = ["SEGURA"]; factoRoteiro = ["Tem uma gata chamada Mimi"];
+  await manda("Eu tenho uma gata chamada Mimi");
+  await new Promise((r) => setTimeout(r, 300));
+  chamadas = [];
+  chatRoteiro = ["Oi! 😊"]; modRoteiro = ["SEGURA"]; factoRoteiro = [];
+  await manda("Oi de novo, tudo bem?");
+  assert.match(chamadas.find((c) => !c.mod).sistema, /gata chamada Mimi/);
+  const html = await (await fetch(base + "/pais", { headers: { Authorization: auth } })).text();
+  assert.match(html, /O que a Lua sabe dela/);
+  assert.match(html, /Tem uma gata/);
+  await fetch(base + "/pais/memoria", { method: "POST", headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" }, body: "id=" + id + "&i=0", redirect: "manual" });
+  const html2 = await (await fetch(base + "/pais", { headers: { Authorization: auth } })).text();
+  assert.doesNotMatch(html2, /Tem uma gata/);
 });
