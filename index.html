@@ -281,6 +281,10 @@
       <button class="speak" id="speakBtn">🔊</button>
     </div>
     <div class="bar"><div id="bar"></div></div>
+    <div class="amiga hidden" id="amigaCard">
+      <div class="bubble" id="amigaTxt" style="text-align:left"></div>
+      <div class="row" style="margin:8px 0 14px"><button class="chip on" id="amigaSim">💬 Responder à Lua</button><button class="chip" id="amigaNao">Agora não</button></div>
+    </div>
     <div class="q" id="q"></div>
     <div class="hint" id="hint"></div>
     <div class="stage" id="stage"></div>
@@ -296,6 +300,10 @@
       <div class="big" id="rewardBig">🌟</div>
       <h2 id="rewardTitle">Missão feita</h2>
       <div class="bubble" id="rewardLua" style="text-align:left"></div>
+      <div class="amiga hidden" id="amigaFim">
+        <div class="bubble" id="amigaFimTxt" style="text-align:left"></div>
+        <button class="chip on" id="amigaFimSim">💬 Responder à Lua</button>
+      </div>
       <p id="rewardText"></p>
       <div id="rewardFig" class="hidden"><div class="fig" id="rewardFigE"></div><p id="rewardFigT"></p></div>
       <button class="next show" id="againBtn">Outra missão</button>
@@ -1350,6 +1358,7 @@ function start(world) {
     state.total = state.queue.length;
   }
   show("play");
+  amigaMostra("entrada", "amigaCard", "amigaTxt");
   renderItem();
 }
 
@@ -1370,6 +1379,7 @@ function startCap(i) {
   }));
   state.total = state.queue.length;
   show("play");
+  amigaMostra("entrada", "amigaCard", "amigaTxt");
   renderItem();
 }
 
@@ -1453,6 +1463,7 @@ function terminaMissao() {
   $("rewardFig").classList.toggle("hidden", !fig);
   if (fig) { $("rewardFigE").textContent = fig.e; $("rewardFigT").textContent = "Figurinha nova: " + fig.t + "!"; }
   $("againBtn").textContent = state.mode === "nov" ? "Ver capítulos" : state.mode === "musica" ? "Outro treino" : "Outra missão";
+  amigaMostra("fim", "amigaFim", "amigaFimTxt");
   show("reward");
   speak(titulo + ". " + $("rewardLua").textContent, "pt-BR");
 }
@@ -1801,6 +1812,7 @@ function startMusica() {
   state.world = "music"; state.mode = "musica"; state.step = 0; state.firsts = 0;
   state.queue = itens; state.total = itens.length;
   show("play");
+  amigaMostra("entrada", "amigaCard", "amigaTxt");
   renderItem();
 }
 function abreMusica() {
@@ -1978,6 +1990,32 @@ $("humorPapo").onclick = () => {
   chat.msgs.push({ role: "assistant", content: oi });
   speak(oi, "pt-BR");
 };
+
+// ---------- Lua puxa papo (ao entrar numa atividade e ao fim de uma missão; no máximo 1 convite a cada 2 h por tipo) ----------
+const AMIGA_INTERVALO = 2 * 3600e3;
+let amigaTexto = "";
+function amigaMostra(quando, cardId, txtId) {
+  const card = $(cardId);
+  if (Date.now() - Number(lsGet("mc-amiga-" + quando) || 0) < AMIGA_INTERVALO) { card.classList.add("hidden"); return; }
+  lsSet("mc-amiga-" + quando, String(Date.now()));
+  amigaTexto = (perfil.luaEmoji || "🌙") + " " + fill(pick(C.amiga[quando]));
+  $(txtId).textContent = amigaTexto;
+  card.classList.remove("hidden");
+}
+function amigaAbre() {
+  ["amigaCard", "amigaFim"].forEach(id => $(id).classList.add("hidden"));
+  chat = { modo: "papo", cenario: null, msgs: [], esperando: false };
+  $("chatModes").innerHTML = "";
+  $("chatTitle").textContent = (perfil.luaEmoji || "🌙") + " " + (perfil.lua || "Lua");
+  $("chatLog").innerHTML = "";
+  show("chat");
+  addMsg("lua", amigaTexto);
+  chat.msgs.push({ role: "assistant", content: amigaTexto });
+  speak(amigaTexto, "pt-BR");
+}
+$("amigaSim").onclick = amigaAbre;
+$("amigaFimSim").onclick = amigaAbre;
+$("amigaNao").onclick = () => $("amigaCard").classList.add("hidden");
 
 // ---------- chat ----------
 let chat = { modo: "papo", cenario: null, msgs: [], esperando: false };
@@ -2259,7 +2297,7 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (
 });
 
 // Versao do app: igual ao CACHE do sw.js. Se "app" e "cache" diferirem, o update nao terminou.
-const APP_VERSAO = "v19";
+const APP_VERSAO = "v21";
 (async () => {
   let cache = "";
   try { cache = (await caches.keys()).filter((k) => k.startsWith("clara-v")).map((k) => k.slice(6)).sort().pop() || ""; } catch (e) {}

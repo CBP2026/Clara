@@ -616,13 +616,66 @@
     "social.conflito": { nome: "resolver desacordos com amigos", casa: "Encenem um desacordo (quem escolhe o jogo) e treinem frases como 'e se fizermos metade de cada um?' ou 'vamos dividir'." }
   };
 
+  // Lua puxa papo: ao entrar numa atividade (entrada) e ao fim de uma missão (fim)
+  C.amiga = {
+    entrada: [
+      "Oi, {nome}! Antes de começar, como você está hoje? 💛",
+      "Oi, {nome}! Como foi o seu dia até agora? Me conta antes da missão 😊",
+      "Ei, {nome}! Tudo bem com você? Quero saber como você está 💛",
+      "Oi, {nome}! Como foi a escola hoje? Depois a gente faz a missão juntas 🌟",
+      "{nome}, antes de começar: o que você fez hoje de legal? 😊",
+      "Oi, {nome}! Como você está se sentindo agora? Pode me contar do seu jeito 💛",
+      "Oi, {nome}! Hoje você já falou com a sua mãe ou o seu pai? Como foi? 💛",
+      "Oi, amiga! Me conta uma coisa boa que aconteceu hoje antes de começar ✨"
+    ],
+    fim: [
+      "Missão feita, {nome}! Como você está agora? 💛",
+      "Muito bem! E o resto do seu dia, como está sendo? 😊",
+      "Você conseguiu! Me conta: o que foi melhor hoje até agora? 🌟",
+      "Que orgulho! Como foi a escola hoje, {nome}? 💬",
+      "Terminou! Agora me conta como você está. Sem pressa 💛",
+      "Boa, {nome}! Você gostou dessa missão? E como está o seu dia? 😊",
+      "Arrasou! Quer me contar alguma coisa? Estou aqui para ouvir 💛",
+      "Missão concluída! Como foi o seu dia, {nome}? 🌈"
+    ]
+  };
+
   C.push = {
     manha: [
       "Bom dia, {nome}! Você pode sempre contar com o papai, a mamãe e a sua irmã. A gente te ama muito 💛 Hoje seja boazinha e dê bom dia para todo mundo ☀️",
       "Bom dia, campeã! O papai, a mamãe e a sua irmã estão sempre com você e te amam muito 💛 Dê bom dia a todos com um sorriso 😊",
       "Acorda, {nome}! Pode contar com a sua família: pai, mãe e irmã te amam demais 💛 Seja boazinha e dê bom dia a todo mundo!",
       "Bom dia! Lembra: o papai, a mamãe e a sua irmã estão do seu lado sempre. Te amamos muito 💛 Um bom dia para cada pessoa que você encontrar ✨",
-      "Bom dia, {nome}! Você é corajosa e é muito amada pelo pai, pela mãe e pela irmã 💛 Hoje seja boazinha e cumprimente a todos 👋"
+      "Bom dia, {nome}! Você é corajosa e é muito amada pelo pai, pela mãe e pela irmã 💛 Hoje seja boazinha e cumprimente a todos 👋",
+      "Bom dia, {nome}! Sua mãe é a sua melhor amiga, e pode contar com ela para tudo 💛",
+      "Bom dia! Você pode contar com os seus pais sempre, em qualquer momento 💛",
+      "Bom dia, {nome}! Sua irmã vai estar sempre ao seu lado. Que dia bonito para começar! 👭",
+      "Bom dia, {nome}! O papai tem muito orgulho de você. Vai lá e brilha hoje ☀️",
+      "Bom dia, {nome}! A mamãe torce por você em cada coisa que faz 💛 Bora?",
+      "Bom dia! Sua família é o seu lugar seguro. Leva esse carinho com você hoje 🏡💛",
+      "Bom dia, {nome}! Você tem uma irmã que te ama e um pai e uma mãe que estão sempre aqui 💛",
+      "Bom dia, {nome}! Sabe quem está torcendo por você agora? A família toda! 📣💛",
+      "Bom dia, {nome}! O papai te ama do jeito que você é. Tenha um dia de muita alegria 🌞",
+      "Bom dia, {nome}! Lembra: quando algo for difícil, você tem o papai, a mamãe e a sua irmã 💪💛",
+      "Bom dia! Sua irmã é sua parceira de vida. Que ela te encontre com um sorriso hoje 😊",
+      "Bom dia, {nome}! Você é muito amada pela sua família. Vai com coragem! 🦋",
+      "Bom dia, {nome}! Seus pais estão sempre por perto, mesmo quando você não vê. Te amamos 💛",
+      "Bom dia, {nome}! Dê um abraço de bom dia em quem você ama. A família te ama de volta 🤗",
+      "Bom dia, {nome}! A sua família é linda e está torcendo por você hoje ✨",
+      "Bom dia, {nome}! Você pode contar com a sua mãe, o seu pai e a sua irmã. Sempre! 💛",
+      "Bom dia, campeã! Seu pai e sua mãe acreditam muito em você 🏆💛",
+      "Bom dia, {nome}! Com a família do seu lado, dá para ir longe. Bora 🚀💛",
+      "Bom dia! A sua irmã é uma sorte na sua vida. Hoje, aproveita o dia juntas 👭☀️",
+      "Bom dia, {nome}! Sua mãe ama ouvir você contar as novidades. Que tal contar algo bom hoje? 💬💛",
+      "Bom dia, {nome}! O papai e a mamãe são seu porto seguro. Você está protegida 🛡️💛",
+      "Bom dia, {nome}! Que bom ter uma família tão unida. Hoje é um ótimo dia para ser gentil 🌸",
+      "Bom dia, {nome}! Sua irmã sempre vai estar do seu lado, pode ter certeza 💛",
+      "Bom dia, {nome}! Seus pais se orgulham de você, e não é de hoje 🌟",
+      "Bom dia! Lembra que a família te ama incondicionalmente? Leva isso no coração hoje 💖",
+      "Bom dia, {nome}! Quando ficar com saudade, lembre que seus pais estão sempre com você 💛",
+      "Bom dia, {nome}! Sua mãe e seu pai fazem tudo por você. Retribua com um sorriso hoje 😊",
+      "Bom dia, {nome}! Você tem uma irmã e uma família que te apoiam em tudo 🌈💛",
+      "Bom dia, {nome}! Hoje, dê um bom dia caloroso para o papai, a mamãe e a sua irmã. Eles vão adorar 💛☀️"
     ],
     dia: [
       "Como foi o seu dia, {nome}? Me conta 💬",
